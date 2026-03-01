@@ -9,47 +9,50 @@
 <body>
   <header>
     <h1>Badminton Stats</h1>
-    <p>Suivi des joueurs, des journées de match et du classement de la saison</p>
+    <p>Club de badminton</p>
   </header>
 
   <main>
     <section class="card">
       <div class="tabs">
-        <button class="tab">Joueurs</button>
-        <button class="tab">Journées de match</button>
-        <button class="tab">Classement global de la saison</button>
+        <button class="tab active" data-tab="joueurs">Joueurs</button>
+        <button class="tab" data-tab="journees">Journées de match</button>
+        <button class="tab" data-tab="classement">Classement global</button>
       </div>
 
-      <h2 class="section-title">Vue générale</h2>
-      <p>
-        Cette première version sert à préparer la structure du site.
-        Chaque onglet représentera une section principale de l’application.
-      </p>
-
-      <div class="card" style="margin-top: 20px;">
-        <h3>Joueurs</h3>
-        <p>
-          Cette section servira à afficher la liste des joueurs de la saison
-          et à en ajouter de nouveaux.
-        </p>
+      <div class="tab-content active" id="joueurs">
+        <ul>
+          <li>Joueur 1</li>
+          <li>Joueur 2</li>
+          <li>Joueur 3</li>
+        </ul>
       </div>
 
-      <div class="card" style="margin-top: 20px;">
-        <h3>Journées de match</h3>
-        <p>
-          Cette section servira à enregistrer chaque date de badminton
-          et les résultats associés à chaque journée.
-        </p>
+      <div class="tab-content" id="journees">
+        <p>Aucune journée enregistrée pour le moment.</p>
       </div>
 
-      <div class="card" style="margin-top: 20px;">
-        <h3>Classement global de la saison</h3>
-        <p>
-          Cette section servira à afficher les statistiques cumulées
-          et le classement général des joueurs.
-        </p>
+      <div class="tab-content" id="classement">
+        <p>Le classement global apparaîtra ici.</p>
       </div>
     </section>
   </main>
+
+  <script>
+    const tabs = document.querySelectorAll(".tab");
+    const contents = document.querySelectorAll(".tab-content");
+
+    tabs.forEach(tab => {
+      tab.addEventListener("click", () => {
+        const target = tab.dataset.tab;
+
+        tabs.forEach(t => t.classList.remove("active"));
+        contents.forEach(c => c.classList.remove("active"));
+
+        tab.classList.add("active");
+        document.getElementById(target).classList.add("active");
+      });
+    });
+  </script>
 </body>
 </html>
