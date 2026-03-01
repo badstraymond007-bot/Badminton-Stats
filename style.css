@@ -158,3 +158,28 @@ main {
 .day-link:hover {
   text-decoration: underline;
 }
+.presence-list {
+  margin-top: 16px;
+}
+
+.presence-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  width: 100%;
+}
+
+.presence-row input[type="checkbox"] {
+  transform: scale(1.2);
+  cursor: pointer;
+}
+
+.presence-row span {
+  font-weight: 500;
+}
+
+.back-link {
+  text-decoration: none;
+  display: inline-block;
+}
