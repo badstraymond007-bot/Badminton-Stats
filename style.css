@@ -55,6 +55,20 @@ main {
   cursor: pointer;
 }
 
-.section-title {
-  margin-top: 0;
+.tab.active {
+  background: #1e3a8a;
+  color: white;
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+ul {
+  margin: 0;
+  padding-left: 20px;
 }
