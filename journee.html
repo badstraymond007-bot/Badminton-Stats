@@ -157,6 +157,20 @@
         document.getElementById(target).classList.add("active");
       });
     });
+    const subTabs = document.querySelectorAll(".sub-tab");
+const subContents = document.querySelectorAll(".subtab-content");
+
+subTabs.forEach((tab) => {
+  tab.addEventListener("click", () => {
+    const target = tab.dataset.subtab;
+
+    subTabs.forEach((t) => t.classList.remove("active"));
+    subContents.forEach((c) => c.classList.remove("active"));
+
+    tab.classList.add("active");
+    document.getElementById(target).classList.add("active");
+  });
+});
   </script>
 </body>
 </html>
