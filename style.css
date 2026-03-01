@@ -183,3 +183,8 @@ main {
   text-decoration: none;
   display: inline-block;
 }
+.note-helper {
+  margin-top: 16px;
+  color: #64748b;
+  font-size: 0.95rem;
+}
