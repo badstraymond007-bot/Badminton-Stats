@@ -48,10 +48,81 @@
         <p class="note-helper">Pour plus tard : case cochée = absent.</p>
       </div>
 
-      <div class="tab-content" id="matchs">
-        <h2>Matchs de la journée</h2>
-        <p>Le calendrier des matchs de cette journée sera ajouté ici.</p>
-      </div>
+<div class="tab-content" id="matchs">
+  <h2>Matchs de la journée</h2>
+
+  <div class="tabs sub-tabs">
+    <button class="tab sub-tab active" data-subtab="serie1">Série 1</button>
+    <button class="tab sub-tab" data-subtab="serie2">Série 2</button>
+    <button class="tab sub-tab" data-subtab="serie3">Série 3</button>
+  </div>
+
+  <div class="subtab-content active" id="serie1">
+    <div class="match-group">
+      <h3>Catégorie A</h3>
+      <ul class="player-list">
+        <li>Pier-Luc Morency</li>
+        <li>David Fortier</li>
+        <li>Sébastien Moisan</li>
+        <li>Cédric Borgia</li>
+      </ul>
+    </div>
+
+    <div class="match-group">
+      <h3>Catégorie B</h3>
+      <ul class="player-list">
+        <li>Dominic Beaupré</li>
+        <li>Rémi Ouellet</li>
+        <li>Julien Auger</li>
+        <li>Mathieu Bayard</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="subtab-content" id="serie2">
+    <div class="match-group">
+      <h3>Catégorie A</h3>
+      <ul class="player-list">
+        <li>Sébastien Moisan</li>
+        <li>Pier-Luc Morency</li>
+        <li>David Fortier</li>
+        <li>Louis Noreau</li>
+      </ul>
+    </div>
+
+    <div class="match-group">
+      <h3>Catégorie B</h3>
+      <ul class="player-list">
+        <li>Dominic Laroche</li>
+        <li>Dave Marcoux</li>
+        <li>Mario Bessette</li>
+        <li>Yvan Renaud</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="subtab-content" id="serie3">
+    <div class="match-group">
+      <h3>Catégorie A</h3>
+      <ul class="player-list">
+        <li>Étienne Drolet</li>
+        <li>Richard Genois</li>
+        <li>Gaétan Borgia</li>
+        <li>Sébastien Plamondon</li>
+      </ul>
+    </div>
+
+    <div class="match-group">
+      <h3>Catégorie B</h3>
+      <ul class="player-list">
+        <li>Olivier Paquet</li>
+        <li>Frédéric Boucher</li>
+        <li>Steven Moisan</li>
+        <li>Julien Auger</li>
+      </ul>
+    </div>
+  </div>
+</div>
 
       <p style="margin-top: 24px;">
         <a class="action-btn back-link" href="index.html">Retour aux journées</a>
