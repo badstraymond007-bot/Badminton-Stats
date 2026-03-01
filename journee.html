@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Journée de matchs</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>Journée de matchs</h1>
+    <p id="date-label">Date</p>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>Présences</h2>
+      <p>La liste des joueurs présents sera ajoutée ici.</p>
+
+      <p style="margin-top: 24px;">
+        <a class="action-btn" href="index.html">Retour</a>
+      </p>
+    </section>
+  </main>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const date = params.get("date");
+    const label = document.getElementById("date-label");
+
+    if (date) {
+      label.textContent = date;
+    } else {
+      label.textContent = "Aucune date sélectionnée";
+    }
+  </script>
+</body>
+</html>
