@@ -21,19 +21,34 @@
       </div>
 
       <div class="tab-content active" id="joueurs">
-        <ul>
-          <li>Joueur 1</li>
-          <li>Joueur 2</li>
-          <li>Joueur 3</li>
+        <h2>Joueurs</h2>
+
+        <ul class="player-list">
+          <li>Dominic Laroche</li>
+          <li>Sébastien Moisan</li>
+          <li>Cédric Borgia</li>
+          <li>David Fortier</li>
+          <li>Dominic Beaupré</li>
+          <li>Rémi Ouellet</li>
+          <li>Mathieu Bayard</li>
+          <li>Pier-Luc Morency</li>
+          <li>Dave Marcoux</li>
+          <li>Sébastien Plamondon</li>
+          <li>Julien Auger</li>
+          <li>Mario Bessette</li>
         </ul>
+
+        <button class="action-btn">Ajouter un joueur</button>
       </div>
 
       <div class="tab-content" id="journees">
+        <h2>Journées de match</h2>
         <p>Aucune journée enregistrée pour le moment.</p>
       </div>
 
       <div class="tab-content" id="classement">
-        <p>Le classement global apparaîtra ici.</p>
+        <h2>Classement global</h2>
+        <p>Le classement global de la saison apparaîtra ici.</p>
       </div>
     </section>
   </main>
@@ -42,12 +57,12 @@
     const tabs = document.querySelectorAll(".tab");
     const contents = document.querySelectorAll(".tab-content");
 
-    tabs.forEach(tab => {
+    tabs.forEach((tab) => {
       tab.addEventListener("click", () => {
         const target = tab.dataset.tab;
 
-        tabs.forEach(t => t.classList.remove("active"));
-        contents.forEach(c => c.classList.remove("active"));
+        tabs.forEach((t) => t.classList.remove("active"));
+        contents.forEach((c) => c.classList.remove("active"));
 
         tab.classList.add("active");
         document.getElementById(target).classList.add("active");
