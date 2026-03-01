@@ -14,11 +14,133 @@
 
   <main>
     <section class="card">
-      <h2>Présences</h2>
-      <p>La liste des joueurs présents sera ajoutée ici.</p>
+      <h2>Présences des joueurs</h2>
+
+      <ul class="player-list presence-list">
+        <li>
+          <label class="presence-row">
+            <input type="checkbox" />
+            <span>Sébastien Moisan</span>
+          </label>
+        </li>
+        <li>
+          <label class="presence-row">
+            <input type="checkbox" />
+            <span>David Fortier</span>
+          </label>
+        </li>
+        <li>
+          <label class="presence-row">
+            <input type="checkbox" />
+            <span>Cédric Borgia</span>
+          </label>
+        </li>
+        <li>
+          <label class="presence-row">
+            <input type="checkbox" />
+            <span>Louis Noreau</span>
+          </label>
+        </li>
+        <li>
+          <label class="presence-row">
+            <input type="checkbox" />
+            <span>Dominic Beaupré</span>
+          </label>
+        </li>
+        <li>
+          <label class="presence-row">
+            <input type="checkbox" />
+            <span>Pier-Luc Morency</span>
+          </label>
+        </li>
+        <li>
+          <label class="presence-row">
+            <input type="checkbox" />
+            <span>Étienne Drolet</span>
+          </label>
+        </li>
+        <li>
+          <label class="presence-row">
+            <input type="checkbox" />
+            <span>Richard Genois</span>
+          </label>
+        </li>
+        <li>
+          <label class="presence-row">
+            <input type="checkbox" />
+            <span>Mario Bessette</span>
+          </label>
+        </li>
+        <li>
+          <label class="presence-row">
+            <input type="checkbox" />
+            <span>Yvan Renaud</span>
+          </label>
+        </li>
+        <li>
+          <label class="presence-row">
+            <input type="checkbox" />
+            <span>Gaétan Borgia</span>
+          </label>
+        </li>
+        <li>
+          <label class="presence-row">
+            <input type="checkbox" />
+            <span>Sébastien Plamondon</span>
+          </label>
+        </li>
+        <li>
+          <label class="presence-row">
+            <input type="checkbox" />
+            <span>Julien Auger</span>
+          </label>
+        </li>
+        <li>
+          <label class="presence-row">
+            <input type="checkbox" />
+            <span>Rémi Ouellet</span>
+          </label>
+        </li>
+        <li>
+          <label class="presence-row">
+            <input type="checkbox" />
+            <span>Dominic Laroche</span>
+          </label>
+        </li>
+        <li>
+          <label class="presence-row">
+            <input type="checkbox" />
+            <span>Dave Marcoux</span>
+          </label>
+        </li>
+        <li>
+          <label class="presence-row">
+            <input type="checkbox" />
+            <span>Mathieu Bayard</span>
+          </label>
+        </li>
+        <li>
+          <label class="presence-row">
+            <input type="checkbox" />
+            <span>Steven Moisan</span>
+          </label>
+        </li>
+        <li>
+          <label class="presence-row">
+            <input type="checkbox" />
+            <span>Olivier Paquet</span>
+          </label>
+        </li>
+        <li>
+          <label class="presence-row">
+            <input type="checkbox" />
+            <span>Frédéric Boucher</span>
+          </label>
+        </li>
+      </ul>
 
       <p style="margin-top: 24px;">
-        <a class="action-btn" href="index.html">Retour</a>
+        <a class="action-btn back-link" href="index.html">Retour aux journées</a>
       </p>
     </section>
   </main>
@@ -29,7 +151,9 @@
     const label = document.getElementById("date-label");
 
     if (date) {
-      label.textContent = date;
+      const options = { weekday: "long", year: "numeric", month: "long", day: "numeric" };
+      const formattedDate = new Date(date + "T12:00:00").toLocaleDateString("fr-CA", options);
+      label.textContent = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
     } else {
       label.textContent = "Aucune date sélectionnée";
     }
