@@ -148,3 +148,13 @@ main {
   color: #64748b;
   cursor: not-allowed;
 }
+.day-link {
+  display: block;
+  text-decoration: none;
+  color: #1e3a8a;
+  font-weight: 600;
+}
+
+.day-link:hover {
+  text-decoration: underline;
+}
