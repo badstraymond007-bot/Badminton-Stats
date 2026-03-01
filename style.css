@@ -95,3 +95,56 @@ main {
   font-weight: bold;
   cursor: pointer;
 }
+.legend {
+  margin-bottom: 16px;
+  color: #475569;
+  font-size: 0.95rem;
+}
+
+#journees-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.journee-row {
+  display: grid;
+  grid-template-columns: 1fr 50px 90px;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: #f8fafc;
+  border: 1px solid #dbeafe;
+  border-radius: 10px;
+}
+
+.journee-date {
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.journee-check {
+  display: flex;
+  justify-content: center;
+}
+
+.journee-check input[type="checkbox"] {
+  transform: scale(1.2);
+  cursor: pointer;
+}
+
+.view-btn {
+  background: #1e3a8a;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.view-btn:disabled {
+  background: #cbd5e1;
+  color: #64748b;
+  cursor: not-allowed;
+}
