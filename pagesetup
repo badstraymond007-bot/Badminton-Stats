@@ -2,14 +2,15 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>Test joueurs badminton</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Badminton Stats - Test joueurs</title>
 </head>
 <body>
   <h1>Liste des joueurs</h1>
   <div id="playersList">Chargement...</div>
 
   <script>
-    const API_URL = 'COLLE_ICI_TON_URL_EXEC';
+    const API_URL = 'https://script.google.com/macros/s/AKfycbzZQbFDtzig2SpsAD8cwf6n6EAePKEGaaOr224epaU/dev';
 
     async function loadPlayers() {
       const container = document.getElementById('playersList');
@@ -23,13 +24,11 @@
           return;
         }
 
-        const html = result.data.map(player => `
-          <div>
+        container.innerHTML = result.data.map(player => `
+          <div style="margin-bottom:8px;">
             <strong>${player.player_id}</strong> — ${player.nom}
           </div>
         `).join('');
-
-        container.innerHTML = html;
       } catch (error) {
         container.textContent = 'Erreur fetch : ' + error;
       }
