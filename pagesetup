@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Test joueurs badminton</title>
+</head>
+<body>
+  <h1>Liste des joueurs</h1>
+  <div id="playersList">Chargement...</div>
+
+  <script>
+    const API_URL = 'COLLE_ICI_TON_URL_EXEC';
+
+    async function loadPlayers() {
+      const container = document.getElementById('playersList');
+
+      try {
+        const response = await fetch(`${API_URL}?action=getPlayers`);
+        const result = await response.json();
+
+        if (!result.ok) {
+          container.textContent = 'Erreur API : ' + result.error;
+          return;
+        }
+
+        const html = result.data.map(player => `
+          <div>
+            <strong>${player.player_id}</strong> — ${player.nom}
+          </div>
+        `).join('');
+
+        container.innerHTML = html;
+      } catch (error) {
+        container.textContent = 'Erreur fetch : ' + error;
+      }
+    }
+
+    loadPlayers();
+  </script>
+</body>
+</html>
