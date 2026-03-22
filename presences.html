@@ -358,6 +358,9 @@
     const uncheckAllBtn = document.getElementById('uncheckAllPlayers');
     const selectedCountEl = document.getElementById('selectedCount');
     const sessionDateEl = document.getElementById('sessionDate');
+    const saveAttendanceBtn = document.getElementById('saveAttendanceBtn');
+    const sessionNumberEl = document.getElementById('sessionNumber');
+    const sessionSeasonEl = document.getElementById('sessionSeason');
 
     function escapeHtml(value) {
       return String(value ?? '')
@@ -394,7 +397,19 @@
         updateSelectedCount();
       });
     }
+    
+function buildAttendancePayload() {
+  const selectedPlayers = Array.from(
+    document.querySelectorAll('input[name="attendanceSelection"]:checked')
+  ).map(box => box.value);
 
+  return {
+    date_session: sessionDateEl.value,
+    no_session: sessionNumberEl.value,
+    saison_id: sessionSeasonEl.value,
+    joueurs_presents: selectedPlayers
+  };
+}
     async function loadPlayers() {
       try {
         const response = await fetch(`${API_URL}?action=getPlayers`);
@@ -427,7 +442,7 @@
         }
 
         playersListEl.innerHTML = players.map(player => {
-          const playerId = escapeHtml(player.player_id || '');
+          const playerId = escapeHtml(player.joueur_id || player.player_id || '');
           const playerName = escapeHtml(player.nom || 'Sans nom');
 
           return `
@@ -460,6 +475,21 @@
     }
 
     loadPlayers();
+
+saveAttendanceBtn.addEventListener('click', () => {
+  const payload = buildAttendancePayload();
+  console.log('payload présences =', payload);
+
+  alert(
+    `Test présences\n\n` +
+    `Date: ${payload.date_session}\n` +
+    `Session: ${payload.no_session}\n` +
+    `Saison: ${payload.saison_id}\n` +
+    `Présents: ${payload.joueurs_presents.length}`
+  );
+});
+
+    
   </script>
 </body>
 </html>
