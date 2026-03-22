@@ -276,7 +276,6 @@
             <label for="sessionSeason">Saison</label>
             <select id="sessionSeason" name="sessionSeason">
               <option value="">Choisir une saison</option>
-              <option value="printemps-2026">Printemps 2026</option>
             </select>
           </div>
         </div>
@@ -521,6 +520,33 @@ saveAttendanceBtn.addEventListener('click', async () => {
   }
 });
 
+async function loadSeasons() {
+  try {
+    const response = await fetch(`${API_URL}?action=getSeasons`);
+    const result = await response.json();
+
+    if (!result.ok) {
+      throw new Error(result.error || 'Erreur API inconnue');
+    }
+
+    const seasons = Array.isArray(result.data) ? result.data : [];
+
+    sessionSeasonEl.innerHTML = '<option value="">Choisir une saison</option>';
+
+    seasons.forEach(season => {
+      const option = document.createElement('option');
+      option.value = season.saison_id;
+      option.textContent = season.nom_saison || season.saison_id;
+      sessionSeasonEl.appendChild(option);
+    });
+
+    if (seasons.length === 1) {
+      sessionSeasonEl.value = seasons[0].saison_id;
+    }
+  } catch (error) {
+    console.error('Erreur loadSeasons:', error);
+  }
+}    
     
   </script>
 </body>
