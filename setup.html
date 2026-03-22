@@ -569,8 +569,9 @@
 
         const players = result.data;
 
-        console.log('players API =', players);
+console.log('players API =', players);
 console.log('premier joueur =', players[0]);
+console.log('ids joueurs =', players.map(p => p.player_id));
 
         if (players.length === 0) {
           playersListEl.innerHTML = `
