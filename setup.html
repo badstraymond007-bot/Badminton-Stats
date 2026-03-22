@@ -586,7 +586,7 @@ console.log('ids joueurs =', players.map(p => p.player_id));
         }
 
         playersListEl.innerHTML = players.map(player => {
-          const playerId = escapeHtml(player.player_id || '');
+          const playerId = escapeHtml(player.joueur_id || '');
           const playerName = escapeHtml(player.nom || 'Sans nom');
 
           return `
