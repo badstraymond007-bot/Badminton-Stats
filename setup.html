@@ -15,6 +15,8 @@
       --accent-hover: #1d4ed8;
       --success-bg: #ecfdf5;
       --success-line: #a7f3d0;
+      --soft: #eff6ff;
+      --soft-line: #bfdbfe;
     }
 
     * { box-sizing: border-box; }
@@ -147,25 +149,29 @@
       margin-bottom: 14px;
     }
 
-    .players-list-title {
+    .players-list-title,
+    .tuesdays-title {
       margin: 18px 0 10px;
       font-size: 18px;
       font-weight: bold;
     }
 
-    .players-list-sub {
+    .players-list-sub,
+    .tuesdays-sub {
       margin: 0 0 14px;
       color: var(--muted);
       line-height: 1.5;
     }
 
-    .players-list {
+    .players-list,
+    .tuesdays-list {
       display: flex;
       flex-direction: column;
       gap: 10px;
     }
 
-    .player-item {
+    .player-item,
+    .tuesday-item {
       border: 1px solid var(--line);
       border-radius: 12px;
       padding: 16px 18px;
@@ -184,11 +190,13 @@
       flex: 0 0 auto;
     }
 
-    .player-name {
+    .player-name,
+    .tuesday-name {
       font-weight: bold;
     }
 
-    .player-code {
+    .player-code,
+    .tuesday-code {
       font-size: 13px;
       color: var(--muted);
       margin-top: 2px;
@@ -227,6 +235,14 @@
     .summary-value {
       font-weight: bold;
       text-align: right;
+    }
+
+    .preview-box {
+      margin-top: 20px;
+      padding: 18px;
+      border: 1px solid var(--soft-line);
+      border-radius: 14px;
+      background: var(--soft);
     }
 
     .actions {
@@ -272,7 +288,7 @@
           <div class="form-grid">
             <div class="field full">
               <label for="nomSaison">Nom de la saison</label>
-              <input type="text" id="nomSaison" name="nomSaison" placeholder="Ex. Printemps 2026" />
+              <input type="text" id="nomSaison" name="nomSaison" placeholder="Ex. Fin de saison 2026" />
             </div>
 
             <div class="field">
@@ -291,6 +307,21 @@
             </div>
           </div>
 
+          <div class="preview-box">
+            <div class="tuesdays-title">Mardis générés</div>
+            <p class="tuesdays-sub">
+              Aperçu automatique des sessions du mardi entre la date de début et la date de fin.
+            </p>
+            <div class="tuesdays-list" id="tuesdaysList">
+              <div class="tuesday-item">
+                <div>
+                  <div class="tuesday-name">Aucun mardi généré pour l’instant</div>
+                  <div class="tuesday-code">Choisis une date de début et une date de fin</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="section-title">Joueurs à inclure</div>
 
           <div class="toolbar">
@@ -306,91 +337,55 @@
           </p>
 
           <div class="players-list" id="playersList">
-            <label class="player-item">
-              <input type="checkbox" name="playerSelection" value="PLY-001" />
+            <div class="player-item">
               <div>
-                <div class="player-name">Sébastien Moisan</div>
-                <div class="player-code">PLY-001</div>
+                <div class="player-name">Chargement des joueurs...</div>
+                <div class="player-code">Connexion à la base en cours</div>
               </div>
-            </label>
-
-            <label class="player-item">
-              <input type="checkbox" name="playerSelection" value="PLY-002" />
-              <div>
-                <div class="player-name">David Fortier</div>
-                <div class="player-code">PLY-002</div>
-              </div>
-            </label>
-
-            <label class="player-item">
-              <input type="checkbox" name="playerSelection" value="PLY-003" />
-              <div>
-                <div class="player-name">Cédric Borgia</div>
-                <div class="player-code">PLY-003</div>
-              </div>
-            </label>
-
-            <label class="player-item">
-              <input type="checkbox" name="playerSelection" value="PLY-004" />
-              <div>
-                <div class="player-name">Louis Noreau</div>
-                <div class="player-code">PLY-004</div>
-              </div>
-            </label>
-
-            <label class="player-item">
-              <input type="checkbox" name="playerSelection" value="PLY-005" />
-              <div>
-                <div class="player-name">Dominic Beaupré</div>
-                <div class="player-code">PLY-005</div>
-              </div>
-            </label>
-
-            <label class="player-item">
-              <input type="checkbox" name="playerSelection" value="PLY-006" />
-              <div>
-                <div class="player-name">Pier-Luc Morency</div>
-                <div class="player-code">PLY-006</div>
-              </div>
-            </label>
+            </div>
           </div>
 
           <div class="actions">
             <button type="submit" class="btn" id="createSeasonBtn">Créer la saison</button>
-            <button type="reset" class="btn secondary">Réinitialiser</button>
+            <button type="reset" class="btn secondary" id="resetSeasonBtn">Réinitialiser</button>
           </div>
 
           <div class="note">
-            Structure visuelle seulement pour l'instant. Plus tard, les boutons « Ajouter un joueur » et « Retirer un joueur » permettront de gérer les petits changements directement dans le front-end.
+            Aujourd’hui, on branche le setup côté interface : vraie liste des joueurs, compteur et génération des mardis. L’écriture dans les tables viendra ensuite.
           </div>
         </form>
       </section>
 
       <aside class="card">
         <h2>Résumé</h2>
-        <p>Petit panneau de contrôle qui pourra être mis à jour automatiquement quand on branchera le JavaScript.</p>
+        <p>Petit panneau de contrôle qui se met déjà à jour pendant la préparation.</p>
 
         <div class="summary-box">
           <h3>Saison en préparation</h3>
 
           <div class="summary-row">
             <div class="summary-label">Nom</div>
-            <div class="summary-value">—</div>
+            <div class="summary-value" id="summaryName">—</div>
           </div>
 
           <div class="summary-row">
             <div class="summary-label">Début</div>
-            <div class="summary-value">—</div>
+            <div class="summary-value" id="summaryStart">—</div>
           </div>
 
           <div class="summary-row">
             <div class="summary-label">Fin</div>
-            <div class="summary-value">—</div>
+            <div class="summary-value" id="summaryEnd">—</div>
+          </div>
+
+          <div class="summary-row">
+            <div class="summary-label">Mardis générés</div>
+            <div class="summary-value" id="summaryTuesdays">0</div>
           </div>
 
           <div class="summary-row">
             <div class="summary-label">Joueurs sélectionnés</div>
-            <div class="summary-value">0</div>
+            <div class="summary-value" id="summaryPlayers">0</div>
           </div>
         </div>
 
@@ -405,5 +400,240 @@
       </aside>
     </div>
   </div>
+
+  <script>
+    const API_URL = 'https://script.google.com/macros/s/AKfycbwddJ7s8j6uWH2fXP_h7161F_MT5ZU12X15oMx6Xx7icxud1jg9_e3iq28bjfs3X4_y/exec';
+
+    const nomSaisonEl = document.getElementById('nomSaison');
+    const dateDebutEl = document.getElementById('dateDebut');
+    const dateFinEl = document.getElementById('dateFin');
+    const playersListEl = document.getElementById('playersList');
+    const tuesdaysListEl = document.getElementById('tuesdaysList');
+    const selectAllBtn = document.getElementById('selectAllPlayers');
+    const clearAllBtn = document.getElementById('clearAllPlayers');
+    const addPlayerBtn = document.getElementById('addPlayerBtn');
+    const removePlayerBtn = document.getElementById('removePlayerBtn');
+    const resetSeasonBtn = document.getElementById('resetSeasonBtn');
+
+    const summaryNameEl = document.getElementById('summaryName');
+    const summaryStartEl = document.getElementById('summaryStart');
+    const summaryEndEl = document.getElementById('summaryEnd');
+    const summaryTuesdaysEl = document.getElementById('summaryTuesdays');
+    const summaryPlayersEl = document.getElementById('summaryPlayers');
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function formatDateForDisplay(dateStr) {
+      if (!dateStr) return '—';
+      const date = new Date(dateStr + 'T00:00:00');
+      return date.toLocaleDateString('fr-CA', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    }
+
+    function generateTuesdays(startStr, endStr) {
+      if (!startStr || !endStr) return [];
+
+      const start = new Date(startStr + 'T00:00:00');
+      const end = new Date(endStr + 'T00:00:00');
+
+      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start > end) {
+        return [];
+      }
+
+      const current = new Date(start);
+      while (current.getDay() !== 2) {
+        current.setDate(current.getDate() + 1);
+      }
+
+      const results = [];
+      let noSession = 1;
+
+      while (current <= end) {
+        results.push({
+          noSession,
+          date: new Date(current)
+        });
+        current.setDate(current.getDate() + 7);
+        noSession += 1;
+      }
+
+      return results;
+    }
+
+    function renderTuesdays() {
+      const tuesdays = generateTuesdays(dateDebutEl.value, dateFinEl.value);
+
+      summaryStartEl.textContent = formatDateForDisplay(dateDebutEl.value);
+      summaryEndEl.textContent = formatDateForDisplay(dateFinEl.value);
+      summaryTuesdaysEl.textContent = tuesdays.length;
+
+      if (!dateDebutEl.value || !dateFinEl.value) {
+        tuesdaysListEl.innerHTML = `
+          <div class="tuesday-item">
+            <div>
+              <div class="tuesday-name">Aucun mardi généré pour l’instant</div>
+              <div class="tuesday-code">Choisis une date de début et une date de fin</div>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      if (tuesdays.length === 0) {
+        tuesdaysListEl.innerHTML = `
+          <div class="tuesday-item">
+            <div>
+              <div class="tuesday-name">Aucun mardi trouvé</div>
+              <div class="tuesday-code">Vérifie les dates choisies</div>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      tuesdaysListEl.innerHTML = tuesdays.map(item => `
+        <div class="tuesday-item">
+          <div>
+            <div class="tuesday-name">Session ${item.noSession}</div>
+            <div class="tuesday-code">${item.date.toLocaleDateString('fr-CA', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            })}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function updateSelectedPlayersCount() {
+      const checked = document.querySelectorAll('input[name="playerSelection"]:checked').length;
+      summaryPlayersEl.textContent = checked;
+    }
+
+    function updateSummaryName() {
+      const value = nomSaisonEl.value.trim();
+      summaryNameEl.textContent = value || '—';
+    }
+
+    function bindPlayerEvents() {
+      const checkboxes = document.querySelectorAll('input[name="playerSelection"]');
+
+      checkboxes.forEach(box => {
+        box.addEventListener('change', updateSelectedPlayersCount);
+      });
+
+      selectAllBtn.addEventListener('click', () => {
+        checkboxes.forEach(box => {
+          box.checked = true;
+        });
+        updateSelectedPlayersCount();
+      });
+
+      clearAllBtn.addEventListener('click', () => {
+        checkboxes.forEach(box => {
+          box.checked = false;
+        });
+        updateSelectedPlayersCount();
+      });
+    }
+
+    async function loadPlayers() {
+      try {
+        const response = await fetch(`${API_URL}?action=getPlayers`);
+        const result = await response.json();
+
+        if (!result.ok || !Array.isArray(result.data)) {
+          playersListEl.innerHTML = `
+            <div class="player-item">
+              <div>
+                <div class="player-name">Erreur de chargement</div>
+                <div class="player-code">${escapeHtml(result.error || 'Réponse API invalide')}</div>
+              </div>
+            </div>
+          `;
+          return;
+        }
+
+        const players = result.data;
+
+        if (players.length === 0) {
+          playersListEl.innerHTML = `
+            <div class="player-item">
+              <div>
+                <div class="player-name">Aucun joueur trouvé</div>
+                <div class="player-code">La base ne contient aucun joueur pour l'instant</div>
+              </div>
+            </div>
+          `;
+          return;
+        }
+
+        playersListEl.innerHTML = players.map(player => {
+          const playerId = escapeHtml(player.player_id || '');
+          const playerName = escapeHtml(player.nom || 'Sans nom');
+
+          return `
+            <label class="player-item">
+              <input type="checkbox" name="playerSelection" value="${playerId}" />
+              <div>
+                <div class="player-name">${playerName}</div>
+                <div class="player-code">${playerId}</div>
+              </div>
+            </label>
+          `;
+        }).join('');
+
+        bindPlayerEvents();
+        updateSelectedPlayersCount();
+      } catch (error) {
+        playersListEl.innerHTML = `
+          <div class="player-item">
+            <div>
+              <div class="player-name">Erreur fetch</div>
+              <div class="player-code">${escapeHtml(error.message || error)}</div>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    nomSaisonEl.addEventListener('input', updateSummaryName);
+    dateDebutEl.addEventListener('change', renderTuesdays);
+    dateFinEl.addEventListener('change', renderTuesdays);
+
+    addPlayerBtn.addEventListener('click', () => {
+      alert('Bouton visuel prêt. On branchera l’ajout d’un joueur dans une prochaine étape.');
+    });
+
+    removePlayerBtn.addEventListener('click', () => {
+      alert('Bouton visuel prêt. On branchera le retrait d’un joueur dans une prochaine étape.');
+    });
+
+    resetSeasonBtn.addEventListener('click', () => {
+      setTimeout(() => {
+        updateSummaryName();
+        renderTuesdays();
+        const checkboxes = document.querySelectorAll('input[name="playerSelection"]');
+        checkboxes.forEach(box => {
+          box.checked = false;
+        });
+        updateSelectedPlayersCount();
+      }, 0);
+    });
+
+    updateSummaryName();
+    renderTuesdays();
+    loadPlayers();
+  </script>
 </body>
 </html>
