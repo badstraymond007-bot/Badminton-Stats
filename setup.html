@@ -404,6 +404,9 @@
   <script>
     const API_URL = 'https://script.google.com/macros/s/AKfycbwddJ7s8j6uWH2fXP_h7161F_MT5ZU12X15oMx6Xx7icxud1jg9_e3iq28bjfs3X4_y/exec';
 
+    const seasonSetupForm = document.getElementById('seasonSetupForm');
+    const createSeasonBtn = document.getElementById('createSeasonBtn');
+    const notesSaisonEl = document.getElementById('notesSaison');
     const nomSaisonEl = document.getElementById('nomSaison');
     const dateDebutEl = document.getElementById('dateDebut');
     const dateFinEl = document.getElementById('dateFin');
@@ -630,7 +633,82 @@
         updateSelectedPlayersCount();
       }, 0);
     });
+function buildSeasonPayload() {
+  const selectedPlayers = Array.from(
+    document.querySelectorAll('input[name="playerSelection"]:checked')
+  ).map(box => box.value);
 
+  const sessions = generateTuesdays(dateDebutEl.value, dateFinEl.value).map(item => ({
+    no_session: item.noSession,
+    date: item.date.toISOString().slice(0, 10)
+  }));
+
+  return {
+    nom_saison: nomSaisonEl.value.trim(),
+    date_debut: dateDebutEl.value,
+    date_fin: dateFinEl.value,
+    notes: notesSaisonEl.value.trim(),
+    joueurs: selectedPlayers,
+    sessions
+  };
+}
+
+seasonSetupForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const payload = buildSeasonPayload();
+
+  if (!payload.nom_saison) {
+    alert('Entre un nom de saison.');
+    return;
+  }
+
+  if (!payload.date_debut || !payload.date_fin) {
+    alert('Choisis une date de début et une date de fin.');
+    return;
+  }
+
+  if (payload.sessions.length === 0) {
+    alert('Aucune session du mardi n’a été générée.');
+    return;
+  }
+
+  if (payload.joueurs.length === 0) {
+    alert('Sélectionne au moins un joueur.');
+    return;
+  }
+
+  createSeasonBtn.disabled = true;
+  createSeasonBtn.textContent = 'Sauvegarde...';
+
+  try {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8'
+      },
+      body: JSON.stringify({
+        action: 'createSeason',
+        ...payload
+      })
+    });
+
+    const result = await response.json();
+
+    if (!result.ok) {
+      throw new Error(result.error || 'Erreur API inconnue');
+    }
+
+    alert('Saison sauvegardée avec succès.');
+    console.log('Résultat createSeason :', result);
+  } catch (error) {
+    console.error(error);
+    alert('Erreur lors de la sauvegarde : ' + (error.message || error));
+  } finally {
+    createSeasonBtn.disabled = false;
+    createSeasonBtn.textContent = 'Créer la saison';
+  }
+});
     updateSummaryName();
     renderTuesdays();
     loadPlayers();
