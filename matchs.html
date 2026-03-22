@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Badminton Stats - Matchs</title>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --soft: #eff6ff;
+      --soft-line: #bfdbfe;
+      --warn-bg: #fff7ed;
+      --warn-line: #fdba74;
+      --ok-bg: #ecfdf5;
+      --ok-line: #a7f3d0;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .topbar h1 {
+      margin: 0;
+      font-size: 30px;
+    }
+
+    .topbar p {
+      margin: 6px 0 0;
+      color: var(--muted);
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 12px 16px;
+      border-radius: 10px;
+      text-decoration: none;
+      font-weight: bold;
+      border: 1px solid var(--accent);
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      background: var(--accent-hover);
+    }
+
+    .btn.secondary {
+      background: #fff;
+      color: var(--accent);
+    }
+
+    .btn.ghost {
+      background: transparent;
+      color: var(--accent);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1.7fr 1fr;
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 20px;
+    }
+
+    .card h2 {
+      margin: 0 0 8px;
+      font-size: 22px;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .session-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    label {
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    input,
+    select {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      font: inherit;
+      background: #fff;
+    }
+
+    .round-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+      padding: 16px;
+      border: 1px solid var(--soft-line);
+      background: var(--soft);
+      border-radius: 14px;
+    }
+
+    .round-title {
+      font-size: 22px;
+      font-weight: bold;
+    }
+
+    .round-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .subgrid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .remove-box {
+      background: var(--warn-bg);
+      border: 1px solid var(--warn-line);
+      border-radius: 14px;
+      padding: 16px;
+    }
+
+    .remove-box h3,
+    .summary-box h3,
+    .court-card h3,
+    .bench-card h3 {
+      margin: 0 0 10px;
+      font-size: 18px;
+    }
+
+    .remove-tools {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .remove-list,
+    .bench-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .mini-player {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .mini-player input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      margin: 0;
+      flex: 0 0 auto;
+    }
+
+    .mini-player-name {
+      font-weight: bold;
+    }
+
+    .mini-player-code {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .courts-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .court-card,
+    .bench-card,
+    .summary-box {
+      border-radius: 14px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      background: #fafafa;
+    }
+
+    .court-players {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .slot {
+      border: 1px dashed #cbd5e1;
+      border-radius: 12px;
+      padding: 12px;
+      background: #fff;
+      min-height: 68px;
+    }
+
+    .slot-label {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .slot-value {
+      font-weight: bold;
+    }
+
+    .score-row {
+      display: grid;
+      grid-template-columns: 1fr 80px;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .summary-box {
+      background: var(--ok-bg);
+      border-color: var(--ok-line);
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+    }
+
+    .summary-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .summary-label {
+      color: var(--muted);
+    }
+
+    .summary-value {
+      font-weight: bold;
+      text-align: right;
+    }
+
+    .note {
+      margin-top: 14px;
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    @media (max-width: 980px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .session-grid,
+      .courts-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div>
+        <h1>Matchs et rounds</h1>
+        <p>Organiser les joueurs actifs, répartir les terrains et entrer les résultats.</p>
+      </div>
+      <a class="btn secondary" href="index.html">← Retour à l'accueil</a>
+    </div>
+
+    <div class="layout">
+      <section class="card">
+        <h2>Session active</h2>
+        <p>Cette page sert à gérer un round à la fois. Les joueurs présents sont la base, puis on ajuste les joueurs actifs selon les départs, blessures ou pauses.</p>
+
+        <div class="session-grid">
+          <div class="field">
+            <label for="matchSeason">Saison</label>
+            <select id="matchSeason" name="matchSeason">
+              <option value="">Choisir une saison</option>
+              <option value="printemps-2026">Printemps 2026</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="matchDate">Date de session</label>
+            <input type="date" id="matchDate" name="matchDate" />
+          </div>
+
+          <div class="field">
+            <label for="matchSessionNo">No de session</label>
+            <input type="number" id="matchSessionNo" name="matchSessionNo" min="1" placeholder="Ex. 1" />
+          </div>
+        </div>
+
+        <div class="round-bar">
+          <div class="round-title">Round 1</div>
+          <div class="round-actions">
+            <button type="button" class="btn ghost">Round précédent</button>
+            <button type="button" class="btn ghost">Round suivant</button>
+            <button type="button" class="btn secondary">Copier le round précédent</button>
+          </div>
+        </div>
+
+        <div class="subgrid">
+          <div class="remove-box">
+            <h3>Retirer un joueur de ce round</h3>
+            <p>Zone visuelle prévue pour les joueurs qui quittent, se blessent ou ne jouent pas ce round-ci. On prépare la place maintenant, sans brancher la logique.</p>
+
+            <div class="remove-tools">
+              <input type="text" placeholder="Rechercher un joueur à retirer..." />
+              <button type="button" class="btn secondary">Appliquer le retrait</button>
+            </div>
+
+            <div class="remove-list">
+              <label class="mini-player">
+                <input type="checkbox" />
+                <div>
+                  <div class="mini-player-name">Julien Auger</div>
+                  <div class="mini-player-code">Joueur actif • exemple</div>
+                </div>
+              </label>
+
+              <label class="mini-player">
+                <input type="checkbox" />
+                <div>
+                  <div class="mini-player-name">Rémi Ouellet</div>
+                  <div class="mini-player-code">Joueur actif • exemple</div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="courts-grid">
+            <article class="court-card">
+              <h3>Terrain 1</h3>
+              <p>2 contre 2</p>
+
+              <div class="court-players">
+                <div class="slot">
+                  <div class="slot-label">Équipe 1 • Joueur 1</div>
+                  <div class="slot-value">—</div>
+                </div>
+                <div class="slot">
+                  <div class="slot-label">Équipe 1 • Joueur 2</div>
+                  <div class="slot-value">—</div>
+                </div>
+                <div class="slot">
+                  <div class="slot-label">Équipe 2 • Joueur 1</div>
+                  <div class="slot-value">—</div>
+                </div>
+                <div class="slot">
+                  <div class="slot-label">Équipe 2 • Joueur 2</div>
+                  <div class="slot-value">—</div>
+                </div>
+              </div>
+
+              <div class="score-row">
+                <input type="number" placeholder="Score équipe 1" />
+                <input type="number" placeholder="E2" />
+              </div>
+            </article>
+
+            <article class="court-card">
+              <h3>Terrain 2</h3>
+              <p>2 contre 2</p>
+
+              <div class="court-players">
+                <div class="slot">
+                  <div class="slot-label">Équipe 1 • Joueur 1</div>
+                  <div class="slot-value">—</div>
+                </div>
+                <div class="slot">
+                  <div class="slot-label">Équipe 1 • Joueur 2</div>
+                  <div class="slot-value">—</div>
+                </div>
+                <div class="slot">
+                  <div class="slot-label">Équipe 2 • Joueur 1</div>
+                  <div class="slot-value">—</div>
+                </div>
+                <div class="slot">
+                  <div class="slot-label">Équipe 2 • Joueur 2</div>
+                  <div class="slot-value">—</div>
+                </div>
+              </div>
+
+              <div class="score-row">
+                <input type="number" placeholder="Score équipe 1" />
+                <input type="number" placeholder="E2" />
+              </div>
+            </article>
+
+            <article class="court-card">
+              <h3>Terrain 3</h3>
+              <p>2 contre 2</p>
+
+              <div class="court-players">
+                <div class="slot">
+                  <div class="slot-label">Équipe 1 • Joueur 1</div>
+                  <div class="slot-value">—</div>
+                </div>
+                <div class="slot">
+                  <div class="slot-label">Équipe 1 • Joueur 2</div>
+                  <div class="slot-value">—</div>
+                </div>
+                <div class="slot">
+                  <div class="slot-label">Équipe 2 • Joueur 1</div>
+                  <div class="slot-value">—</div>
+                </div>
+                <div class="slot">
+                  <div class="slot-label">Équipe 2 • Joueur 2</div>
+                  <div class="slot-value">—</div>
+                </div>
+              </div>
+
+              <div class="score-row">
+                <input type="number" placeholder="Score équipe 1" />
+                <input type="number" placeholder="E2" />
+              </div>
+            </article>
+          </div>
+
+          <div class="bench-card">
+            <h3>En pause / en attente / partis</h3>
+            <p>Zone visuelle pour voir les joueurs qui ne sont pas placés sur un terrain dans ce round.</p>
+
+            <div class="bench-list" style="margin-top: 12px;">
+              <div class="mini-player">
+                <div>
+                  <div class="mini-player-name">Aucun joueur pour l’instant</div>
+                  <div class="mini-player-code">Cette zone pourra être alimentée automatiquement plus tard</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="note">
+            Version prototype : on construit d'abord le visuel général du round. Le placement automatique, les liens avec les présences, les départs et la sauvegarde viendront dans le script ensuite.
+          </div>
+        </div>
+      </section>
+
+      <aside class="card">
+        <h2>Résumé du round</h2>
+        <p>Petit panneau de contrôle pour t’aider à suivre rapidement la soirée.</p>
+
+        <div class="summary-box">
+          <h3>Vue rapide</h3>
+
+          <div class="summary-row">
+            <div class="summary-label">Saison</div>
+            <div class="summary-value">—</div>
+          </div>
+
+          <div class="summary-row">
+            <div class="summary-label">Date</div>
+            <div class="summary-value">—</div>
+          </div>
+
+          <div class="summary-row">
+            <div class="summary-label">Round</div>
+            <div class="summary-value">1</div>
+          </div>
+
+          <div class="summary-row">
+            <div class="summary-label">Joueurs présents</div>
+            <div class="summary-value">17</div>
+          </div>
+
+          <div class="summary-row">
+            <div class="summary-label">Joueurs actifs</div>
+            <div class="summary-value">12</div>
+          </div>
+
+          <div class="summary-row">
+            <div class="summary-label">Terrains utilisés</div>
+            <div class="summary-value">3</div>
+          </div>
+        </div>
+
+        <h2 style="margin-top: 18px;">Étapes prévues</h2>
+        <p>
+          1. Récupérer les joueurs présents de la session.<br />
+          2. Définir les joueurs actifs pour le round.<br />
+          3. Répartir les joueurs par terrain.<br />
+          4. Sauvegarder les matchs et les scores.<br />
+          5. Préparer le round suivant avec ajustements.
+        </p>
+      </aside>
+    </div>
+  </div>
+</body>
+</html>
