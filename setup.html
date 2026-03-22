@@ -147,24 +147,34 @@
       margin-bottom: 14px;
     }
 
-    .search-box {
-      flex: 1 1 260px;
+    .players-list-title {
+      margin: 18px 0 10px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .players-list-sub {
+      margin: 0 0 14px;
+      color: var(--muted);
+      line-height: 1.5;
     }
 
     .players-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
 
     .player-item {
       border: 1px solid var(--line);
       border-radius: 12px;
-      padding: 12px 14px;
+      padding: 16px 18px;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 14px;
       background: #fafafa;
+      width: 100%;
+      min-height: 68px;
     }
 
     .player-item input[type="checkbox"] {
@@ -275,15 +285,6 @@
               <input type="date" id="dateFin" name="dateFin" />
             </div>
 
-            <div class="field">
-              <label for="statutSaison">Statut</label>
-              <select id="statutSaison" name="statutSaison">
-                <option value="planifiee">Planifiée</option>
-                <option value="active">Active</option>
-                <option value="terminee">Terminée</option>
-              </select>
-            </div>
-
             <div class="field full">
               <label for="notesSaison">Notes</label>
               <textarea id="notesSaison" name="notesSaison" placeholder="Notes optionnelles pour la saison..."></textarea>
@@ -293,10 +294,16 @@
           <div class="section-title">Joueurs à inclure</div>
 
           <div class="toolbar">
-            <input class="search-box" type="text" id="searchPlayers" placeholder="Rechercher un joueur..." />
             <button type="button" class="btn secondary" id="selectAllPlayers">Tout sélectionner</button>
             <button type="button" class="btn secondary" id="clearAllPlayers">Tout retirer</button>
+            <button type="button" class="btn secondary" id="addPlayerBtn">Ajouter un joueur</button>
+            <button type="button" class="btn secondary" id="removePlayerBtn">Retirer un joueur</button>
           </div>
+
+          <div class="players-list-title">Liste des joueurs de la saison</div>
+          <p class="players-list-sub">
+            Même logique que la page de présences : on voit la liste complète, puis on ajuste simplement les joueurs inclus dans la saison.
+          </p>
 
           <div class="players-list" id="playersList">
             <label class="player-item">
@@ -354,7 +361,7 @@
           </div>
 
           <div class="note">
-            Structure visuelle seulement pour l'instant. La sauvegarde et le chargement dynamique seront branchés ensuite.
+            Structure visuelle seulement pour l'instant. Plus tard, les boutons « Ajouter un joueur » et « Retirer un joueur » permettront de gérer les petits changements directement dans le front-end.
           </div>
         </form>
       </section>
@@ -390,9 +397,10 @@
         <div class="section-title">Étapes prévues</div>
         <p>
           1. Charger les joueurs automatiquement depuis l'API.<br />
-          2. Permettre la sélection complète ou partielle.<br />
+          2. Générer les mardis entre la date de début et la date de fin.<br />
           3. Créer la saison dans <strong>saisons</strong>.<br />
-          4. Créer les lignes dans <strong>saison_joueurs</strong>.
+          4. Créer les lignes dans <strong>saison_joueurs</strong>.<br />
+          5. Préparer les sessions de la saison.
         </p>
       </aside>
     </div>
