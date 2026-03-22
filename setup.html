@@ -569,6 +569,9 @@
 
         const players = result.data;
 
+        console.log('players API =', players);
+console.log('premier joueur =', players[0]);
+
         if (players.length === 0) {
           playersListEl.innerHTML = `
             <div class="player-item">
