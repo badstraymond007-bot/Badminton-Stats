@@ -402,7 +402,7 @@
   </div>
 
   <script>
-    const API_URL = 'https://script.google.com/macros/s/AKfycbyIwOsxfqNK9dRlEhzlAEBUtDSAo2nm4H87TlkRVm2xJ_xtib1zRMNpkDIrjcaQbHN-/exec';
+    const API_URL = 'https://script.google.com/macros/s/AKfycbyK80nScuJ34kVfj5yyrK48E1Ipkrc_TBC5ZN_8f-7iDHcIDS1MOst0pE0nadOVk2c_/exec';
 
     const seasonSetupForm = document.getElementById('seasonSetupForm');
     const createSeasonBtn = document.getElementById('createSeasonBtn');
@@ -586,7 +586,7 @@ console.log('ids joueurs =', players.map(p => p.player_id));
         }
 
         playersListEl.innerHTML = players.map(player => {
-          const playerId = escapeHtml(player.joueur_id || '');
+          const playerId = escapeHtml(player.joueur_id || player.player_id || '');
           const playerName = escapeHtml(player.nom || 'Sans nom');
 
           return `
@@ -618,13 +618,83 @@ console.log('ids joueurs =', players.map(p => p.player_id));
     dateDebutEl.addEventListener('change', renderTuesdays);
     dateFinEl.addEventListener('change', renderTuesdays);
 
-    addPlayerBtn.addEventListener('click', () => {
-      alert('Bouton visuel prêt. On branchera l’ajout d’un joueur dans une prochaine étape.');
+addPlayerBtn.addEventListener('click', async () => {
+  const nom = prompt('Nom du nouveau joueur :');
+
+  if (!nom || !nom.trim()) {
+    return;
+  }
+
+  try {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8'
+      },
+      body: JSON.stringify({
+        action: 'addPlayer',
+        nom: nom.trim()
+      })
     });
 
-    removePlayerBtn.addEventListener('click', () => {
-      alert('Bouton visuel prêt. On branchera le retrait d’un joueur dans une prochaine étape.');
+    const result = await response.json();
+
+    if (!result.ok) {
+      throw new Error(result.error || 'Erreur API inconnue');
+    }
+
+    await loadPlayers();
+    alert(`Joueur ajouté : ${nom.trim()}`);
+  } catch (error) {
+    console.error(error);
+    alert('Erreur lors de l’ajout : ' + (error.message || error));
+  }
+});
+
+removePlayerBtn.addEventListener('click', async () => {
+  const selected = Array.from(
+    document.querySelectorAll('input[name="playerSelection"]:checked')
+  );
+
+  if (selected.length !== 1) {
+    alert('Coche un seul joueur à retirer.');
+    return;
+  }
+
+  const joueurId = selected[0].value;
+  const joueurName =
+    selected[0].closest('label')?.querySelector('.player-name')?.textContent || joueurId;
+
+  const ok = confirm(`Retirer ce joueur de la liste active ?\n\n${joueurName} (${joueurId})`);
+  if (!ok) {
+    return;
+  }
+
+  try {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8'
+      },
+      body: JSON.stringify({
+        action: 'removePlayer',
+        joueur_id: joueurId
+      })
     });
+
+    const result = await response.json();
+
+    if (!result.ok) {
+      throw new Error(result.error || 'Erreur API inconnue');
+    }
+
+    await loadPlayers();
+    alert(`Joueur retiré : ${joueurName}`);
+  } catch (error) {
+    console.error(error);
+    alert('Erreur lors du retrait : ' + (error.message || error));
+  }
+});
 
     resetSeasonBtn.addEventListener('click', () => {
       setTimeout(() => {
