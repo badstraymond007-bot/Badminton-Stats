@@ -540,10 +540,11 @@ async function loadSeasons() {
       option.textContent = season.nom_saison || season.saison_id;
       sessionSeasonEl.appendChild(option);
     });
-
-    if (seasons.length === 1) {
-      sessionSeasonEl.value = seasons[0].saison_id;
-    }
+console.log('seasons =', seasons);
+console.log('selected saison =', sessionSeasonEl.value);
+   if (seasons.length > 0) {
+  sessionSeasonEl.value = seasons[0].saison_id;
+}
   } catch (error) {
     console.error('Erreur loadSeasons:', error);
   }
