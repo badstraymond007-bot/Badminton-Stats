@@ -3,34 +3,207 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Badminton Stats - Test joueurs</title>
+  <title>Badminton Stats</title>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .wrap {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .hero {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    .hero h1 {
+      margin: 0 0 10px;
+      font-size: 32px;
+    }
+
+    .hero p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 12px 16px;
+      border-radius: 10px;
+      text-decoration: none;
+      font-weight: bold;
+      border: 1px solid var(--accent);
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .btn:hover {
+      background: var(--accent-hover);
+    }
+
+    .btn.secondary {
+      background: #fff;
+      color: var(--accent);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 20px;
+    }
+
+    .card h2 {
+      margin-top: 0;
+      margin-bottom: 10px;
+      font-size: 20px;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .big-number {
+      font-size: 40px;
+      font-weight: bold;
+      margin: 10px 0 0;
+    }
+
+    .players-preview {
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .player-row {
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fafafa;
+    }
+
+    .footer-note {
+      margin-top: 20px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+  </style>
 </head>
 <body>
-  <h1>Liste des joueurs</h1>
-  <div id="playersList">Chargement...</div>
+  <div class="wrap">
+    <section class="hero">
+      <h1>🏸 Badminton Stats</h1>
+      <p>
+        Tableau de bord principal du club. Cette page sert d'accueil pour accéder
+        au setup de la saison, aux présences et aux statistiques.
+      </p>
+
+      <div class="actions">
+        <a class="btn" href="setup.html">Nouvelle saison / Setup</a>
+        <a class="btn secondary" href="stats.html">Voir les statistiques</a>
+      </div>
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <h2>État de la connexion</h2>
+        <div id="apiStatus" class="muted">Vérification en cours...</div>
+      </article>
+
+      <article class="card">
+        <h2>Joueurs actifs</h2>
+        <div id="playersCount" class="big-number">--</div>
+        <div class="muted">Nombre de joueurs trouvés dans la base</div>
+      </article>
+    </section>
+
+    <section class="card" style="margin-top: 20px;">
+      <h2>Aperçu des joueurs</h2>
+      <div id="playersList" class="players-preview">
+        <div class="muted">Chargement...</div>
+      </div>
+    </section>
+
+    <div class="footer-note">
+      Version de base branchée sur Google Sheets / Apps Script.
+    </div>
+  </div>
 
   <script>
     const API_URL = 'https://script.google.com/macros/s/AKfycbwddJ7s8j6uWH2fXP_h7161F_MT5ZU12X15oMx6Xx7icxud1jg9_e3iq28bjfs3X4_y/exec';
 
     async function loadPlayers() {
-      const container = document.getElementById('playersList');
+      const statusEl = document.getElementById('apiStatus');
+      const countEl = document.getElementById('playersCount');
+      const listEl = document.getElementById('playersList');
 
       try {
         const response = await fetch(`${API_URL}?action=getPlayers`);
         const result = await response.json();
 
         if (!result.ok) {
-          container.textContent = 'Erreur API : ' + result.error;
+          statusEl.textContent = 'Erreur API';
+          countEl.textContent = '0';
+          listEl.innerHTML = `<div class="muted">${result.error || 'Erreur inconnue'}</div>`;
           return;
         }
 
-        container.innerHTML = result.data.map(player => `
-          <div style="margin-bottom:8px;">
+        const players = Array.isArray(result.data) ? result.data : [];
+
+        statusEl.textContent = 'Connexion API OK';
+        countEl.textContent = players.length;
+
+        if (players.length === 0) {
+          listEl.innerHTML = '<div class="muted">Aucun joueur trouvé.</div>';
+          return;
+        }
+
+        listEl.innerHTML = players.slice(0, 8).map(player => `
+          <div class="player-row">
             <strong>${player.player_id}</strong> — ${player.nom}
           </div>
         `).join('');
       } catch (error) {
-        container.textContent = 'Erreur fetch : ' + error;
+        statusEl.textContent = 'Erreur de connexion';
+        countEl.textContent = '0';
+        listEl.innerHTML = `<div class="muted">${error}</div>`;
       }
     }
 
