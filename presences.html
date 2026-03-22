@@ -13,8 +13,6 @@
       --line: #e5e7eb;
       --accent: #2563eb;
       --accent-hover: #1d4ed8;
-      --soft: #eff6ff;
-      --soft-line: #bfdbfe;
       --ok-bg: #ecfdf5;
       --ok-line: #a7f3d0;
     }
@@ -137,13 +135,6 @@
       margin: 18px 0 14px;
     }
 
-    .players-list {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-top: 8px;
-    }
-
     .players-list-title {
       margin: 18px 0 10px;
       font-size: 18px;
@@ -156,10 +147,10 @@
       line-height: 1.5;
     }
 
-    .player-item {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 12px;
+    .players-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
       margin-top: 8px;
     }
 
@@ -302,53 +293,12 @@
         </p>
 
         <div class="players-list" id="playersList">
-          <label class="player-item">
-            <input type="checkbox" name="attendanceSelection" value="PLY-001" />
+          <div class="player-item">
             <div class="player-text">
-              <div class="player-name">Sébastien Moisan</div>
-              <div class="player-code">PLY-001</div>
+              <div class="player-name">Chargement des joueurs...</div>
+              <div class="player-code">Connexion à la base en cours</div>
             </div>
-          </label>
-
-          <label class="player-item">
-            <input type="checkbox" name="attendanceSelection" value="PLY-002" />
-            <div class="player-text">
-              <div class="player-name">David Fortier</div>
-              <div class="player-code">PLY-002</div>
-            </div>
-          </label>
-
-          <label class="player-item">
-            <input type="checkbox" name="attendanceSelection" value="PLY-003" />
-            <div class="player-text">
-              <div class="player-name">Cédric Borgia</div>
-              <div class="player-code">PLY-003</div>
-            </div>
-          </label>
-
-          <label class="player-item">
-            <input type="checkbox" name="attendanceSelection" value="PLY-004" />
-            <div class="player-text">
-              <div class="player-name">Louis Noreau</div>
-              <div class="player-code">PLY-004</div>
-            </div>
-          </label>
-
-          <label class="player-item">
-            <input type="checkbox" name="attendanceSelection" value="PLY-005" />
-            <div class="player-text">
-              <div class="player-name">Dominic Beaupré</div>
-              <div class="player-code">PLY-005</div>
-            </div>
-          </label>
-
-          <label class="player-item">
-            <input type="checkbox" name="attendanceSelection" value="PLY-006" />
-            <div class="player-text">
-              <div class="player-name">Pier-Luc Morency</div>
-              <div class="player-code">PLY-006</div>
-            </div>
-          </label>
+          </div>
         </div>
 
         <div class="actions">
@@ -385,7 +335,7 @@
 
           <div class="summary-row">
             <div class="summary-label">Présents cochés</div>
-            <div class="summary-value">0</div>
+            <div class="summary-value" id="selectedCount">0</div>
           </div>
         </div>
 
@@ -399,5 +349,117 @@
       </aside>
     </div>
   </div>
+
+  <script>
+    const API_URL = 'https://script.google.com/macros/s/AKfycbwddJ7s8j6uWH2fXP_h7161F_MT5ZU12X15oMx6Xx7icxud1jg9_e3iq28bjfs3X4_y/exec';
+
+    const playersListEl = document.getElementById('playersList');
+    const checkAllBtn = document.getElementById('checkAllPlayers');
+    const uncheckAllBtn = document.getElementById('uncheckAllPlayers');
+    const selectedCountEl = document.getElementById('selectedCount');
+    const sessionDateEl = document.getElementById('sessionDate');
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function updateSelectedCount() {
+      const checked = document.querySelectorAll('input[name="attendanceSelection"]:checked').length;
+      selectedCountEl.textContent = checked;
+    }
+
+    function bindAttendanceEvents() {
+      const checkboxes = document.querySelectorAll('input[name="attendanceSelection"]');
+
+      checkboxes.forEach(box => {
+        box.addEventListener('change', updateSelectedCount);
+      });
+
+      checkAllBtn.addEventListener('click', () => {
+        checkboxes.forEach(box => {
+          box.checked = true;
+        });
+        updateSelectedCount();
+      });
+
+      uncheckAllBtn.addEventListener('click', () => {
+        checkboxes.forEach(box => {
+          box.checked = false;
+        });
+        updateSelectedCount();
+      });
+    }
+
+    async function loadPlayers() {
+      try {
+        const response = await fetch(`${API_URL}?action=getPlayers`);
+        const result = await response.json();
+
+        if (!result.ok || !Array.isArray(result.data)) {
+          playersListEl.innerHTML = `
+            <div class="player-item">
+              <div class="player-text">
+                <div class="player-name">Erreur de chargement</div>
+                <div class="player-code">${escapeHtml(result.error || 'Réponse API invalide')}</div>
+              </div>
+            </div>
+          `;
+          return;
+        }
+
+        const players = result.data;
+
+        if (players.length === 0) {
+          playersListEl.innerHTML = `
+            <div class="player-item">
+              <div class="player-text">
+                <div class="player-name">Aucun joueur trouvé</div>
+                <div class="player-code">La base ne contient aucun joueur pour l'instant</div>
+              </div>
+            </div>
+          `;
+          return;
+        }
+
+        playersListEl.innerHTML = players.map(player => {
+          const playerId = escapeHtml(player.player_id || '');
+          const playerName = escapeHtml(player.nom || 'Sans nom');
+
+          return `
+            <label class="player-item">
+              <input type="checkbox" name="attendanceSelection" value="${playerId}" />
+              <div class="player-text">
+                <div class="player-name">${playerName}</div>
+                <div class="player-code">${playerId}</div>
+              </div>
+            </label>
+          `;
+        }).join('');
+
+        bindAttendanceEvents();
+        updateSelectedCount();
+      } catch (error) {
+        playersListEl.innerHTML = `
+          <div class="player-item">
+            <div class="player-text">
+              <div class="player-name">Erreur fetch</div>
+              <div class="player-code">${escapeHtml(error.message || error)}</div>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    if (sessionDateEl) {
+      sessionDateEl.value = new Date().toISOString().split('T')[0];
+    }
+
+    loadPlayers();
+  </script>
 </body>
 </html>
