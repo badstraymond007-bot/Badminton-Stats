@@ -476,17 +476,49 @@ function buildAttendancePayload() {
 
     loadPlayers();
 
-saveAttendanceBtn.addEventListener('click', () => {
+    
+saveAttendanceBtn.addEventListener('click', async () => {
   const payload = buildAttendancePayload();
-  console.log('payload présences =', payload);
 
-  alert(
-    `Test présences\n\n` +
-    `Date: ${payload.date_session}\n` +
-    `Session: ${payload.no_session}\n` +
-    `Saison: ${payload.saison_id}\n` +
-    `Présents: ${payload.joueurs_presents.length}`
-  );
+  if (!payload.date_session) {
+    alert('Choisis une date de session.');
+    return;
+  }
+
+  if (!payload.no_session) {
+    alert('Entre le numéro de session.');
+    return;
+  }
+
+  if (!payload.saison_id) {
+    alert('Choisis une saison.');
+    return;
+  }
+
+  try {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8'
+      },
+      body: JSON.stringify({
+        action: 'saveAttendance',
+        ...payload
+      })
+    });
+
+    const result = await response.json();
+
+    if (!result.ok) {
+      throw new Error(result.error || 'Erreur API inconnue');
+    }
+
+    alert(`Présences sauvegardées : ${result.nb_presents}`);
+    console.log('Résultat saveAttendance :', result);
+  } catch (error) {
+    console.error(error);
+    alert('Erreur lors de la sauvegarde : ' + (error.message || error));
+  }
 });
 
     
