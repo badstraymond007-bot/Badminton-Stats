@@ -137,11 +137,26 @@
       margin: 18px 0 14px;
     }
 
-    .search-box {
-      flex: 1 1 260px;
+    .players-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 8px;
     }
 
-    .players-list {
+    .players-list-title {
+      margin: 18px 0 10px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .players-list-sub {
+      margin: 0 0 14px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .player-item {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
       gap: 12px;
@@ -151,11 +166,13 @@
     .player-item {
       border: 1px solid var(--line);
       border-radius: 12px;
-      padding: 14px;
+      padding: 16px 18px;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
       background: #fafafa;
+      width: 100%;
+      min-height: 68px;
     }
 
     .player-item input[type="checkbox"] {
@@ -274,10 +291,15 @@
         </div>
 
         <div class="toolbar">
-          <input class="search-box" type="text" id="searchPlayers" placeholder="Rechercher un joueur..." />
           <button type="button" class="btn secondary" id="checkAllPlayers">Tout cocher</button>
           <button type="button" class="btn secondary" id="uncheckAllPlayers">Tout décocher</button>
         </div>
+
+        <div class="players-list-title">Liste complète des joueurs</div>
+        <p class="players-list-sub">
+          Affichage simple et complet pour tablette : on voit tous les joueurs un à la suite de l’autre,
+          puis on coche seulement les présences du jour.
+        </p>
 
         <div class="players-list" id="playersList">
           <label class="player-item">
@@ -335,7 +357,7 @@
         </div>
 
         <div class="note">
-          Structure visuelle seulement pour l’instant. La sauvegarde dans les tables viendra après.
+          Structure visuelle pensée d’abord pour la tablette : liste complète, gros clic facile, puis sauvegarde branchée ensuite.
         </div>
       </section>
 
