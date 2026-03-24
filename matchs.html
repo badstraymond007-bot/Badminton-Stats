@@ -562,33 +562,35 @@
 
   let seasonsCache = [];
 
-  function escapeHtml(value) {
-    return String(value ?? '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
-  }
-
   function getSelectedSeason() {
     const saisonId = String(matchSeasonEl.value || '').trim();
     return seasonsCache.find(s => String(s.saison_id || '').trim() === saisonId) || null;
   }
 
-  function clearMatchSessionFields() {
+  function clearSessionFields() {
     matchSessionEl.innerHTML = '<option value="">Choisir une session</option>';
     matchDateEl.value = '';
     matchSessionNoEl.value = '';
   }
 
-  function populateMatchSessions() {
-    clearMatchSessionFields();
+  function syncSelectedSession() {
+    const option = matchSessionEl.options[matchSessionEl.selectedIndex];
 
-    const season = getSelectedSeason();
-    if (!season) {
+    if (!option || !option.value) {
+      matchDateEl.value = '';
+      matchSessionNoEl.value = '';
       return;
     }
+
+    matchDateEl.value = option.dataset.date || '';
+    matchSessionNoEl.value = option.value || '';
+  }
+
+  function populateSessions() {
+    clearSessionFields();
+
+    const season = getSelectedSeason();
+    if (!season) return;
 
     const sessions = Array.isArray(season.sessions) ? season.sessions : [];
 
@@ -596,9 +598,7 @@
       const noSession = String(session.no_session || '').trim();
       const dateSession = String(session.date || '').trim();
 
-      if (!noSession || !dateSession) {
-        return;
-      }
+      if (!noSession || !dateSession) return;
 
       const option = document.createElement('option');
       option.value = noSession;
@@ -613,20 +613,7 @@
     }
   }
 
-  function syncSelectedSession() {
-    const selectedOption = matchSessionEl.options[matchSessionEl.selectedIndex];
-
-    if (!selectedOption || !selectedOption.value) {
-      matchDateEl.value = '';
-      matchSessionNoEl.value = '';
-      return;
-    }
-
-    matchDateEl.value = selectedOption.dataset.date || '';
-    matchSessionNoEl.value = selectedOption.value || '';
-  }
-
-  async function loadMatchSeasons() {
+  async function loadSeasons() {
     try {
       const response = await fetch(`${API_URL}?action=getSeasons`);
       const result = await response.json();
@@ -636,7 +623,6 @@
       }
 
       seasonsCache = Array.isArray(result.data) ? result.data : [];
-
       matchSeasonEl.innerHTML = '<option value="">Choisir une saison</option>';
 
       seasonsCache.forEach(season => {
@@ -648,18 +634,18 @@
 
       if (seasonsCache.length > 0) {
         matchSeasonEl.value = seasonsCache[0].saison_id;
-        populateMatchSessions();
+        populateSessions();
       }
     } catch (error) {
-      console.error('Erreur loadMatchSeasons:', error);
-      clearMatchSessionFields();
+      console.error('Erreur loadSeasons:', error);
+      clearSessionFields();
     }
   }
 
-  matchSeasonEl.addEventListener('change', populateMatchSessions);
+  matchSeasonEl.addEventListener('change', populateSessions);
   matchSessionEl.addEventListener('change', syncSelectedSession);
 
-  loadMatchSeasons();
+  loadSeasons();
 </script>
   
 </body>
