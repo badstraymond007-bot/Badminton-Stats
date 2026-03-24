@@ -261,24 +261,31 @@
         <h2>Session du jour</h2>
         <p>Prépare la session active, puis coche simplement les joueurs présents.</p>
 
-        <div class="session-box">
-          <div class="field">
-            <label for="sessionDate">Date de la session</label>
-            <input type="date" id="sessionDate" name="sessionDate" />
-          </div>
+<div class="session-box">
+  <div class="field full">
+    <label for="sessionSeason">Saison</label>
+    <select id="sessionSeason" name="sessionSeason">
+      <option value="">Choisir une saison</option>
+    </select>
+  </div>
 
-          <div class="field">
-            <label for="sessionNumber">No de session</label>
-            <input type="number" id="sessionNumber" name="sessionNumber" placeholder="Ex. 1" min="1" />
-          </div>
+  <div class="field full">
+    <label for="sessionPicker">Session</label>
+    <select id="sessionPicker" name="sessionPicker">
+      <option value="">Choisir une session</option>
+    </select>
+  </div>
 
-          <div class="field full">
-            <label for="sessionSeason">Saison</label>
-            <select id="sessionSeason" name="sessionSeason">
-              <option value="">Choisir une saison</option>
-            </select>
-          </div>
-        </div>
+  <div class="field">
+    <label for="sessionDate">Date de la session</label>
+    <input type="date" id="sessionDate" name="sessionDate" readonly />
+  </div>
+
+  <div class="field">
+    <label for="sessionNumber">No de session</label>
+    <input type="number" id="sessionNumber" name="sessionNumber" min="1" readonly />
+  </div>
+</div>
 
         <div class="toolbar">
           <button type="button" class="btn secondary" id="checkAllPlayers">Tout cocher</button>
@@ -352,14 +359,17 @@
   <script>
     const API_URL = 'https://script.google.com/macros/s/AKfycbwddJ7s8j6uWH2fXP_h7161F_MT5ZU12X15oMx6Xx7icxud1jg9_e3iq28bjfs3X4_y/exec';
 
-    const playersListEl = document.getElementById('playersList');
-    const checkAllBtn = document.getElementById('checkAllPlayers');
-    const uncheckAllBtn = document.getElementById('uncheckAllPlayers');
-    const selectedCountEl = document.getElementById('selectedCount');
-    const sessionDateEl = document.getElementById('sessionDate');
-    const saveAttendanceBtn = document.getElementById('saveAttendanceBtn');
-    const sessionNumberEl = document.getElementById('sessionNumber');
-    const sessionSeasonEl = document.getElementById('sessionSeason');
+const playersListEl = document.getElementById('playersList');
+const checkAllBtn = document.getElementById('checkAllPlayers');
+const uncheckAllBtn = document.getElementById('uncheckAllPlayers');
+const selectedCountEl = document.getElementById('selectedCount');
+const sessionDateEl = document.getElementById('sessionDate');
+const saveAttendanceBtn = document.getElementById('saveAttendanceBtn');
+const sessionNumberEl = document.getElementById('sessionNumber');
+const sessionSeasonEl = document.getElementById('sessionSeason');
+const sessionPickerEl = document.getElementById('sessionPicker');
+
+let seasonsCache = [];
 
     function escapeHtml(value) {
       return String(value ?? '')
@@ -409,6 +419,60 @@ function buildAttendancePayload() {
     joueurs_presents: selectedPlayers
   };
 }
+
+function getSelectedSeason() {
+  const saisonId = String(sessionSeasonEl.value || '').trim();
+  return seasonsCache.find(s => String(s.saison_id || '').trim() === saisonId) || null;
+}
+
+function clearSessionFields() {
+  sessionPickerEl.innerHTML = '<option value="">Choisir une session</option>';
+  sessionDateEl.value = '';
+  sessionNumberEl.value = '';
+}
+
+function syncSelectedSession() {
+  const option = sessionPickerEl.options[sessionPickerEl.selectedIndex];
+
+  if (!option || !option.value) {
+    sessionDateEl.value = '';
+    sessionNumberEl.value = '';
+    return;
+  }
+
+  sessionDateEl.value = option.dataset.date || '';
+  sessionNumberEl.value = option.value || '';
+}
+
+function populateSessions() {
+  clearSessionFields();
+
+  const season = getSelectedSeason();
+  if (!season) {
+    return;
+  }
+
+  const sessions = Array.isArray(season.sessions) ? season.sessions : [];
+
+  sessions.forEach(session => {
+    const noSession = String(session.no_session || '').trim();
+    const dateSession = String(session.date || '').trim();
+
+    if (!noSession || !dateSession) return;
+
+    const option = document.createElement('option');
+    option.value = noSession;
+    option.textContent = `Session ${noSession} — ${dateSession}`;
+    option.dataset.date = dateSession;
+    sessionPickerEl.appendChild(option);
+  });
+
+  if (sessions.length > 0) {
+    sessionPickerEl.value = String(sessions[0].no_session || '');
+    syncSelectedSession();
+  }
+}
+    
     async function loadPlayers() {
       try {
         const response = await fetch(`${API_URL}?action=getPlayers`);
@@ -472,7 +536,8 @@ function buildAttendancePayload() {
     if (sessionDateEl) {
       sessionDateEl.value = new Date().toISOString().split('T')[0];
     }
-
+sessionSeasonEl.addEventListener('change', populateSessions);
+sessionPickerEl.addEventListener('change', syncSelectedSession);
     loadPlayers();
     loadSeasons();
 
@@ -530,25 +595,28 @@ async function loadSeasons() {
       throw new Error(result.error || 'Erreur API inconnue');
     }
 
-    const seasons = Array.isArray(result.data) ? result.data : [];
+    seasonsCache = Array.isArray(result.data) ? result.data : [];
 
     sessionSeasonEl.innerHTML = '<option value="">Choisir une saison</option>';
 
-    seasons.forEach(season => {
+    seasonsCache.forEach(season => {
       const option = document.createElement('option');
       option.value = season.saison_id;
       option.textContent = season.nom_saison || season.saison_id;
       sessionSeasonEl.appendChild(option);
     });
-console.log('seasons =', seasons);
-console.log('selected saison =', sessionSeasonEl.value);
-   if (seasons.length > 0) {
-  sessionSeasonEl.value = seasons[0].saison_id;
-}
+
+    if (seasonsCache.length > 0) {
+      sessionSeasonEl.value = seasonsCache[0].saison_id;
+      populateSessions();
+    } else {
+      clearSessionFields();
+    }
   } catch (error) {
     console.error('Erreur loadSeasons:', error);
+    clearSessionFields();
   }
-}    
+} 
     
   </script>
 </body>
