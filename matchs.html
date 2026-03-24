@@ -463,37 +463,27 @@
               <button type="button" class="btn secondary">Appliquer le retrait</button>
             </div>
 
-            <div class="remove-list">
-              <label class="mini-player">
-                <input type="checkbox" />
-                <div>
-                  <div class="mini-player-name">Julien Auger</div>
-                  <div class="mini-player-code">Joueur actif • exemple</div>
-                </div>
-              </label>
-
-              <label class="mini-player">
-                <input type="checkbox" />
-                <div>
-                  <div class="mini-player-name">Rémi Ouellet</div>
-                  <div class="mini-player-code">Joueur actif • exemple</div>
-                </div>
-              </label>
-            </div>
-          </div>
+<div class="remove-list" id="removeList">
+  <div class="mini-player">
+    <div>
+      <div class="mini-player-name">Aucun joueur chargé</div>
+      <div class="mini-player-code">Choisis une session pour voir les joueurs présents</div>
+    </div>
+  </div>
+</div>
 
           <div class="bench-card">
             <h3>En pause / en attente / partis</h3>
             <p>Zone visuelle pour voir les joueurs qui ne sont pas placés sur un terrain dans ce round.</p>
 
-            <div class="bench-list" style="margin-top: 12px;">
-              <div class="mini-player">
-                <div>
-                  <div class="mini-player-name">Aucun joueur pour l’instant</div>
-                  <div class="mini-player-code">Cette zone pourra être alimentée automatiquement plus tard</div>
-                </div>
-              </div>
-            </div>
+<div class="bench-list" id="benchList" style="margin-top: 12px;">
+  <div class="mini-player">
+    <div>
+      <div class="mini-player-name">Aucun joueur en pause</div>
+      <div class="mini-player-code">Les joueurs non placés apparaîtront ici plus tard</div>
+    </div>
+  </div>
+</div>
           </div>
 
           <div class="note">
@@ -506,39 +496,39 @@
         <h2>Résumé du round</h2>
         <p>Petit panneau de contrôle pour t’aider à suivre rapidement la soirée.</p>
 
-        <div class="summary-box">
-          <h3>Vue rapide</h3>
+<div class="summary-box">
+  <h3>Vue rapide</h3>
 
-          <div class="summary-row">
-            <div class="summary-label">Saison</div>
-            <div class="summary-value">—</div>
-          </div>
+  <div class="summary-row">
+    <div class="summary-label">Saison</div>
+    <div class="summary-value" id="sumSeason">—</div>
+  </div>
 
-          <div class="summary-row">
-            <div class="summary-label">Date</div>
-            <div class="summary-value">—</div>
-          </div>
+  <div class="summary-row">
+    <div class="summary-label">Date</div>
+    <div class="summary-value" id="sumDate">—</div>
+  </div>
 
-          <div class="summary-row">
-            <div class="summary-label">Round</div>
-            <div class="summary-value">1</div>
-          </div>
+  <div class="summary-row">
+    <div class="summary-label">Round</div>
+    <div class="summary-value">1</div>
+  </div>
 
-          <div class="summary-row">
-            <div class="summary-label">Joueurs présents</div>
-            <div class="summary-value">17</div>
-          </div>
+  <div class="summary-row">
+    <div class="summary-label">Joueurs présents</div>
+    <div class="summary-value" id="sumPresentCount">0</div>
+  </div>
 
-          <div class="summary-row">
-            <div class="summary-label">Joueurs actifs</div>
-            <div class="summary-value">12</div>
-          </div>
+  <div class="summary-row">
+    <div class="summary-label">Joueurs actifs</div>
+    <div class="summary-value" id="sumActiveCount">0</div>
+  </div>
 
-          <div class="summary-row">
-            <div class="summary-label">Terrains utilisés</div>
-            <div class="summary-value">3</div>
-          </div>
-        </div>
+  <div class="summary-row">
+    <div class="summary-label">Groupes utilisés</div>
+    <div class="summary-value" id="sumGroupCount">—</div>
+  </div>
+</div>
 
         <h2 style="margin-top: 18px;">Étapes prévues</h2>
         <p>
@@ -560,7 +550,26 @@
   const matchDateEl = document.getElementById('matchDate');
   const matchSessionNoEl = document.getElementById('matchSessionNo');
 
+  const removeListEl = document.getElementById('removeList');
+  const benchListEl = document.getElementById('benchList');
+
+  const sumSeasonEl = document.getElementById('sumSeason');
+  const sumDateEl = document.getElementById('sumDate');
+  const sumPresentCountEl = document.getElementById('sumPresentCount');
+  const sumActiveCountEl = document.getElementById('sumActiveCount');
+  const sumGroupCountEl = document.getElementById('sumGroupCount');
+
   let seasonsCache = [];
+  let attendanceCache = [];
+
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
 
   function getSelectedSeason() {
     const saisonId = String(matchSeasonEl.value || '').trim();
@@ -573,24 +582,126 @@
     matchSessionNoEl.value = '';
   }
 
+  function renderAttendance() {
+    const season = getSelectedSeason();
+    const seasonName = season ? (season.nom_saison || season.saison_id) : '—';
+
+    sumSeasonEl.textContent = seasonName;
+    sumDateEl.textContent = matchDateEl.value || '—';
+    sumPresentCountEl.textContent = String(attendanceCache.length);
+    sumActiveCountEl.textContent = String(attendanceCache.length);
+    sumGroupCountEl.textContent = '—';
+
+    if (!attendanceCache.length) {
+      removeListEl.innerHTML = `
+        <div class="mini-player">
+          <div>
+            <div class="mini-player-name">Aucun joueur présent trouvé</div>
+            <div class="mini-player-code">Vérifie les présences de cette session</div>
+          </div>
+        </div>
+      `;
+
+      benchListEl.innerHTML = `
+        <div class="mini-player">
+          <div>
+            <div class="mini-player-name">Aucun joueur en pause</div>
+            <div class="mini-player-code">Les joueurs non placés apparaîtront ici plus tard</div>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    removeListEl.innerHTML = attendanceCache.map(player => `
+      <label class="mini-player">
+        <input type="checkbox" value="${escapeHtml(player.joueur_id)}" />
+        <div>
+          <div class="mini-player-name">${escapeHtml(player.nom || player.joueur_id)}</div>
+          <div class="mini-player-code">${escapeHtml(player.joueur_id)} • présent</div>
+        </div>
+      </label>
+    `).join('');
+
+    benchListEl.innerHTML = `
+      <div class="mini-player">
+        <div>
+          <div class="mini-player-name">Aucun joueur en pause pour l’instant</div>
+          <div class="mini-player-code">La répartition par groupes viendra à l’étape suivante</div>
+        </div>
+      </div>
+    `;
+  }
+
+  async function loadAttendanceForSelectedSession() {
+    const season = getSelectedSeason();
+    const saisonId = season ? String(season.saison_id || '').trim() : '';
+    const dateSession = String(matchDateEl.value || '').trim();
+    const noSession = String(matchSessionNoEl.value || '').trim();
+
+    attendanceCache = [];
+    renderAttendance();
+
+    if (!saisonId || !dateSession || !noSession) {
+      return;
+    }
+
+    try {
+      const params = new URLSearchParams({
+        action: 'getAttendanceForSession',
+        saison_id: saisonId,
+        date_session: dateSession,
+        no_session: noSession
+      });
+
+      const response = await fetch(`${API_URL}?${params.toString()}`);
+      const result = await response.json();
+
+      if (!result.ok) {
+        throw new Error(result.error || 'Erreur API inconnue');
+      }
+
+      attendanceCache = Array.isArray(result.joueurs) ? result.joueurs : [];
+      renderAttendance();
+    } catch (error) {
+      console.error('Erreur loadAttendanceForSelectedSession:', error);
+
+      removeListEl.innerHTML = `
+        <div class="mini-player">
+          <div>
+            <div class="mini-player-name">Erreur de chargement</div>
+            <div class="mini-player-code">${escapeHtml(error.message || 'Erreur inconnue')}</div>
+          </div>
+        </div>
+      `;
+    }
+  }
+
   function syncSelectedSession() {
     const option = matchSessionEl.options[matchSessionEl.selectedIndex];
 
     if (!option || !option.value) {
       matchDateEl.value = '';
       matchSessionNoEl.value = '';
+      attendanceCache = [];
+      renderAttendance();
       return;
     }
 
     matchDateEl.value = option.dataset.date || '';
     matchSessionNoEl.value = option.value || '';
+    loadAttendanceForSelectedSession();
   }
 
   function populateSessions() {
     clearSessionFields();
 
     const season = getSelectedSeason();
-    if (!season) return;
+    if (!season) {
+      attendanceCache = [];
+      renderAttendance();
+      return;
+    }
 
     const sessions = Array.isArray(season.sessions) ? season.sessions : [];
 
@@ -610,6 +721,9 @@
     if (sessions.length > 0) {
       matchSessionEl.value = String(sessions[0].no_session || '');
       syncSelectedSession();
+    } else {
+      attendanceCache = [];
+      renderAttendance();
     }
   }
 
@@ -635,16 +749,22 @@
       if (seasonsCache.length > 0) {
         matchSeasonEl.value = seasonsCache[0].saison_id;
         populateSessions();
+      } else {
+        attendanceCache = [];
+        renderAttendance();
       }
     } catch (error) {
       console.error('Erreur loadSeasons:', error);
       clearSessionFields();
+      attendanceCache = [];
+      renderAttendance();
     }
   }
 
   matchSeasonEl.addEventListener('change', populateSessions);
   matchSessionEl.addEventListener('change', syncSelectedSession);
 
+  renderAttendance();
   loadSeasons();
 </script>
   
