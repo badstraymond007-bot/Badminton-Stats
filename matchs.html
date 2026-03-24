@@ -328,25 +328,31 @@
         <h2>Session active</h2>
         <p>Cette page sert à gérer un round à la fois. Les joueurs présents sont la base, puis on ajuste les joueurs actifs selon les départs, blessures ou pauses.</p>
 
-        <div class="session-grid">
-          <div class="field">
-            <label for="matchSeason">Saison</label>
-            <select id="matchSeason" name="matchSeason">
-              <option value="">Choisir une saison</option>
-              <option value="printemps-2026">Printemps 2026</option>
-            </select>
-          </div>
+<div class="session-grid">
+  <div class="field">
+    <label for="matchSeason">Saison</label>
+    <select id="matchSeason" name="matchSeason">
+      <option value="">Choisir une saison</option>
+    </select>
+  </div>
 
-          <div class="field">
-            <label for="matchDate">Date de session</label>
-            <input type="date" id="matchDate" name="matchDate" />
-          </div>
+  <div class="field">
+    <label for="matchSession">Session</label>
+    <select id="matchSession" name="matchSession">
+      <option value="">Choisir une session</option>
+    </select>
+  </div>
 
-          <div class="field">
-            <label for="matchSessionNo">No de session</label>
-            <input type="number" id="matchSessionNo" name="matchSessionNo" min="1" placeholder="Ex. 1" />
-          </div>
-        </div>
+  <div class="field">
+    <label for="matchDate">Date de session</label>
+    <input type="date" id="matchDate" name="matchDate" readonly />
+  </div>
+
+  <div class="field">
+    <label for="matchSessionNo">No de session</label>
+    <input type="number" id="matchSessionNo" name="matchSessionNo" min="1" readonly />
+  </div>
+</div>
 
         <div class="round-bar">
           <div class="round-title">Round 1</div>
@@ -545,5 +551,116 @@
       </aside>
     </div>
   </div>
+
+<script>
+  const API_URL = 'https://script.google.com/macros/s/AKfycbwddJ7s8j6uWH2fXP_h7161F_MT5ZU12X15oMx6Xx7icxud1jg9_e3iq28bjfs3X4_y/exec';
+
+  const matchSeasonEl = document.getElementById('matchSeason');
+  const matchSessionEl = document.getElementById('matchSession');
+  const matchDateEl = document.getElementById('matchDate');
+  const matchSessionNoEl = document.getElementById('matchSessionNo');
+
+  let seasonsCache = [];
+
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function getSelectedSeason() {
+    const saisonId = String(matchSeasonEl.value || '').trim();
+    return seasonsCache.find(s => String(s.saison_id || '').trim() === saisonId) || null;
+  }
+
+  function clearMatchSessionFields() {
+    matchSessionEl.innerHTML = '<option value="">Choisir une session</option>';
+    matchDateEl.value = '';
+    matchSessionNoEl.value = '';
+  }
+
+  function populateMatchSessions() {
+    clearMatchSessionFields();
+
+    const season = getSelectedSeason();
+    if (!season) {
+      return;
+    }
+
+    const sessions = Array.isArray(season.sessions) ? season.sessions : [];
+
+    sessions.forEach(session => {
+      const noSession = String(session.no_session || '').trim();
+      const dateSession = String(session.date || '').trim();
+
+      if (!noSession || !dateSession) {
+        return;
+      }
+
+      const option = document.createElement('option');
+      option.value = noSession;
+      option.textContent = `Session ${noSession} — ${dateSession}`;
+      option.dataset.date = dateSession;
+      matchSessionEl.appendChild(option);
+    });
+
+    if (sessions.length > 0) {
+      matchSessionEl.value = String(sessions[0].no_session || '');
+      syncSelectedSession();
+    }
+  }
+
+  function syncSelectedSession() {
+    const selectedOption = matchSessionEl.options[matchSessionEl.selectedIndex];
+
+    if (!selectedOption || !selectedOption.value) {
+      matchDateEl.value = '';
+      matchSessionNoEl.value = '';
+      return;
+    }
+
+    matchDateEl.value = selectedOption.dataset.date || '';
+    matchSessionNoEl.value = selectedOption.value || '';
+  }
+
+  async function loadMatchSeasons() {
+    try {
+      const response = await fetch(`${API_URL}?action=getSeasons`);
+      const result = await response.json();
+
+      if (!result.ok) {
+        throw new Error(result.error || 'Erreur API inconnue');
+      }
+
+      seasonsCache = Array.isArray(result.data) ? result.data : [];
+
+      matchSeasonEl.innerHTML = '<option value="">Choisir une saison</option>';
+
+      seasonsCache.forEach(season => {
+        const option = document.createElement('option');
+        option.value = season.saison_id;
+        option.textContent = season.nom_saison || season.saison_id;
+        matchSeasonEl.appendChild(option);
+      });
+
+      if (seasonsCache.length > 0) {
+        matchSeasonEl.value = seasonsCache[0].saison_id;
+        populateMatchSessions();
+      }
+    } catch (error) {
+      console.error('Erreur loadMatchSeasons:', error);
+      clearMatchSessionFields();
+    }
+  }
+
+  matchSeasonEl.addEventListener('change', populateMatchSessions);
+  matchSessionEl.addEventListener('change', syncSelectedSession);
+
+  loadMatchSeasons();
+</script>
+  
 </body>
 </html>
