@@ -286,7 +286,6 @@
     <input type="number" id="sessionNumber" name="sessionNumber" min="1" readonly />
   </div>
 </div>
-
         <div class="toolbar">
           <button type="button" class="btn secondary" id="checkAllPlayers">Tout cocher</button>
           <button type="button" class="btn secondary" id="uncheckAllPlayers">Tout décocher</button>
@@ -321,37 +320,37 @@
         <h2>Résumé</h2>
         <p>Ce panneau pourra être mis à jour automatiquement quand on branchera le JavaScript.</p>
 
-        <div class="summary-box">
-          <h3>Session en préparation</h3>
+<div class="summary-box">
+  <h3>Session en préparation</h3>
 
-          <div class="summary-row">
-            <div class="summary-label">Saison</div>
-            <div class="summary-value">—</div>
-          </div>
+  <div class="summary-row">
+    <div class="summary-label">Saison</div>
+    <div class="summary-value" id="sumSeason">—</div>
+  </div>
 
-          <div class="summary-row">
-            <div class="summary-label">Date</div>
-            <div class="summary-value">—</div>
-          </div>
+  <div class="summary-row">
+    <div class="summary-label">Date</div>
+    <div class="summary-value" id="sumDate">—</div>
+  </div>
 
-          <div class="summary-row">
-            <div class="summary-label">No session</div>
-            <div class="summary-value">—</div>
-          </div>
+  <div class="summary-row">
+    <div class="summary-label">No session</div>
+    <div class="summary-value" id="sumSessionNo">—</div>
+  </div>
 
-          <div class="summary-row">
-            <div class="summary-label">Présents cochés</div>
-            <div class="summary-value" id="selectedCount">0</div>
-          </div>
-        </div>
+  <div class="summary-row">
+    <div class="summary-label">Présents cochés</div>
+    <div class="summary-value" id="selectedCount">0</div>
+  </div>
+</div>
 
-        <h2 style="margin-top: 18px;">Étapes prévues</h2>
-        <p>
-          1. Charger la liste des joueurs depuis l’API.<br />
-          2. Cocher / décocher facilement les présences.<br />
-          3. Créer la session dans <strong>sessions</strong> si nécessaire.<br />
-          4. Enregistrer les lignes dans <strong>presences</strong>.
-        </p>
+<h2 style="margin-top: 18px;">Étapes prévues</h2>
+<p>
+  1. Charger la liste des joueurs depuis l’API.<br />
+  2. Choisir la saison et la session depuis la saison active.<br />
+  3. Cocher / décocher facilement les présences.<br />
+  4. Enregistrer les lignes dans <strong>presences</strong>.
+</p>
       </aside>
     </div>
   </div>
