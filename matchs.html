@@ -107,7 +107,7 @@
 
     .session-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 14px;
       margin-top: 16px;
     }
@@ -186,6 +186,10 @@
       margin-bottom: 14px;
     }
 
+    .remove-tools input {
+      flex: 1 1 280px;
+    }
+
     .remove-list,
     .bench-list {
       display: flex;
@@ -235,6 +239,31 @@
       background: #fafafa;
     }
 
+    .court-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .group-badge {
+      display: inline-block;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: var(--soft);
+      border: 1px solid var(--soft-line);
+      color: var(--accent);
+      font-weight: bold;
+      font-size: 13px;
+      margin-top: 6px;
+    }
+
+    .court-meta {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
     .court-players {
       display: flex;
       flex-direction: column;
@@ -257,6 +286,24 @@
     }
 
     .slot-value {
+      font-weight: bold;
+    }
+
+    .waiting-box {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 12px;
+      background: #fff;
+      border: 1px solid var(--line);
+    }
+
+    .waiting-label {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .waiting-value {
       font-weight: bold;
     }
 
@@ -328,65 +375,74 @@
         <h2>Session active</h2>
         <p>Cette page sert à gérer un round à la fois. Les joueurs présents sont la base, puis on ajuste les joueurs actifs selon les départs, blessures ou pauses.</p>
 
-<div class="session-grid">
-  <div class="field">
-    <label for="matchSeason">Saison</label>
-    <select id="matchSeason" name="matchSeason">
-      <option value="">Choisir une saison</option>
-    </select>
-  </div>
+        <div class="session-grid">
+          <div class="field">
+            <label for="matchSeason">Saison</label>
+            <select id="matchSeason" name="matchSeason">
+              <option value="">Choisir une saison</option>
+            </select>
+          </div>
 
-  <div class="field">
-    <label for="matchSession">Session</label>
-    <select id="matchSession" name="matchSession">
-      <option value="">Choisir une session</option>
-    </select>
-  </div>
+          <div class="field">
+            <label for="matchSession">Session</label>
+            <select id="matchSession" name="matchSession">
+              <option value="">Choisir une session</option>
+            </select>
+          </div>
 
-  <div class="field">
-    <label for="matchDate">Date de session</label>
-    <input type="date" id="matchDate" name="matchDate" readonly />
-  </div>
+          <div class="field">
+            <label for="matchDate">Date de session</label>
+            <input type="date" id="matchDate" name="matchDate" readonly />
+          </div>
 
-  <div class="field">
-    <label for="matchSessionNo">No de session</label>
-    <input type="number" id="matchSessionNo" name="matchSessionNo" min="1" readonly />
-  </div>
-</div>
+          <div class="field">
+            <label for="matchSessionNo">No de session</label>
+            <input type="number" id="matchSessionNo" name="matchSessionNo" min="1" readonly />
+          </div>
+        </div>
 
         <div class="round-bar">
-          <div class="round-title">Round 1</div>
+          <div class="round-title" id="roundTitle">Round 1</div>
           <div class="round-actions">
-            <button type="button" class="btn ghost">Round précédent</button>
-            <button type="button" class="btn ghost">Round suivant</button>
-            <button type="button" class="btn secondary">Copier le round précédent</button>
+            <button type="button" class="btn ghost" id="prevRoundBtn">Round précédent</button>
+            <button type="button" class="btn ghost" id="nextRoundBtn">Round suivant</button>
+            <button type="button" class="btn secondary" id="copyPrevRoundBtn">Copier le round précédent</button>
           </div>
         </div>
 
         <div class="subgrid">
-
           <div class="courts-grid">
-            <article class="court-card">
-              <h3>Terrain 1</h3>
-              <p>2 contre 2</p>
+            <article class="court-card" data-court="1">
+              <div class="court-top">
+                <div>
+                  <h3>Terrain 1</h3>
+                  <div class="group-badge" data-role="group-badge">Aucun groupe</div>
+                  <div class="court-meta" data-role="group-meta">En attente de joueurs</div>
+                </div>
+              </div>
 
               <div class="court-players">
                 <div class="slot">
                   <div class="slot-label">Équipe 1 • Joueur 1</div>
-                  <div class="slot-value">—</div>
+                  <div class="slot-value" data-slot="team1_player1">—</div>
                 </div>
                 <div class="slot">
                   <div class="slot-label">Équipe 1 • Joueur 2</div>
-                  <div class="slot-value">—</div>
+                  <div class="slot-value" data-slot="team1_player2">—</div>
                 </div>
                 <div class="slot">
                   <div class="slot-label">Équipe 2 • Joueur 1</div>
-                  <div class="slot-value">—</div>
+                  <div class="slot-value" data-slot="team2_player1">—</div>
                 </div>
                 <div class="slot">
                   <div class="slot-label">Équipe 2 • Joueur 2</div>
-                  <div class="slot-value">—</div>
+                  <div class="slot-value" data-slot="team2_player2">—</div>
                 </div>
+              </div>
+
+              <div class="waiting-box">
+                <div class="waiting-label">Joueur en attente</div>
+                <div class="waiting-value" data-role="waiting-player">—</div>
               </div>
 
               <div class="score-row">
@@ -395,27 +451,37 @@
               </div>
             </article>
 
-            <article class="court-card">
-              <h3>Terrain 2</h3>
-              <p>2 contre 2</p>
+            <article class="court-card" data-court="2">
+              <div class="court-top">
+                <div>
+                  <h3>Terrain 2</h3>
+                  <div class="group-badge" data-role="group-badge">Aucun groupe</div>
+                  <div class="court-meta" data-role="group-meta">En attente de joueurs</div>
+                </div>
+              </div>
 
               <div class="court-players">
                 <div class="slot">
                   <div class="slot-label">Équipe 1 • Joueur 1</div>
-                  <div class="slot-value">—</div>
+                  <div class="slot-value" data-slot="team1_player1">—</div>
                 </div>
                 <div class="slot">
                   <div class="slot-label">Équipe 1 • Joueur 2</div>
-                  <div class="slot-value">—</div>
+                  <div class="slot-value" data-slot="team1_player2">—</div>
                 </div>
                 <div class="slot">
                   <div class="slot-label">Équipe 2 • Joueur 1</div>
-                  <div class="slot-value">—</div>
+                  <div class="slot-value" data-slot="team2_player1">—</div>
                 </div>
                 <div class="slot">
                   <div class="slot-label">Équipe 2 • Joueur 2</div>
-                  <div class="slot-value">—</div>
+                  <div class="slot-value" data-slot="team2_player2">—</div>
                 </div>
+              </div>
+
+              <div class="waiting-box">
+                <div class="waiting-label">Joueur en attente</div>
+                <div class="waiting-value" data-role="waiting-player">—</div>
               </div>
 
               <div class="score-row">
@@ -424,27 +490,37 @@
               </div>
             </article>
 
-            <article class="court-card">
-              <h3>Terrain 3</h3>
-              <p>2 contre 2</p>
+            <article class="court-card" data-court="3">
+              <div class="court-top">
+                <div>
+                  <h3>Terrain 3</h3>
+                  <div class="group-badge" data-role="group-badge">Aucun groupe</div>
+                  <div class="court-meta" data-role="group-meta">En attente de joueurs</div>
+                </div>
+              </div>
 
               <div class="court-players">
                 <div class="slot">
                   <div class="slot-label">Équipe 1 • Joueur 1</div>
-                  <div class="slot-value">—</div>
+                  <div class="slot-value" data-slot="team1_player1">—</div>
                 </div>
                 <div class="slot">
                   <div class="slot-label">Équipe 1 • Joueur 2</div>
-                  <div class="slot-value">—</div>
+                  <div class="slot-value" data-slot="team1_player2">—</div>
                 </div>
                 <div class="slot">
                   <div class="slot-label">Équipe 2 • Joueur 1</div>
-                  <div class="slot-value">—</div>
+                  <div class="slot-value" data-slot="team2_player1">—</div>
                 </div>
                 <div class="slot">
                   <div class="slot-label">Équipe 2 • Joueur 2</div>
-                  <div class="slot-value">—</div>
+                  <div class="slot-value" data-slot="team2_player2">—</div>
                 </div>
+              </div>
+
+              <div class="waiting-box">
+                <div class="waiting-label">Joueur en attente</div>
+                <div class="waiting-value" data-role="waiting-player">—</div>
               </div>
 
               <div class="score-row">
@@ -456,38 +532,39 @@
 
           <div class="remove-box">
             <h3>Retirer un joueur de ce round</h3>
-            <p>Zone visuelle prévue pour les joueurs qui quittent, se blessent ou ne jouent pas ce round-ci. On prépare la place maintenant, sans brancher la logique.</p>
+            <p>Zone visuelle prévue pour les joueurs qui quittent, se blessent ou ne jouent pas ce round-ci. On prépare la place maintenant, sans brancher la logique de sauvegarde.</p>
 
             <div class="remove-tools">
-              <input type="text" placeholder="Rechercher un joueur à retirer..." />
-              <button type="button" class="btn secondary">Appliquer le retrait</button>
+              <input type="text" id="removeSearch" placeholder="Rechercher un joueur à retirer..." />
+              <button type="button" class="btn secondary" id="applyRemovalBtn">Appliquer le retrait</button>
             </div>
 
-<div class="remove-list" id="removeList">
-  <div class="mini-player">
-    <div>
-      <div class="mini-player-name">Aucun joueur chargé</div>
-      <div class="mini-player-code">Choisis une session pour voir les joueurs présents</div>
-    </div>
-  </div>
-</div>
+            <div class="remove-list" id="removeList">
+              <div class="mini-player">
+                <div>
+                  <div class="mini-player-name">Aucun joueur chargé</div>
+                  <div class="mini-player-code">Choisis une session pour voir les joueurs présents</div>
+                </div>
+              </div>
+            </div>
 
-          <div class="bench-card">
-            <h3>En pause / en attente / partis</h3>
-            <p>Zone visuelle pour voir les joueurs qui ne sont pas placés sur un terrain dans ce round.</p>
+            <div class="bench-card" style="margin-top: 16px;">
+              <h3>En pause / en attente / groupes hors terrain</h3>
+              <p>Zone visuelle pour voir les joueurs qui ne sont pas placés sur un terrain dans ce round.</p>
 
-<div class="bench-list" id="benchList" style="margin-top: 12px;">
-  <div class="mini-player">
-    <div>
-      <div class="mini-player-name">Aucun joueur en pause</div>
-      <div class="mini-player-code">Les joueurs non placés apparaîtront ici plus tard</div>
-    </div>
-  </div>
-</div>
-          </div>
+              <div class="bench-list" id="benchList" style="margin-top: 12px;">
+                <div class="mini-player">
+                  <div>
+                    <div class="mini-player-name">Aucun joueur en pause</div>
+                    <div class="mini-player-code">Les joueurs non placés apparaîtront ici plus tard</div>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-          <div class="note">
-            Version prototype : on construit d'abord le visuel général du round. Le placement automatique, les liens avec les présences, les départs et la sauvegarde viendront dans le script ensuite.
+            <div class="note">
+              Version prototype : ce fichier affiche maintenant la répartition automatique du round. La sauvegarde et la logique de montée/descente viendront ensuite.
+            </div>
           </div>
         </div>
       </section>
@@ -496,45 +573,45 @@
         <h2>Résumé du round</h2>
         <p>Petit panneau de contrôle pour t’aider à suivre rapidement la soirée.</p>
 
-<div class="summary-box">
-  <h3>Vue rapide</h3>
+        <div class="summary-box">
+          <h3>Vue rapide</h3>
 
-  <div class="summary-row">
-    <div class="summary-label">Saison</div>
-    <div class="summary-value" id="sumSeason">—</div>
-  </div>
+          <div class="summary-row">
+            <div class="summary-label">Saison</div>
+            <div class="summary-value" id="sumSeason">—</div>
+          </div>
 
-  <div class="summary-row">
-    <div class="summary-label">Date</div>
-    <div class="summary-value" id="sumDate">—</div>
-  </div>
+          <div class="summary-row">
+            <div class="summary-label">Date</div>
+            <div class="summary-value" id="sumDate">—</div>
+          </div>
 
-  <div class="summary-row">
-    <div class="summary-label">Round</div>
-    <div class="summary-value">1</div>
-  </div>
+          <div class="summary-row">
+            <div class="summary-label">Round</div>
+            <div class="summary-value" id="sumRound">1</div>
+          </div>
 
-  <div class="summary-row">
-    <div class="summary-label">Joueurs présents</div>
-    <div class="summary-value" id="sumPresentCount">0</div>
-  </div>
+          <div class="summary-row">
+            <div class="summary-label">Joueurs présents</div>
+            <div class="summary-value" id="sumPresentCount">0</div>
+          </div>
 
-  <div class="summary-row">
-    <div class="summary-label">Joueurs actifs</div>
-    <div class="summary-value" id="sumActiveCount">0</div>
-  </div>
+          <div class="summary-row">
+            <div class="summary-label">Joueurs actifs</div>
+            <div class="summary-value" id="sumActiveCount">0</div>
+          </div>
 
-  <div class="summary-row">
-    <div class="summary-label">Groupes utilisés</div>
-    <div class="summary-value" id="sumGroupCount">—</div>
-  </div>
-</div>
+          <div class="summary-row">
+            <div class="summary-label">Groupes utilisés</div>
+            <div class="summary-value" id="sumGroupCount">—</div>
+          </div>
+        </div>
 
         <h2 style="margin-top: 18px;">Étapes prévues</h2>
         <p>
           1. Récupérer les joueurs présents de la session.<br />
           2. Définir les joueurs actifs pour le round.<br />
-          3. Répartir les joueurs par terrain.<br />
+          3. Répartir les joueurs par groupes A/B/C/D/E et sur 3 terrains.<br />
           4. Sauvegarder les matchs et les scores.<br />
           5. Préparer le round suivant avec ajustements.
         </p>
@@ -549,18 +626,32 @@
   const matchSessionEl = document.getElementById('matchSession');
   const matchDateEl = document.getElementById('matchDate');
   const matchSessionNoEl = document.getElementById('matchSessionNo');
+  const roundTitleEl = document.getElementById('roundTitle');
+  const prevRoundBtn = document.getElementById('prevRoundBtn');
+  const nextRoundBtn = document.getElementById('nextRoundBtn');
+  const copyPrevRoundBtn = document.getElementById('copyPrevRoundBtn');
 
   const removeListEl = document.getElementById('removeList');
   const benchListEl = document.getElementById('benchList');
+  const removeSearchEl = document.getElementById('removeSearch');
+  const applyRemovalBtn = document.getElementById('applyRemovalBtn');
 
   const sumSeasonEl = document.getElementById('sumSeason');
   const sumDateEl = document.getElementById('sumDate');
+  const sumRoundEl = document.getElementById('sumRound');
   const sumPresentCountEl = document.getElementById('sumPresentCount');
   const sumActiveCountEl = document.getElementById('sumActiveCount');
   const sumGroupCountEl = document.getElementById('sumGroupCount');
 
+  const courtCards = Array.from(document.querySelectorAll('.court-card'));
+
+  const COURTS_PER_ROUND = 3;
+  const GROUP_CODES = ['A', 'B', 'C', 'D', 'E'];
+
   let seasonsCache = [];
   let attendanceCache = [];
+  let removedPlayerIds = new Set();
+  let currentRoundNo = 1;
 
   function escapeHtml(value) {
     return String(value ?? '')
@@ -582,17 +673,216 @@
     matchSessionNoEl.value = '';
   }
 
-  function renderAttendance() {
-    const season = getSelectedSeason();
-    const seasonName = season ? (season.nom_saison || season.saison_id) : '—';
+  function getRemovedIdsFromUI() {
+    return Array.from(removeListEl.querySelectorAll('input[type="checkbox"]:checked'))
+      .map(input => String(input.value || '').trim())
+      .filter(Boolean);
+  }
 
-    sumSeasonEl.textContent = seasonName;
-    sumDateEl.textContent = matchDateEl.value || '—';
-    sumPresentCountEl.textContent = String(attendanceCache.length);
-    sumActiveCountEl.textContent = String(attendanceCache.length);
-    sumGroupCountEl.textContent = '—';
+  function getActivePlayers() {
+    return attendanceCache.filter(player => !removedPlayerIds.has(String(player.joueur_id || '').trim()));
+  }
 
-    if (!attendanceCache.length) {
+  function partitionPlayers(players) {
+    const total = players.length;
+
+    if (total < 4) {
+      return [];
+    }
+
+    const numGroupsOfFive = total % 4;
+    const groups = [];
+    let index = 0;
+
+    for (let i = 0; i < numGroupsOfFive; i += 1) {
+      groups.push(players.slice(index, index + 5));
+      index += 5;
+    }
+
+    while (index < total) {
+      groups.push(players.slice(index, index + 4));
+      index += 4;
+    }
+
+    return groups.map((playersInGroup, idx) => ({
+      group_code: GROUP_CODES[idx] || `G${idx + 1}`,
+      players: playersInGroup
+    }));
+  }
+
+  function getRotationForGroup(groupPlayers, roundNo) {
+    const size = groupPlayers.length;
+
+    if (size === 4) {
+      const p = groupPlayers;
+      const rotation4 = [
+        { team1: [p[0], p[1]], team2: [p[2], p[3]], waiting: null },
+        { team1: [p[0], p[2]], team2: [p[1], p[3]], waiting: null },
+        { team1: [p[0], p[3]], team2: [p[1], p[2]], waiting: null }
+      ];
+      return rotation4[(roundNo - 1) % rotation4.length];
+    }
+
+    if (size === 5) {
+      const p = groupPlayers;
+      const rotation5 = [
+        { team1: [p[0], p[2]], team2: [p[1], p[3]], waiting: p[4] },
+        { team1: [p[0], p[3]], team2: [p[2], p[4]], waiting: p[1] },
+        { team1: [p[0], p[4]], team2: [p[1], p[2]], waiting: p[3] },
+        { team1: [p[1], p[4]], team2: [p[2], p[3]], waiting: p[0] }
+      ];
+      return rotation5[(roundNo - 1) % rotation5.length];
+    }
+
+    return null;
+  }
+
+  function getVisibleGroups(groups, roundNo) {
+    if (!groups.length) {
+      return [];
+    }
+
+    if (groups.length <= COURTS_PER_ROUND) {
+      return groups.map((group, index) => ({ ...group, court_no: index + 1 }));
+    }
+
+    const startIndex = ((roundNo - 1) * COURTS_PER_ROUND) % groups.length;
+    const visible = [];
+
+    for (let i = 0; i < COURTS_PER_ROUND; i += 1) {
+      const group = groups[(startIndex + i) % groups.length];
+      visible.push({ ...group, court_no: i + 1 });
+    }
+
+    return visible;
+  }
+
+  function buildRoundPlan(players, roundNo) {
+    const groups = partitionPlayers(players);
+    const visibleGroups = getVisibleGroups(groups, roundNo);
+    const visibleCodes = new Set(visibleGroups.map(group => group.group_code));
+
+    const matches = visibleGroups.map(group => {
+      const rotation = getRotationForGroup(group.players, roundNo);
+      if (!rotation) {
+        return null;
+      }
+
+      return {
+        group_code: group.group_code,
+        court_no: group.court_no,
+        group_size: group.players.length,
+        team1_player1: rotation.team1[0] || null,
+        team1_player2: rotation.team1[1] || null,
+        team2_player1: rotation.team2[0] || null,
+        team2_player2: rotation.team2[1] || null,
+        waiting_player: rotation.waiting || null
+      };
+    }).filter(Boolean);
+
+    const benchEntries = [];
+
+    matches.forEach(match => {
+      if (match.waiting_player) {
+        benchEntries.push({
+          type: 'waiting',
+          group_code: match.group_code,
+          player: match.waiting_player
+        });
+      }
+    });
+
+    groups.forEach(group => {
+      if (visibleCodes.has(group.group_code)) {
+        return;
+      }
+
+      benchEntries.push({
+        type: 'group_rest',
+        group_code: group.group_code,
+        players: group.players
+      });
+    });
+
+    return {
+      total_groups: groups.length,
+      matches,
+      benchEntries
+    };
+  }
+
+  function resetCourts() {
+    courtCards.forEach(card => {
+      card.querySelector('[data-role="group-badge"]').textContent = 'Aucun groupe';
+      card.querySelector('[data-role="group-meta"]').textContent = 'En attente de joueurs';
+      card.querySelector('[data-role="waiting-player"]').textContent = '—';
+      card.querySelectorAll('[data-slot]').forEach(slot => {
+        slot.textContent = '—';
+      });
+    });
+  }
+
+  function formatPlayer(player) {
+    if (!player) return '—';
+    return player.nom || player.joueur_id || '—';
+  }
+
+  function renderCourts(roundPlan) {
+    resetCourts();
+
+    roundPlan.matches.forEach(match => {
+      const card = document.querySelector(`.court-card[data-court="${match.court_no}"]`);
+      if (!card) return;
+
+      card.querySelector('[data-role="group-badge"]').textContent = `Groupe ${match.group_code}`;
+      card.querySelector('[data-role="group-meta"]').textContent = `${match.group_size} joueurs • Terrain ${match.court_no}`;
+      card.querySelector('[data-role="waiting-player"]').textContent = formatPlayer(match.waiting_player);
+      card.querySelector('[data-slot="team1_player1"]').textContent = formatPlayer(match.team1_player1);
+      card.querySelector('[data-slot="team1_player2"]').textContent = formatPlayer(match.team1_player2);
+      card.querySelector('[data-slot="team2_player1"]').textContent = formatPlayer(match.team2_player1);
+      card.querySelector('[data-slot="team2_player2"]').textContent = formatPlayer(match.team2_player2);
+    });
+  }
+
+  function renderBench(roundPlan) {
+    if (!roundPlan.benchEntries.length) {
+      benchListEl.innerHTML = `
+        <div class="mini-player">
+          <div>
+            <div class="mini-player-name">Aucun joueur en pause</div>
+            <div class="mini-player-code">Tous les joueurs actifs sont placés pour ce round</div>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    benchListEl.innerHTML = roundPlan.benchEntries.map(entry => {
+      if (entry.type === 'waiting') {
+        return `
+          <div class="mini-player">
+            <div>
+              <div class="mini-player-name">${escapeHtml(entry.player.nom || entry.player.joueur_id)}</div>
+              <div class="mini-player-code">Groupe ${escapeHtml(entry.group_code)} • joueur en attente</div>
+            </div>
+          </div>
+        `;
+      }
+
+      const playerNames = entry.players.map(player => escapeHtml(player.nom || player.joueur_id)).join(', ');
+      return `
+        <div class="mini-player">
+          <div>
+            <div class="mini-player-name">Groupe ${escapeHtml(entry.group_code)} hors terrain ce round</div>
+            <div class="mini-player-code">${playerNames}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderRemoveList(players) {
+    if (!players.length) {
       removeListEl.innerHTML = `
         <div class="mini-player">
           <div>
@@ -601,36 +891,79 @@
           </div>
         </div>
       `;
+      return;
+    }
 
-      benchListEl.innerHTML = `
+    const search = String(removeSearchEl.value || '').trim().toLowerCase();
+
+    const filteredPlayers = players.filter(player => {
+      if (!search) return true;
+      const text = `${player.nom || ''} ${player.joueur_id || ''}`.toLowerCase();
+      return text.includes(search);
+    });
+
+    if (!filteredPlayers.length) {
+      removeListEl.innerHTML = `
         <div class="mini-player">
           <div>
-            <div class="mini-player-name">Aucun joueur en pause</div>
-            <div class="mini-player-code">Les joueurs non placés apparaîtront ici plus tard</div>
+            <div class="mini-player-name">Aucun résultat</div>
+            <div class="mini-player-code">Aucun joueur ne correspond à la recherche</div>
           </div>
         </div>
       `;
       return;
     }
 
-    removeListEl.innerHTML = attendanceCache.map(player => `
-      <label class="mini-player">
-        <input type="checkbox" value="${escapeHtml(player.joueur_id)}" />
-        <div>
-          <div class="mini-player-name">${escapeHtml(player.nom || player.joueur_id)}</div>
-          <div class="mini-player-code">${escapeHtml(player.joueur_id)} • présent</div>
-        </div>
-      </label>
-    `).join('');
+    removeListEl.innerHTML = filteredPlayers.map(player => {
+      const joueurId = String(player.joueur_id || '').trim();
+      const checked = removedPlayerIds.has(joueurId) ? 'checked' : '';
+      return `
+        <label class="mini-player">
+          <input type="checkbox" value="${escapeHtml(joueurId)}" ${checked} />
+          <div>
+            <div class="mini-player-name">${escapeHtml(player.nom || joueurId)}</div>
+            <div class="mini-player-code">${escapeHtml(joueurId)} • présent</div>
+          </div>
+        </label>
+      `;
+    }).join('');
+  }
 
-    benchListEl.innerHTML = `
-      <div class="mini-player">
-        <div>
-          <div class="mini-player-name">Aucun joueur en pause pour l’instant</div>
-          <div class="mini-player-code">La répartition par groupes viendra à l’étape suivante</div>
+  function renderRound() {
+    const season = getSelectedSeason();
+    const seasonName = season ? (season.nom_saison || season.saison_id) : '—';
+    const activePlayers = getActivePlayers();
+
+    roundTitleEl.textContent = `Round ${currentRoundNo}`;
+    sumSeasonEl.textContent = seasonName;
+    sumDateEl.textContent = matchDateEl.value || '—';
+    sumRoundEl.textContent = String(currentRoundNo);
+    sumPresentCountEl.textContent = String(attendanceCache.length);
+
+    renderRemoveList(attendanceCache);
+
+    if (activePlayers.length < 4) {
+      sumActiveCountEl.textContent = String(activePlayers.length);
+      sumGroupCountEl.textContent = '—';
+      resetCourts();
+      benchListEl.innerHTML = `
+        <div class="mini-player">
+          <div>
+            <div class="mini-player-name">Pas assez de joueurs actifs</div>
+            <div class="mini-player-code">Il faut au moins 4 joueurs pour générer un match</div>
+          </div>
         </div>
-      </div>
-    `;
+      `;
+      return;
+    }
+
+    const roundPlan = buildRoundPlan(activePlayers, currentRoundNo);
+    renderCourts(roundPlan);
+    renderBench(roundPlan);
+
+    const playersOnCourt = roundPlan.matches.length * 4;
+    sumActiveCountEl.textContent = String(playersOnCourt);
+    sumGroupCountEl.textContent = `${roundPlan.matches.length} / ${roundPlan.total_groups}`;
   }
 
   async function loadAttendanceForSelectedSession() {
@@ -640,7 +973,9 @@
     const noSession = String(matchSessionNoEl.value || '').trim();
 
     attendanceCache = [];
-    renderAttendance();
+    removedPlayerIds = new Set();
+    currentRoundNo = 1;
+    renderRound();
 
     if (!saisonId || !dateSession || !noSession) {
       return;
@@ -662,10 +997,11 @@
       }
 
       attendanceCache = Array.isArray(result.joueurs) ? result.joueurs : [];
-      renderAttendance();
+      renderRound();
     } catch (error) {
       console.error('Erreur loadAttendanceForSelectedSession:', error);
 
+      resetCourts();
       removeListEl.innerHTML = `
         <div class="mini-player">
           <div>
@@ -684,7 +1020,9 @@
       matchDateEl.value = '';
       matchSessionNoEl.value = '';
       attendanceCache = [];
-      renderAttendance();
+      removedPlayerIds = new Set();
+      currentRoundNo = 1;
+      renderRound();
       return;
     }
 
@@ -699,7 +1037,9 @@
     const season = getSelectedSeason();
     if (!season) {
       attendanceCache = [];
-      renderAttendance();
+      removedPlayerIds = new Set();
+      currentRoundNo = 1;
+      renderRound();
       return;
     }
 
@@ -723,7 +1063,9 @@
       syncSelectedSession();
     } else {
       attendanceCache = [];
-      renderAttendance();
+      removedPlayerIds = new Set();
+      currentRoundNo = 1;
+      renderRound();
     }
   }
 
@@ -751,22 +1093,51 @@
         populateSessions();
       } else {
         attendanceCache = [];
-        renderAttendance();
+        removedPlayerIds = new Set();
+        currentRoundNo = 1;
+        renderRound();
       }
     } catch (error) {
       console.error('Erreur loadSeasons:', error);
       clearSessionFields();
       attendanceCache = [];
-      renderAttendance();
+      removedPlayerIds = new Set();
+      currentRoundNo = 1;
+      renderRound();
     }
   }
+
+  applyRemovalBtn.addEventListener('click', () => {
+    removedPlayerIds = new Set(getRemovedIdsFromUI());
+    renderRound();
+  });
+
+  removeSearchEl.addEventListener('input', () => {
+    renderRemoveList(attendanceCache);
+  });
+
+  prevRoundBtn.addEventListener('click', () => {
+    if (currentRoundNo <= 1) {
+      return;
+    }
+    currentRoundNo -= 1;
+    renderRound();
+  });
+
+  nextRoundBtn.addEventListener('click', () => {
+    currentRoundNo += 1;
+    renderRound();
+  });
+
+  copyPrevRoundBtn.addEventListener('click', () => {
+    alert('Le bouton est conservé visuellement pour plus tard. Pour l’instant, le round affiché est généré automatiquement.');
+  });
 
   matchSeasonEl.addEventListener('change', populateSessions);
   matchSessionEl.addEventListener('change', syncSelectedSession);
 
-  renderAttendance();
+  renderRound();
   loadSeasons();
 </script>
-  
 </body>
 </html>
