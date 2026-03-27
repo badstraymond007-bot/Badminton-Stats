@@ -365,6 +365,8 @@
   </div>
 
   <script>
+  const API_BASE = 'https://script.google.com/macros/s/AKfycbwddJ7s8j6uWH2fXP_h7161F_MT5ZU12X15oMx6Xx7icxud1jg9_e3iq28bjfs3X4_y/exec';
+
   function setText(id, value) {
     const el = document.getElementById(id);
     if (el) {
@@ -372,44 +374,35 @@
     }
   }
 
-  function applyDashboard(data) {
-    if (!data || !data.display) {
-      throw new Error('Réponse dashboard invalide.');
+  async function loadDashboardSummary() {
+    try {
+      const response = await fetch(API_BASE + '?action=getDashboardSummary');
+      const data = await response.json();
+
+      if (!data || !data.ok) {
+        throw new Error('Réponse dashboard invalide.');
+      }
+
+      setText('dashPlayersCount', data.display?.joueurs_inscrits || '—');
+      setText('dashActiveSeason', data.display?.saison_active || '—');
+      setText('dashNextSession', data.display?.prochaine_session || '—');
+
+      setText('dashSeasonName', data.display?.saison_nom || 'Aucune saison active');
+      setText('dashSeasonStatus', data.display?.saison_statut || 'À configurer');
+      setText('dashSeasonPlayers', data.display?.saison_joueurs || '0 sélectionné');
+      setText('dashSeasonSessions', data.display?.saison_sessions || '0');
+    } catch (error) {
+      console.error('Erreur dashboard:', error);
+
+      setText('dashPlayersCount', '—');
+      setText('dashActiveSeason', '—');
+      setText('dashNextSession', '—');
+
+      setText('dashSeasonName', 'Erreur chargement');
+      setText('dashSeasonStatus', '—');
+      setText('dashSeasonPlayers', '—');
+      setText('dashSeasonSessions', '—');
     }
-
-    setText('dashPlayersCount', data.display.joueurs_inscrits || '—');
-    setText('dashActiveSeason', data.display.saison_active || '—');
-    setText('dashNextSession', data.display.prochaine_session || '—');
-
-    setText('dashSeasonName', data.display.saison_nom || 'Aucune saison active');
-    setText('dashSeasonStatus', data.display.saison_statut || 'À configurer');
-    setText('dashSeasonPlayers', data.display.saison_joueurs || '0 sélectionné');
-    setText('dashSeasonSessions', data.display.saison_sessions || '0');
-  }
-
-  function showDashboardError(error) {
-    console.error('Erreur dashboard:', error);
-
-    setText('dashPlayersCount', '—');
-    setText('dashActiveSeason', '—');
-    setText('dashNextSession', '—');
-
-    setText('dashSeasonName', 'Erreur chargement');
-    setText('dashSeasonStatus', '—');
-    setText('dashSeasonPlayers', '—');
-    setText('dashSeasonSessions', '—');
-  }
-
-  function loadDashboardSummary() {
-    if (typeof google === 'undefined' || !google.script || !google.script.run) {
-      showDashboardError('google.script.run indisponible');
-      return;
-    }
-
-    google.script.run
-      .withSuccessHandler(applyDashboard)
-      .withFailureHandler(showDashboardError)
-      .getDashboardSummary();
   }
 
   document.addEventListener('DOMContentLoaded', loadDashboardSummary);
