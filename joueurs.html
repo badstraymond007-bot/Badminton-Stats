@@ -428,8 +428,10 @@
     }
 
     function getPlayerPhoto(player) {
-      const url = safeText(player && player.photo_url).trim();
-      return url || DEFAULT_AVATAR;
+      const fileId = safeText(player && player.photo_drive).trim();
+      return fileId
+      ? ('https://drive.google.com/thumbnail?id=' + encodeURIComponent(fileId) + '&sz=w300')
+      : DEFAULT_AVATAR;
     }
 
     function findPlayerById(playerId) {
