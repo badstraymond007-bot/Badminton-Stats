@@ -373,8 +373,8 @@
             </div>
 
             <div class="field">
-              <label for="playerPhotoUrl">Photo URL</label>
-              <input id="playerPhotoUrl" type="text" placeholder="https://..." />
+              <label for="playerPhotoDrive">Photo Drive ID</label>
+              <input id="playerPhotoDrive" type="text" placeholder="FILE_ID Google Drive" />
             </div>
 
             <div class="field">
@@ -395,7 +395,7 @@
           </div>
 
           <div class="save-row">
-            <button class="btn save-disabled" type="button" disabled>Sauvegarder (étape suivante)</button>
+            <button id="savePlayerBtn" class="btn primary" type="button">Sauvegarder</button>
           </div>
 
           <div id="playerStatus" class="status">
@@ -483,7 +483,7 @@
 
       document.getElementById('playerId').value = safeText(player.joueur_id);
       document.getElementById('playerName').value = safeText(player.nom);
-      document.getElementById('playerPhotoUrl').value = safeText(player.photo_url);
+      document.getElementById('playerPhotoDrive').value = safeText(player.photo_drive);
       document.getElementById('playerPhotoFile').value = '';
       document.getElementById('playerStatus').textContent = 'Modification locale prête. Sauvegarde serveur à brancher ensuite.';
       document.getElementById('playerStatus').className = 'status';
@@ -498,20 +498,22 @@
       renderPlayersList(filteredPlayers);
     }
 
-    function refreshPhotoPreview() {
-      const fileInput = document.getElementById('playerPhotoFile');
-      const urlInput = document.getElementById('playerPhotoUrl');
-      const preview = document.getElementById('playerPhotoPreview');
+function refreshPhotoPreview() {
+  const fileInput = document.getElementById('playerPhotoFile');
+  const driveInput = document.getElementById('playerPhotoDrive');
+  const preview = document.getElementById('playerPhotoPreview');
 
-      const file = fileInput.files && fileInput.files[0];
-      if (file) {
-        preview.src = URL.createObjectURL(file);
-        return;
-      }
+  const file = fileInput.files && fileInput.files[0];
+  if (file) {
+    preview.src = URL.createObjectURL(file);
+    return;
+  }
 
-      const url = safeText(urlInput.value).trim();
-      preview.src = url || DEFAULT_AVATAR;
-    }
+  const fileId = safeText(driveInput.value).trim();
+  preview.src = fileId
+    ? ('https://drive.google.com/thumbnail?id=' + encodeURIComponent(fileId) + '&sz=w300')
+    : DEFAULT_AVATAR;
+}
 
     function filterPlayers() {
       const term = safeText(document.getElementById('playerSearch').value).trim().toLowerCase();
@@ -525,6 +527,66 @@
       renderPlayersList(filteredPlayers);
     }
 
+async function savePlayer() {
+  const joueurId = safeText(document.getElementById('playerId').value).trim();
+  const nom = safeText(document.getElementById('playerName').value).trim();
+  const photoDrive = safeText(document.getElementById('playerPhotoDrive').value).trim();
+  const status = document.getElementById('playerStatus');
+
+  if (!joueurId) {
+    status.textContent = 'Aucun joueur sélectionné.';
+    status.className = 'status error';
+    return;
+  }
+
+  if (!nom) {
+    status.textContent = 'Le nom du joueur est obligatoire.';
+    status.className = 'status error';
+    return;
+  }
+
+  try {
+    status.textContent = 'Sauvegarde en cours...';
+    status.className = 'status';
+
+    const response = await fetch(API_BASE, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8'
+      },
+      body: JSON.stringify({
+        action: 'updatePlayer',
+        joueur_id: joueurId,
+        nom: nom,
+        photo_drive: photoDrive
+      })
+    });
+
+    const data = await response.json();
+
+    if (!data || !data.ok || !data.joueur) {
+      throw new Error('Réponse updatePlayer invalide.');
+    }
+
+    const updated = data.joueur;
+
+    const idx = allPlayers.findIndex(p => safeText(p.joueur_id) === safeText(updated.joueur_id));
+    if (idx >= 0) {
+      allPlayers[idx] = updated;
+    }
+
+    filterPlayers();
+    openPlayer(updated.joueur_id);
+
+    status.textContent = 'Joueur sauvegardé avec succès.';
+    status.className = 'status ok';
+  } catch (error) {
+    console.error(error);
+    status.textContent = 'Erreur lors de la sauvegarde.';
+    status.className = 'status error';
+  }
+}
+    
     async function loadPlayers() {
       try {
         const response = await fetch(API_BASE + '?action=getPlayers&includeInactive=0');
@@ -548,10 +610,11 @@
     }
 
     document.getElementById('playerSearch').addEventListener('input', filterPlayers);
-    document.getElementById('playerPhotoUrl').addEventListener('input', refreshPhotoPreview);
+    document.getElementById('playerPhotoDrive').addEventListener('input', refreshPhotoPreview);
     document.getElementById('playerPhotoFile').addEventListener('change', refreshPhotoPreview);
     document.getElementById('backToListBtn').addEventListener('click', closePlayer);
-
+    document.getElementById('savePlayerBtn').addEventListener('click', savePlayer);
+    
     loadPlayers();
   </script>
 </body>
