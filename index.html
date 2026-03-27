@@ -273,57 +273,57 @@
       </div>
     </section>
 
-    <section class="dashboard">
-      <article class="card">
-        <h2>Vue d’ensemble</h2>
-        <p>
-          Cette page sert de point d’entrée pour tout le système. L’idée est simple :
-          tu arrives ici, tu vois rapidement l’état de la saison, puis tu choisis la section
-          dans laquelle tu veux travailler.
-        </p>
+<section class="dashboard">
+  <article class="card">
+    <h2>Vue d’ensemble</h2>
+    <p>
+      Cette page sert de point d’entrée pour tout le système. L’idée est simple :
+      tu arrives ici, tu vois rapidement l’état de la saison, puis tu choisis la section
+      dans laquelle tu veux travailler.
+    </p>
 
-        <div class="stats-grid">
-          <div class="stat-box">
-            <div class="stat-label">Joueurs inscrits</div>
-            <div class="stat-value">19</div>
-          </div>
+    <div class="stats-grid">
+      <div class="stat-box">
+        <div class="stat-label">Joueurs inscrits</div>
+        <div class="stat-value" id="dashPlayersCount">...</div>
+      </div>
 
-          <div class="stat-box">
-            <div class="stat-label">Saison active</div>
-            <div class="stat-value">—</div>
-          </div>
+      <div class="stat-box">
+        <div class="stat-label">Saison active</div>
+        <div class="stat-value" id="dashActiveSeason">...</div>
+      </div>
 
-          <div class="stat-box">
-            <div class="stat-label">Prochaine session</div>
-            <div class="stat-value">—</div>
-          </div>
-        </div>
-      </article>
+      <div class="stat-box">
+        <div class="stat-label">Prochaine session</div>
+        <div class="stat-value" id="dashNextSession">...</div>
+      </div>
+    </div>
+  </article>
 
-      <aside class="season-box">
-        <h3>Saison en cours</h3>
+  <aside class="season-box">
+    <h3>Saison en cours</h3>
 
-        <div class="season-item">
-          <div class="season-label">Nom</div>
-          <div class="season-value">Aucune saison active</div>
-        </div>
+    <div class="season-item">
+      <div class="season-label">Nom</div>
+      <div class="season-value" id="dashSeasonName">Chargement...</div>
+    </div>
 
-        <div class="season-item">
-          <div class="season-label">Statut</div>
-          <div class="season-value">À configurer</div>
-        </div>
+    <div class="season-item">
+      <div class="season-label">Statut</div>
+      <div class="season-value" id="dashSeasonStatus">Chargement...</div>
+    </div>
 
-        <div class="season-item">
-          <div class="season-label">Joueurs</div>
-          <div class="season-value">0 sélectionné</div>
-        </div>
+    <div class="season-item">
+      <div class="season-label">Joueurs</div>
+      <div class="season-value" id="dashSeasonPlayers">Chargement...</div>
+    </div>
 
-        <div class="season-item">
-          <div class="season-label">Sessions</div>
-          <div class="season-value">0</div>
-        </div>
-      </aside>
-    </section>
+    <div class="season-item">
+      <div class="season-label">Sessions</div>
+      <div class="season-value" id="dashSeasonSessions">Chargement...</div>
+    </div>
+  </aside>
+</section>
 
     <section>
       <h2 class="section-title">Navigation principale</h2>
@@ -363,5 +363,50 @@
       Base visuelle de l’application badminton • version prototype
     </div>
   </div>
+
+  <script>
+  const API_BASE = 'https://script.google.com/macros/s/AKfycbwddJ7s8j6uWH2fXP_h7161F_MT5ZU12X15oMx6Xx7icxud1jg9_e3iq28bjfs3X4_y/exec';
+
+  function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) {
+      el.textContent = value == null || value === '' ? '—' : value;
+    }
+  }
+
+  async function loadDashboardSummary() {
+    try {
+      const response = await fetch(API_BASE + '?action=getDashboardSummary');
+      const data = await response.json();
+
+      if (!data || !data.ok) {
+        throw new Error('Réponse dashboard invalide.');
+      }
+
+      setText('dashPlayersCount', data.display?.joueurs_inscrits || '—');
+      setText('dashActiveSeason', data.display?.saison_active || '—');
+      setText('dashNextSession', data.display?.prochaine_session || '—');
+
+      setText('dashSeasonName', data.display?.saison_nom || 'Aucune saison active');
+      setText('dashSeasonStatus', data.display?.saison_statut || 'À configurer');
+      setText('dashSeasonPlayers', data.display?.saison_joueurs || '0 sélectionné');
+      setText('dashSeasonSessions', data.display?.saison_sessions || '0');
+    } catch (error) {
+      console.error('Erreur dashboard:', error);
+
+      setText('dashPlayersCount', '—');
+      setText('dashActiveSeason', '—');
+      setText('dashNextSession', '—');
+
+      setText('dashSeasonName', 'Erreur chargement');
+      setText('dashSeasonStatus', '—');
+      setText('dashSeasonPlayers', '—');
+      setText('dashSeasonSessions', '—');
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', loadDashboardSummary);
+</script>
 </body>
+  
 </html>
