@@ -34,78 +34,52 @@
       padding: 24px;
     }
 
-    .hero {
-      background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 55%, #3b82f6 100%);
-      color: #fff;
-      border-radius: 22px;
-      padding: 34px 28px;
-      margin-bottom: 24px;
-      box-shadow: 0 12px 24px rgba(37, 99, 235, 0.18);
-    }
+.hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+}
 
-    .eyebrow {
-      display: inline-block;
-      font-size: 13px;
-      font-weight: bold;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      background: rgba(255,255,255,0.16);
-      border: 1px solid rgba(255,255,255,0.18);
-      border-radius: 999px;
-      padding: 8px 12px;
-      margin-bottom: 14px;
-    }
+.hero h1 {
+  margin: 0;
+  font-size: 38px;
+  line-height: 1.15;
+  color: var(--accent);
+}
 
-    .hero h1 {
-      margin: 0 0 12px;
-      font-size: 38px;
-      line-height: 1.15;
-    }
+.hero-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 0;
+}
 
-    .hero p {
-      margin: 0;
-      max-width: 760px;
-      line-height: 1.6;
-      font-size: 17px;
-      color: rgba(255,255,255,0.94);
-    }
+.btn {
+  display: inline-block;
+  text-decoration: none;
+  font-weight: bold;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-size: 14px;
+}
 
-    .hero-actions {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-top: 22px;
-    }
+.btn.home-link {
+  background: #fff;
+  color: var(--accent);
+  border-color: var(--accent);
+}
 
-    .btn {
-      display: inline-block;
-      text-decoration: none;
-      font-weight: bold;
-      padding: 12px 16px;
-      border-radius: 12px;
-      border: 1px solid transparent;
-      cursor: pointer;
-      font-size: 14px;
-    }
-
-    .btn.primary {
-      background: #fff;
-      color: var(--accent);
-    }
-
-    .btn.primary:hover {
-      background: #f8fafc;
-    }
-
-    .btn.secondary {
-      background: rgba(255,255,255,0.12);
-      color: #fff;
-      border-color: rgba(255,255,255,0.25);
-    }
-
-    .btn.secondary:hover {
-      background: rgba(255,255,255,0.2);
-    }
+.btn.home-link:hover {
+  background: #eff6ff;
+}
 
     .page-grid {
       display: grid;
@@ -528,11 +502,23 @@ function refreshPhotoPreview() {
 
       renderPlayersList(filteredPlayers);
     }
+function readFileAsDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
 
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(new Error('Lecture du fichier impossible.'));
+
+    reader.readAsDataURL(file);
+  });
+}
+    
 async function savePlayer() {
   const joueurId = safeText(document.getElementById('playerId').value).trim();
   const nom = safeText(document.getElementById('playerName').value).trim();
   const photoDrive = safeText(document.getElementById('playerPhotoDrive').value).trim();
+  const fileInput = document.getElementById('playerPhotoFile');
+  const file = fileInput.files && fileInput.files[0];
   const status = document.getElementById('playerStatus');
 
   if (!joueurId) {
@@ -551,6 +537,14 @@ async function savePlayer() {
     status.textContent = 'Sauvegarde en cours...';
     status.className = 'status';
 
+    let photoBase64 = '';
+    let photoMimeType = '';
+
+    if (file) {
+      photoBase64 = await readFileAsDataURL(file);
+      photoMimeType = safeText(file.type).trim() || 'image/jpeg';
+    }
+
     const response = await fetch(API_BASE, {
       method: 'POST',
       headers: {
@@ -560,14 +554,16 @@ async function savePlayer() {
         action: 'updatePlayer',
         joueur_id: joueurId,
         nom: nom,
-        photo_drive: photoDrive
+        photo_drive: photoDrive,
+        photo_base64: photoBase64,
+        photo_mime_type: photoMimeType
       })
     });
 
     const data = await response.json();
 
     if (!data || !data.ok || !data.joueur) {
-      throw new Error('Réponse updatePlayer invalide.');
+      throw new Error((data && data.error) || 'Réponse updatePlayer invalide.');
     }
 
     const updated = data.joueur;
@@ -580,7 +576,9 @@ async function savePlayer() {
     filterPlayers();
     openPlayer(updated.joueur_id);
 
-    status.textContent = 'Joueur sauvegardé avec succès.';
+    status.textContent = file
+      ? 'Joueur et photo sauvegardés avec succès.'
+      : 'Joueur sauvegardé avec succès.';
     status.className = 'status ok';
   } catch (error) {
     console.error(error);
