@@ -48,9 +48,10 @@
 
 .hero h1 {
   margin: 0;
-  font-size: 38px;
-  line-height: 1.15;
-  color: var(--accent);
+  font-size: 32px;
+  line-height: 1.2;
+  color: var(--text);
+  font-weight: bold;
 }
 
 .hero-actions {
@@ -60,21 +61,10 @@
   margin-top: 0;
 }
 
-.btn {
-  display: inline-block;
-  text-decoration: none;
-  font-weight: bold;
-  padding: 12px 16px;
-  border-radius: 12px;
-  border: 1px solid transparent;
-  cursor: pointer;
-  font-size: 14px;
-}
-
 .btn.home-link {
   background: #fff;
   color: var(--accent);
-  border-color: var(--accent);
+  border: 1px solid var(--accent);
 }
 
 .btn.home-link:hover {
@@ -284,7 +274,7 @@
         flex-direction: column;
         align-items: stretch;
       }
-      .hero {
+.hero {
   flex-direction: column;
   align-items: stretch;
 }
