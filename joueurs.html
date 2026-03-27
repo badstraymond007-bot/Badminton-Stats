@@ -1,1 +1,558 @@
 
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Joueurs • Club de badminton</title>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --soft: #eff6ff;
+      --soft-line: #bfdbfe;
+      --danger: #b91c1c;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .wrap {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 55%, #3b82f6 100%);
+      color: #fff;
+      border-radius: 22px;
+      padding: 34px 28px;
+      margin-bottom: 24px;
+      box-shadow: 0 12px 24px rgba(37, 99, 235, 0.18);
+    }
+
+    .eyebrow {
+      display: inline-block;
+      font-size: 13px;
+      font-weight: bold;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      background: rgba(255,255,255,0.16);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 999px;
+      padding: 8px 12px;
+      margin-bottom: 14px;
+    }
+
+    .hero h1 {
+      margin: 0 0 12px;
+      font-size: 38px;
+      line-height: 1.15;
+    }
+
+    .hero p {
+      margin: 0;
+      max-width: 760px;
+      line-height: 1.6;
+      font-size: 17px;
+      color: rgba(255,255,255,0.94);
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 22px;
+    }
+
+    .btn {
+      display: inline-block;
+      text-decoration: none;
+      font-weight: bold;
+      padding: 12px 16px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .btn.primary {
+      background: #fff;
+      color: var(--accent);
+    }
+
+    .btn.primary:hover {
+      background: #f8fafc;
+    }
+
+    .btn.secondary {
+      background: rgba(255,255,255,0.12);
+      color: #fff;
+      border-color: rgba(255,255,255,0.25);
+    }
+
+    .btn.secondary:hover {
+      background: rgba(255,255,255,0.2);
+    }
+
+    .page-grid {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 20px;
+    }
+
+    .panel h2 {
+      margin: 0 0 8px;
+      font-size: 24px;
+    }
+
+    .panel-intro {
+      margin: 0 0 18px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .search-box {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      font-size: 14px;
+      margin-bottom: 14px;
+    }
+
+    .players-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 70vh;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .player-item {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+      cursor: pointer;
+      transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+    }
+
+    .player-item:hover {
+      transform: translateY(-1px);
+      border-color: #c7d2fe;
+      box-shadow: 0 10px 20px rgba(15, 23, 42, 0.06);
+    }
+
+    .player-item.active {
+      border-color: var(--accent);
+      background: #f8fbff;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+    }
+
+    .avatar-sm,
+    .avatar-lg {
+      border-radius: 50%;
+      object-fit: cover;
+      background: #e5e7eb;
+      border: 1px solid var(--line);
+    }
+
+    .avatar-sm {
+      width: 52px;
+      height: 52px;
+      flex: 0 0 52px;
+    }
+
+    .avatar-lg {
+      width: 140px;
+      height: 140px;
+      display: block;
+      margin: 0 auto 16px;
+    }
+
+    .player-meta {
+      min-width: 0;
+    }
+
+    .player-name {
+      font-weight: bold;
+      font-size: 16px;
+      margin-bottom: 4px;
+    }
+
+    .player-id {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .empty-box {
+      border: 1px dashed var(--line);
+      border-radius: 14px;
+      padding: 24px;
+      text-align: center;
+      color: var(--muted);
+      background: #fafafa;
+    }
+
+    .detail-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .back-btn {
+      background: #fff;
+      color: var(--text);
+      border: 1px solid var(--line);
+    }
+
+    .back-btn:hover {
+      background: #f8fafc;
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 13px;
+      font-weight: bold;
+      margin-bottom: 6px;
+      color: var(--muted);
+    }
+
+    .field input {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      font-size: 14px;
+    }
+
+    .photo-actions {
+      display: grid;
+      gap: 10px;
+    }
+
+    .hint {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .status {
+      margin-top: 14px;
+      min-height: 20px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .status.error {
+      color: var(--danger);
+    }
+
+    .status.ok {
+      color: #166534;
+    }
+
+    .save-row {
+      margin-top: 18px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn.save-disabled {
+      background: #e5e7eb;
+      color: #6b7280;
+      cursor: not-allowed;
+    }
+
+    @media (max-width: 920px) {
+      .page-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .players-list {
+        max-height: none;
+      }
+
+      .detail-top {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <div class="eyebrow">Application interne</div>
+      <h1>Joueurs</h1>
+      <p>
+        Sélectionne un joueur dans la liste, consulte sa fiche, modifie son nom
+        et prépare sa photo pour la suite.
+      </p>
+
+      <div class="hero-actions">
+        <a class="btn primary" href="index.html">Retour à l’accueil</a>
+        <a class="btn secondary" href="matchs.html">Match de la soirée</a>
+      </div>
+    </section>
+
+    <section class="page-grid">
+      <aside class="panel">
+        <h2>Liste des joueurs</h2>
+        <p class="panel-intro">
+          Clique sur un joueur pour ouvrir sa fiche.
+        </p>
+
+        <input
+          id="playerSearch"
+          class="search-box"
+          type="text"
+          placeholder="Rechercher un joueur..."
+        />
+
+        <div id="playersList" class="players-list">
+          <div class="empty-box">Chargement des joueurs...</div>
+        </div>
+      </aside>
+
+      <section class="panel">
+        <div id="playerDetailEmpty" class="empty-box">
+          Choisis un joueur dans la liste pour afficher sa fiche.
+        </div>
+
+        <div id="playerDetailCard" style="display:none;">
+          <div class="detail-top">
+            <h2 style="margin:0;">Fiche du joueur</h2>
+            <button id="backToListBtn" class="btn back-btn" type="button">Retour à la liste</button>
+          </div>
+
+          <img id="playerPhotoPreview" class="avatar-lg" src="" alt="Photo du joueur" />
+
+          <div class="form-grid">
+            <div class="field">
+              <label for="playerId">ID joueur</label>
+              <input id="playerId" type="text" readonly />
+            </div>
+
+            <div class="field">
+              <label for="playerName">Nom</label>
+              <input id="playerName" type="text" />
+            </div>
+
+            <div class="field">
+              <label for="playerPhotoUrl">Photo URL</label>
+              <input id="playerPhotoUrl" type="text" placeholder="https://..." />
+            </div>
+
+            <div class="field">
+              <label for="playerPhotoFile">Photo depuis l’appareil</label>
+              <div class="photo-actions">
+                <input
+                  id="playerPhotoFile"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                />
+                <div class="hint">
+                  Sur mobile, ce champ peut proposer directement la caméra ou la galerie.
+                  Pour cette première étape, l’image choisie sert d’aperçu local.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="save-row">
+            <button class="btn save-disabled" type="button" disabled>Sauvegarder (étape suivante)</button>
+          </div>
+
+          <div id="playerStatus" class="status">
+            La sauvegarde serveur sera branchée à l’étape suivante.
+          </div>
+        </div>
+      </section>
+    </section>
+  </div>
+
+  <script>
+    const API_BASE = 'COLLE_ICI_TON_URL_WEBAPP';
+
+    const DEFAULT_AVATAR =
+      'data:image/svg+xml;utf8,' +
+      encodeURIComponent(`
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+          <rect width="200" height="200" fill="#e5e7eb"/>
+          <circle cx="100" cy="78" r="34" fill="#9ca3af"/>
+          <path d="M40 170c10-30 34-46 60-46s50 16 60 46" fill="#9ca3af"/>
+        </svg>
+      `);
+
+    let allPlayers = [];
+    let filteredPlayers = [];
+    let selectedPlayerId = '';
+
+    function safeText(value) {
+      return value == null ? '' : String(value);
+    }
+
+    function getPlayerPhoto(player) {
+      const url = safeText(player && player.photo_url).trim();
+      return url || DEFAULT_AVATAR;
+    }
+
+    function findPlayerById(playerId) {
+      return allPlayers.find(player => safeText(player.joueur_id).trim() === safeText(playerId).trim()) || null;
+    }
+
+    function renderPlayersList(players) {
+      const list = document.getElementById('playersList');
+
+      if (!players.length) {
+        list.innerHTML = '<div class="empty-box">Aucun joueur trouvé.</div>';
+        return;
+      }
+
+      list.innerHTML = players.map(player => {
+        const isActive = safeText(player.joueur_id) === selectedPlayerId;
+        return `
+          <button
+            type="button"
+            class="player-item${isActive ? ' active' : ''}"
+            data-player-id="${safeText(player.joueur_id)}"
+            style="text-align:left;background:none;"
+          >
+            <img class="avatar-sm" src="${getPlayerPhoto(player)}" alt="${safeText(player.nom)}">
+            <div class="player-meta">
+              <div class="player-name">${safeText(player.nom) || '(Sans nom)'}</div>
+              <div class="player-id">${safeText(player.joueur_id)}</div>
+            </div>
+          </button>
+        `;
+      }).join('');
+
+      list.querySelectorAll('[data-player-id]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          openPlayer(btn.getAttribute('data-player-id'));
+        });
+      });
+    }
+
+    function showPlayerCard(show) {
+      document.getElementById('playerDetailEmpty').style.display = show ? 'none' : 'block';
+      document.getElementById('playerDetailCard').style.display = show ? 'block' : 'none';
+    }
+
+    function openPlayer(playerId) {
+      const player = findPlayerById(playerId);
+      if (!player) return;
+
+      selectedPlayerId = safeText(player.joueur_id);
+      showPlayerCard(true);
+
+      document.getElementById('playerId').value = safeText(player.joueur_id);
+      document.getElementById('playerName').value = safeText(player.nom);
+      document.getElementById('playerPhotoUrl').value = safeText(player.photo_url);
+      document.getElementById('playerPhotoFile').value = '';
+      document.getElementById('playerStatus').textContent = 'Modification locale prête. Sauvegarde serveur à brancher ensuite.';
+      document.getElementById('playerStatus').className = 'status';
+
+      refreshPhotoPreview();
+      renderPlayersList(filteredPlayers);
+    }
+
+    function closePlayer() {
+      selectedPlayerId = '';
+      showPlayerCard(false);
+      renderPlayersList(filteredPlayers);
+    }
+
+    function refreshPhotoPreview() {
+      const fileInput = document.getElementById('playerPhotoFile');
+      const urlInput = document.getElementById('playerPhotoUrl');
+      const preview = document.getElementById('playerPhotoPreview');
+
+      const file = fileInput.files && fileInput.files[0];
+      if (file) {
+        preview.src = URL.createObjectURL(file);
+        return;
+      }
+
+      const url = safeText(urlInput.value).trim();
+      preview.src = url || DEFAULT_AVATAR;
+    }
+
+    function filterPlayers() {
+      const term = safeText(document.getElementById('playerSearch').value).trim().toLowerCase();
+
+      filteredPlayers = allPlayers.filter(player => {
+        const nom = safeText(player.nom).toLowerCase();
+        const id = safeText(player.joueur_id).toLowerCase();
+        return !term || nom.includes(term) || id.includes(term);
+      });
+
+      renderPlayersList(filteredPlayers);
+    }
+
+    async function loadPlayers() {
+      try {
+        const response = await fetch(API_BASE + '?action=getPlayers&includeInactive=0');
+        const data = await response.json();
+
+        if (!data || !data.ok || !Array.isArray(data.data)) {
+          throw new Error('Réponse joueurs invalide.');
+        }
+
+        allPlayers = data.data
+          .slice()
+          .sort((a, b) => safeText(a.nom).localeCompare(safeText(b.nom), 'fr', { sensitivity: 'base' }));
+
+        filteredPlayers = allPlayers.slice();
+        renderPlayersList(filteredPlayers);
+      } catch (error) {
+        console.error(error);
+        document.getElementById('playersList').innerHTML =
+          '<div class="empty-box">Erreur de chargement des joueurs.</div>';
+      }
+    }
+
+    document.getElementById('playerSearch').addEventListener('input', filterPlayers);
+    document.getElementById('playerPhotoUrl').addEventListener('input', refreshPhotoPreview);
+    document.getElementById('playerPhotoFile').addEventListener('change', refreshPhotoPreview);
+    document.getElementById('backToListBtn').addEventListener('click', closePlayer);
+
+    loadPlayers();
+  </script>
+</body>
+</html>
