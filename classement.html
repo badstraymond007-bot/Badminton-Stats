@@ -257,14 +257,13 @@
     <div class="layout">
       <section class="card">
         <h2>Tableau des résultats</h2>
-        <p>Vue visuelle de base pour naviguer dans les classements avant de brancher le calcul automatique.</p>
+        <p>Lecture automatique du classement cumulatif ou par session, avec recherche rapide d’un joueur.</p>
 
         <div class="filters">
           <div class="field">
             <label for="rankingSeason">Saison</label>
             <select id="rankingSeason" name="rankingSeason">
               <option value="">Choisir une saison</option>
-              <option value="printemps-2026">Printemps 2026</option>
             </select>
           </div>
 
@@ -272,9 +271,6 @@
             <label for="rankingSession">Session</label>
             <select id="rankingSession" name="rankingSession">
               <option value="">Toutes les sessions</option>
-              <option value="1">Session 1</option>
-              <option value="2">Session 2</option>
-              <option value="3">Session 3</option>
             </select>
           </div>
 
@@ -285,8 +281,8 @@
         </div>
 
         <div class="tabs">
-          <button type="button" class="tab-btn active">Classement cumulatif</button>
-          <button type="button" class="tab-btn">Classement par session</button>
+          <button type="button" class="tab-btn active" id="tabCumulatif">Classement cumulatif</button>
+          <button type="button" class="tab-btn" id="tabSession">Classement par session</button>
         </div>
 
         <div class="table-wrap">
@@ -304,68 +300,16 @@
                 <th>Total</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody id="rankingTableBody">
               <tr>
-                <td class="rank-cell">1</td>
-                <td class="player-cell">Sébastien Moisan</td>
-                <td>12</td>
-                <td>9</td>
-                <td>3</td>
-                <td>246</td>
-                <td>201</td>
-                <td>+45</td>
-                <td>27</td>
-              </tr>
-              <tr>
-                <td class="rank-cell">2</td>
-                <td class="player-cell">David Fortier</td>
-                <td>12</td>
-                <td>8</td>
-                <td>4</td>
-                <td>238</td>
-                <td>214</td>
-                <td>+24</td>
-                <td>24</td>
-              </tr>
-              <tr>
-                <td class="rank-cell">3</td>
-                <td class="player-cell">Pier-Luc Morency</td>
-                <td>11</td>
-                <td>7</td>
-                <td>4</td>
-                <td>221</td>
-                <td>210</td>
-                <td>+11</td>
-                <td>21</td>
-              </tr>
-              <tr>
-                <td class="rank-cell">4</td>
-                <td class="player-cell">Rémi Ouellet</td>
-                <td>10</td>
-                <td>6</td>
-                <td>4</td>
-                <td>205</td>
-                <td>198</td>
-                <td>+7</td>
-                <td>18</td>
-              </tr>
-              <tr>
-                <td class="rank-cell">5</td>
-                <td class="player-cell">Julien Auger</td>
-                <td>10</td>
-                <td>5</td>
-                <td>5</td>
-                <td>197</td>
-                <td>202</td>
-                <td>-5</td>
-                <td>15</td>
+                <td colspan="9">Chargement du classement...</td>
               </tr>
             </tbody>
           </table>
         </div>
 
         <div class="note">
-          Données de démonstration pour le moment. La vraie lecture des feuilles <strong>classement_session</strong> et <strong>classement_cumulatif</strong> sera branchée ensuite.
+          Les lignes proviennent maintenant de l’API après sauvegarde des matchs.
         </div>
       </section>
 
@@ -378,22 +322,22 @@
 
           <div class="summary-row">
             <div class="summary-label">Saison</div>
-            <div class="summary-value">Printemps 2026</div>
+            <div class="summary-value" id="summarySeason">—</div>
           </div>
 
           <div class="summary-row">
             <div class="summary-label">Mode</div>
-            <div class="summary-value">Cumulatif</div>
+            <div class="summary-value" id="summaryMode">Cumulatif</div>
           </div>
 
           <div class="summary-row">
             <div class="summary-label">Joueurs classés</div>
-            <div class="summary-value">17</div>
+            <div class="summary-value" id="summaryCount">0</div>
           </div>
 
           <div class="summary-row">
             <div class="summary-label">Dernière mise à jour</div>
-            <div class="summary-value">—</div>
+            <div class="summary-value" id="summaryUpdated">—</div>
           </div>
         </div>
 
@@ -407,5 +351,191 @@
       </aside>
     </div>
   </div>
+<script>
+  const API_URL = 'https://script.google.com/macros/s/AKfycbwddJ7s8j6uWH2fXP_h7161F_MT5ZU12X15oMx6Xx7icxud1jg9_e3iq28bjfs3X4_y/exec';
+
+  const rankingSeasonEl = document.getElementById('rankingSeason');
+  const rankingSessionEl = document.getElementById('rankingSession');
+  const rankingSearchEl = document.getElementById('rankingSearch');
+  const rankingTableBodyEl = document.getElementById('rankingTableBody');
+
+  const tabCumulatifEl = document.getElementById('tabCumulatif');
+  const tabSessionEl = document.getElementById('tabSession');
+
+  const summarySeasonEl = document.getElementById('summarySeason');
+  const summaryModeEl = document.getElementById('summaryMode');
+  const summaryCountEl = document.getElementById('summaryCount');
+  const summaryUpdatedEl = document.getElementById('summaryUpdated');
+
+  let seasonsCache = [];
+  let rankingCache = [];
+  let currentMode = 'cumulatif';
+
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function getSelectedSeason() {
+    const saisonId = String(rankingSeasonEl.value || '').trim();
+    return seasonsCache.find(s => String(s.saison_id || '').trim() === saisonId) || null;
+  }
+
+  function setMode(mode) {
+    currentMode = mode === 'session' ? 'session' : 'cumulatif';
+    tabCumulatifEl.classList.toggle('active', currentMode === 'cumulatif');
+    tabSessionEl.classList.toggle('active', currentMode === 'session');
+    rankingSessionEl.disabled = currentMode !== 'session';
+    loadRanking();
+  }
+
+  function populateSessions() {
+    rankingSessionEl.innerHTML = '<option value="">Toutes les sessions</option>';
+
+    const season = getSelectedSeason();
+    const sessions = season && Array.isArray(season.sessions) ? season.sessions : [];
+
+    sessions.forEach(session => {
+      const option = document.createElement('option');
+      option.value = String(session.no_session || '').trim();
+      option.textContent = `Session ${session.no_session} — ${session.date}`;
+      rankingSessionEl.appendChild(option);
+    });
+
+    if (currentMode === 'session' && sessions.length > 0) {
+      rankingSessionEl.value = String(sessions[0].no_session || '').trim();
+    }
+  }
+
+  async function loadSeasons() {
+    try {
+      const response = await fetch(`${API_URL}?action=getSeasons`);
+      const result = await response.json();
+
+      if (!result.ok) {
+        throw new Error(result.error || 'Erreur API inconnue');
+      }
+
+      seasonsCache = Array.isArray(result.data) ? result.data : [];
+      rankingSeasonEl.innerHTML = '<option value="">Choisir une saison</option>';
+
+      seasonsCache.forEach(season => {
+        const option = document.createElement('option');
+        option.value = season.saison_id;
+        option.textContent = season.nom_saison || season.saison_id;
+        rankingSeasonEl.appendChild(option);
+      });
+
+      if (seasonsCache.length > 0) {
+        rankingSeasonEl.value = seasonsCache[0].saison_id;
+        populateSessions();
+        loadRanking();
+      } else {
+        renderTable();
+      }
+    } catch (error) {
+      console.error('Erreur loadSeasons:', error);
+      rankingTableBodyEl.innerHTML = `
+        <tr>
+          <td colspan="9">Erreur de chargement : ${escapeHtml(error.message || 'Erreur inconnue')}</td>
+        </tr>
+      `;
+    }
+  }
+
+  async function loadRanking() {
+    const season = getSelectedSeason();
+    if (!season) {
+      rankingCache = [];
+      renderTable();
+      return;
+    }
+
+    try {
+      const params = new URLSearchParams({
+        action: 'getRanking',
+        saison_id: String(season.saison_id || '').trim()
+      });
+
+      if (currentMode === 'session' && rankingSessionEl.value) {
+        params.set('no_session', String(rankingSessionEl.value || '').trim());
+      }
+
+      const response = await fetch(`${API_URL}?${params.toString()}`);
+      const result = await response.json();
+
+      if (!result.ok) {
+        throw new Error(result.error || 'Erreur API inconnue');
+      }
+
+      rankingCache = Array.isArray(result.rows) ? result.rows : [];
+      summaryUpdatedEl.textContent = result.updated_at || '—';
+      renderTable();
+    } catch (error) {
+      console.error('Erreur loadRanking:', error);
+      rankingCache = [];
+      rankingTableBodyEl.innerHTML = `
+        <tr>
+          <td colspan="9">Erreur de chargement : ${escapeHtml(error.message || 'Erreur inconnue')}</td>
+        </tr>
+      `;
+    }
+  }
+
+  function renderTable() {
+    const season = getSelectedSeason();
+    const search = String(rankingSearchEl.value || '').trim().toLowerCase();
+
+    const filtered = rankingCache.filter(row => {
+      if (!search) return true;
+      const text = `${row.nom || ''} ${row.joueur_id || ''}`.toLowerCase();
+      return text.includes(search);
+    });
+
+    if (!filtered.length) {
+      rankingTableBodyEl.innerHTML = `
+        <tr>
+          <td colspan="9">Aucun résultat à afficher.</td>
+        </tr>
+      `;
+    } else {
+      rankingTableBodyEl.innerHTML = filtered.map(row => `
+        <tr>
+          <td class="rank-cell">${escapeHtml(row.rang)}</td>
+          <td class="player-cell">${escapeHtml(row.nom || row.joueur_id)}</td>
+          <td>${escapeHtml(row.matchs_joues)}</td>
+          <td>${escapeHtml(row.victoires)}</td>
+          <td>${escapeHtml(row.defaites)}</td>
+          <td>${escapeHtml(row.points_pour)}</td>
+          <td>${escapeHtml(row.points_contre)}</td>
+          <td>${escapeHtml(row.plus_moins)}</td>
+          <td>${escapeHtml(row.total_points)}</td>
+        </tr>
+      `).join('');
+    }
+
+    summarySeasonEl.textContent = season ? (season.nom_saison || season.saison_id) : '—';
+    summaryModeEl.textContent = currentMode === 'session'
+      ? `Session ${rankingSessionEl.value || '—'}`
+      : 'Cumulatif';
+    summaryCountEl.textContent = String(filtered.length);
+  }
+
+  rankingSeasonEl.addEventListener('change', () => {
+    populateSessions();
+    loadRanking();
+  });
+
+  rankingSessionEl.addEventListener('change', loadRanking);
+  rankingSearchEl.addEventListener('input', renderTable);
+  tabCumulatifEl.addEventListener('click', () => setMode('cumulatif'));
+  tabSessionEl.addEventListener('click', () => setMode('session'));
+
+  loadSeasons();
+</script>
 </body>
 </html>
