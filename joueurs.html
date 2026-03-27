@@ -284,24 +284,26 @@
         flex-direction: column;
         align-items: stretch;
       }
+      .hero {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.hero-actions {
+  justify-content: flex-start;
+}
     }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <section class="hero">
-      <div class="eyebrow">Application interne</div>
-      <h1>Joueurs</h1>
-      <p>
-        Sélectionne un joueur dans la liste, consulte sa fiche, modifie son nom
-        et prépare sa photo pour la suite.
-      </p>
+<section class="hero">
+  <h1>Joueurs</h1>
 
-      <div class="hero-actions">
-        <a class="btn primary" href="index.html">Retour à l’accueil</a>
-        <a class="btn secondary" href="matchs.html">Match de la soirée</a>
-      </div>
-    </section>
+  <div class="hero-actions">
+    <a class="btn home-link" href="index.html">← Retour à l’accueil</a>
+  </div>
+</section>
 
     <section class="page-grid">
       <aside class="panel">
