@@ -129,32 +129,48 @@
       line-height: 1.55;
     }
 
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 14px;
-      margin-top: 18px;
-    }
+.overview-card {
+  padding: 20px;
+}
 
-    .stat-box {
-      background: #fafafa;
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 16px;
-    }
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 0;
+}
 
-    .stat-label {
-      font-size: 13px;
-      color: var(--muted);
-      margin-bottom: 6px;
-    }
+.stat-box {
+  background: #fafafa;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px 14px;
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
 
-    .stat-value {
-      font-size: 32px;
-      font-weight: bold;
-      line-height: 1;
-    }
+.stat-label {
+  font-size: 14px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
 
+.stat-value {
+  font-size: 24px;
+  font-weight: bold;
+  line-height: 1.15;
+  max-width: 100%;
+  white-space: normal;
+}
+
+#dashPlayersCount {
+  font-size: 42px;
+  line-height: 1;
+}
     .season-box {
       background: var(--soft);
       border: 1px solid var(--soft-line);
@@ -274,15 +290,8 @@
     </section>
 
 <section class="dashboard">
-  <article class="card">
-    <h2>Vue d’ensemble</h2>
-    <p>
-      Cette page sert de point d’entrée pour tout le système. L’idée est simple :
-      tu arrives ici, tu vois rapidement l’état de la saison, puis tu choisis la section
-      dans laquelle tu veux travailler.
-    </p>
-
-    <div class="stats-grid">
+  <article class="card overview-card">
+  <div class="stats-grid">
       <div class="stat-box">
         <div class="stat-label">Joueurs inscrits</div>
         <div class="stat-value" id="dashPlayersCount">...</div>
@@ -384,8 +393,8 @@
       }
 
       setText('dashPlayersCount', data.display?.joueurs_inscrits || '—');
-      setText('dashActiveSeason', data.display?.saison_active || '—');
-      setText('dashNextSession', data.display?.prochaine_session || '—');
+      setHtml('dashActiveSeason', formatSeasonValue(data.display?.saison_active || '—'));
+      setHtml('dashNextSession', formatNextSessionValue(data.display?.prochaine_session || '—'));
 
       setText('dashSeasonName', data.display?.saison_nom || 'Aucune saison active');
       setText('dashSeasonStatus', data.display?.saison_statut || 'À configurer');
@@ -404,7 +413,22 @@
       setText('dashSeasonSessions', '—');
     }
   }
+function setHtml(id, value) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.innerHTML = value == null || value === '' ? '—' : value;
+  }
+}
 
+function formatSeasonValue(value) {
+  if (!value) return '—';
+  return value.replace(/^Saison\s+/i, 'Saison<br>');
+}
+
+function formatNextSessionValue(value) {
+  if (!value) return '—';
+  return value.replace(/\s*•\s*/g, '<br>');
+}
   document.addEventListener('DOMContentLoaded', loadDashboardSummary);
 </script>
 </body>
