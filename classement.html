@@ -296,8 +296,8 @@
                 <th>D</th>
                 <th>PF</th>
                 <th>PC</th>
-                <th>+/-</th>
-                <th>Total</th>
+                <th>Diff.</th>
+                <th>Pts</th>
               </tr>
             </thead>
             <tbody id="rankingTableBody">
@@ -309,7 +309,548 @@
         </div>
 
         <div class="note">
-          Les lignes proviennent maintenant de l’API après sauvegarde des matchs.
+          Diff. = PF - PC. Pts = points de classement (3 points par victoire).
+        </div>
+      </section>
+
+      <aside class="card">
+        <h2>Résumé</h2>
+        <p>Petit panneau de contrôle pour voir rapidement le contexte du classement affiché.</p>
+
+        <div class="summary-box">
+          <h3>Vue rapide</h3>
+
+          <div class="summary-row">
+            <div class="summary-label">Saison</div>
+            <div class="summary-value" id="summarySeason">—</div>
+          </div>
+
+          <div class="summary-row">
+            <div class="summary-label">Mode</div>
+            <div class="summary-value" id="summaryMode">Cumulatif</div>
+          </div>
+
+          <div class="summary-row">
+            <div class="summary-label">Joueurs classés</div>
+            <div class="summary-value" id="summaryCount">0</div>
+          </div>
+
+          <div class="summary-row">
+            <div class="summary-label">Dernière mise à jour</div>
+            <div class="summary-value" id="summaryUpdated">—</div>
+          </div>
+        </div>
+
+        <h2 style="margin-top: 18px;">Étapes prévues</h2>
+        <p>
+          1. Lire le classement cumulatif par saison.<br />
+          2. Lire le classement d’une session précise.<br />
+          3. Permettre la recherche d’un joueur.<br />
+          4. Mettre à jour le tableau automatiquement après les matchs.
+        </p>
+      </aside>
+    </div>
+  </div>
+<script>
+  const API_URL = 'https://script.google.com/macros/s/AKfycbwddJ7s8j6uWH2fXP_h7161F_MT5ZU12X15oMx6Xx7icxud1jg9_e3iq28bjfs3X4_y/exec';
+
+  const rankingSeasonEl = document.getElementById('rankingSeason');
+  const rankingSessionEl = document.getElementById('rankingSession');
+  const rankingSearchEl = document.getElementById('rankingSearch');
+  const rankingTableBodyEl = document.getElementById('rankingTableBody');
+
+  const tabCumulatifEl = document.getElementById('tabCumulatif');
+  const tabSessionEl = document.getElementById('tabSession');
+
+  const summarySeasonEl = document.getElementById('summarySeason');
+  const summaryModeEl = document.getElementById('summaryMode');
+  const summaryCountEl = document.getElementById('summaryCount');
+  const summaryUpdatedEl = document.getElementById('summaryUpdated');
+
+  let seasonsCache = [];
+  let rankingCache = [];
+  let currentMode = 'cumulatif';
+
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function getSelectedSeason() {
+    const saisonId = String(rankingSeasonEl.value || '').trim();
+    return seasonsCache.find(s => String(s.saison_id || '').trim() === saisonId) || null;
+  }
+
+  function setMode(mode) {
+    currentMode = mode === 'session' ? 'session' : 'cumulatif';
+    tabCumulatifEl.classList.toggle('active', currentMode === 'cumulatif');
+    tabSessionEl.classList.toggle('active', currentMode === 'session');
+    rankingSessionEl.disabled = currentMode !== 'session';
+    loadRanking();
+  }
+
+  function populateSessions() {
+    rankingSessionEl.innerHTML = '<option value="">Toutes les sessions</option>';
+
+    const season = getSelectedSeason();
+    const sessions = season && Array.isArray(season.sessions) ? season.sessions : [];
+
+    sessions.forEach(session => {
+      const option = document.createElement('option');
+      option.value = String(session.no_session || '').trim();
+      option.textContent = `Session ${session.no_session} — ${session.date}`;
+      rankingSessionEl.appendChild(option);
+    });
+
+    if (currentMode === 'session' && sessions.length > 0) {
+      rankingSessionEl.value = String(sessions[0].no_session || '').trim();
+    }
+  }
+
+  async function loadSeasons() {
+    try {
+      const response = await fetch(`${API_URL}?action=getSeasons`);
+      const result = await response.json();
+
+      if (!result.ok) {
+        throw new Error(result.error || 'Erreur API inconnue');
+      }
+
+      seasonsCache = Array.isArray(result.data) ? result.data : [];
+      rankingSeasonEl.innerHTML = '<option value="">Choisir une saison</option>';
+
+      seasonsCache.forEach(season => {
+        const option = document.createElement('option');
+        option.value = season.saison_id;
+        option.textContent = season.nom_saison || season.saison_id;
+        rankingSeasonEl.appendChild(option);
+      });
+
+      if (seasonsCache.length > 0) {
+        rankingSeasonEl.value = seasonsCache[0].saison_id;
+        populateSessions();
+        loadRanking();
+      } else {
+        renderTable();
+      }
+    } catch (error) {
+      console.error('Erreur loadSeasons:', error);
+      rankingTableBodyEl.innerHTML = `
+        <tr>
+          <td colspan="9">Erreur de chargement : ${escapeHtml(error.message || 'Erreur inconnue')}</td>
+        </tr>
+      `;
+    }
+  }
+
+  async function loadRanking() {
+    const season = getSelectedSeason();
+    if (!season) {
+      rankingCache = [];
+      renderTable();
+      return;
+    }
+
+    try {
+      const params = new URLSearchParams({
+        action: 'getRanking',
+        saison_id: String(season.saison_id || '').trim()
+      });
+
+      if (currentMode === 'session' && rankingSessionEl.value) {
+        params.set('no_session', String(rankingSessionEl.value || '').trim());
+      }
+
+      const response = await fetch(`${API_URL}?${params.toString()}`);
+      const result = await response.json();
+
+      if (!result.ok) {
+        throw new Error(result.error || 'Erreur API inconnue');
+      }
+
+      rankingCache = Array.isArray(result.rows) ? result.rows : [];
+      summaryUpdatedEl.textContent = result.updated_at || '—';
+      renderTable();
+    } catch (error) {
+      console.error('Erreur loadRanking:', error);
+      rankingCache = [];
+      rankingTableBodyEl.innerHTML = `
+        <tr>
+          <td colspan="9">Erreur de chargement : ${escapeHtml(error.message || 'Erreur inconnue')}</td>
+        </tr>
+      `;
+    }
+  }
+
+  function renderTable() {
+    const season = getSelectedSeason();
+    const search = String(rankingSearchEl.value || '').trim().toLowerCase();
+
+    const filtered = rankingCache.filter(row => {
+      if (!search) return true;
+      const text = `${row.nom || ''} ${row.joueur_id || ''}`.toLowerCase();
+      return text.includes(search);
+    });
+
+    if (!filtered.length) {
+      rankingTableBodyEl.innerHTML = `
+        <tr>
+          <td colspan="9">Aucun résultat à afficher.</td>
+        </tr>
+      `;
+    } else {
+      rankingTableBodyEl.innerHTML = filtered.map(row => `
+        <tr>
+          <td class="rank-cell">${escapeHtml(row.rang)}</td>
+          <td class="player-cell">${escapeHtml(row.nom || row.joueur_id)}</td>
+          <td>${escapeHtml(row.matchs_joues)}</td>
+          <td>${escapeHtml(row.victoires)}</td>
+          <td>${escapeHtml(row.defaites)}</td>
+          <td>${escapeHtml(row.points_pour)}</td>
+          <td>${escapeHtml(row.points_contre)}</td>
+          <td>${escapeHtml(row.plus_moins)}</td>
+          <td>${escapeHtml(row.total_points)}</td>
+        </tr>
+      `).join('');
+    }
+
+    summarySeasonEl.textContent = season ? (season.nom_saison || season.saison_id) : '—';
+    summaryModeEl.textContent = currentMode === 'session'
+      ? `Session ${rankingSessionEl.value || '—'}`
+      : 'Cumulatif';
+    summaryCountEl.textContent = String(filtered.length);
+  }
+
+  rankingSeasonEl.addEventListener('change', () => {
+    populateSessions();
+    loadRanking();
+  });
+
+  rankingSessionEl.addEventListener('change', loadRanking);
+  rankingSearchEl.addEventListener('input', renderTable);
+  tabCumulatifEl.addEventListener('click', () => setMode('cumulatif'));
+  tabSessionEl.addEventListener('click', () => setMode('session'));
+
+  loadSeasons();
+</script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Badminton Stats - Classement</title>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --soft: #eff6ff;
+      --soft-line: #bfdbfe;
+      --ok-bg: #ecfdf5;
+      --ok-line: #a7f3d0;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .topbar h1 {
+      margin: 0;
+      font-size: 30px;
+    }
+
+    .topbar p {
+      margin: 6px 0 0;
+      color: var(--muted);
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 12px 16px;
+      border-radius: 10px;
+      text-decoration: none;
+      font-weight: bold;
+      border: 1px solid var(--accent);
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      background: var(--accent-hover);
+    }
+
+    .btn.secondary {
+      background: #fff;
+      color: var(--accent);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1.7fr 1fr;
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 20px;
+    }
+
+    .card h2 {
+      margin: 0 0 8px;
+      font-size: 22px;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    label {
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    select,
+    input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      font: inherit;
+      background: #fff;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 18px 0 14px;
+    }
+
+    .tab-btn {
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: #fff;
+      font-weight: bold;
+      color: var(--text);
+    }
+
+    .tab-btn.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    .table-wrap {
+      margin-top: 12px;
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+    }
+
+    th,
+    td {
+      padding: 12px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+      white-space: nowrap;
+    }
+
+    th {
+      background: #f9fafb;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+    }
+
+    tbody tr:hover {
+      background: #fafafa;
+    }
+
+    .rank-cell {
+      font-weight: bold;
+      width: 72px;
+    }
+
+    .player-cell {
+      font-weight: bold;
+    }
+
+    .summary-box {
+      background: var(--ok-bg);
+      border: 1px solid var(--ok-line);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .summary-box h3 {
+      margin: 0 0 10px;
+      font-size: 18px;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+    }
+
+    .summary-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .summary-label {
+      color: var(--muted);
+    }
+
+    .summary-value {
+      font-weight: bold;
+      text-align: right;
+    }
+
+    .note {
+      margin-top: 14px;
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    @media (max-width: 980px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .filters {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div>
+        <h1>Classements</h1>
+        <p>Consulter les résultats de la saison, par session ou en cumulatif.</p>
+      </div>
+      <a class="btn secondary" href="index.html">← Retour à l'accueil</a>
+    </div>
+
+    <div class="layout">
+      <section class="card">
+        <h2>Tableau des résultats</h2>
+        <p>Lecture automatique du classement cumulatif ou par session, avec recherche rapide d’un joueur.</p>
+
+        <div class="filters">
+          <div class="field">
+            <label for="rankingSeason">Saison</label>
+            <select id="rankingSeason" name="rankingSeason">
+              <option value="">Choisir une saison</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="rankingSession">Session</label>
+            <select id="rankingSession" name="rankingSession">
+              <option value="">Toutes les sessions</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="rankingSearch">Rechercher un joueur</label>
+            <input type="text" id="rankingSearch" name="rankingSearch" placeholder="Nom du joueur" />
+          </div>
+        </div>
+
+        <div class="tabs">
+          <button type="button" class="tab-btn active" id="tabCumulatif">Classement cumulatif</button>
+          <button type="button" class="tab-btn" id="tabSession">Classement par session</button>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Rang</th>
+                <th>Joueur</th>
+                <th>MJ</th>
+                <th>V</th>
+                <th>D</th>
+                <th>PF</th>
+                <th>PC</th>
+                <th>Diff.</th>
+                <th>Pts</th>
+              </tr>
+            </thead>
+            <tbody id="rankingTableBody">
+              <tr>
+                <td colspan="9">Chargement du classement...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note">
+          Diff. = PF - PC. Pts = points de classement (3 points par victoire).
         </div>
       </section>
 
