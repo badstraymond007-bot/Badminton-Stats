@@ -156,13 +156,6 @@
       font-weight: bold;
     }
 
-    .players-list-sub,
-    .tuesdays-sub {
-      margin: 0 0 14px;
-      color: var(--muted);
-      line-height: 1.5;
-    }
-
     .players-list,
     .tuesdays-list {
       display: flex;
@@ -252,12 +245,6 @@
       margin-top: 18px;
     }
 
-    .note {
-      margin-top: 14px;
-      font-size: 14px;
-      color: var(--muted);
-    }
-
     @media (max-width: 860px) {
       .layout {
         grid-template-columns: 1fr;
@@ -274,7 +261,6 @@
     <div class="topbar">
       <div>
         <h1>Setup de la saison</h1>
-        <p>Créer une nouvelle saison et sélectionner les joueurs qui y participent.</p>
       </div>
       <a class="btn secondary" href="index.html">← Retour à l'accueil</a>
     </div>
@@ -282,7 +268,6 @@
     <div class="layout">
       <section class="card">
         <h2>Nouvelle saison</h2>
-        <p>Prépare ici la base de la saison avant de créer les sessions et enregistrer les présences.</p>
 
         <form id="seasonSetupForm">
           <div class="form-grid">
@@ -309,9 +294,6 @@
 
           <div class="preview-box">
             <div class="tuesdays-title">Mardis générés</div>
-            <p class="tuesdays-sub">
-              Aperçu automatique des sessions du mardi entre la date de début et la date de fin.
-            </p>
             <div class="tuesdays-list" id="tuesdaysList">
               <div class="tuesday-item">
                 <div>
@@ -332,9 +314,6 @@
           </div>
 
           <div class="players-list-title">Liste des joueurs de la saison</div>
-          <p class="players-list-sub">
-            Même logique que la page de présences : on voit la liste complète, puis on ajuste simplement les joueurs inclus dans la saison.
-          </p>
 
           <div class="players-list" id="playersList">
             <div class="player-item">
@@ -350,15 +329,11 @@
             <button type="reset" class="btn secondary" id="resetSeasonBtn">Réinitialiser</button>
           </div>
 
-          <div class="note">
-            Aujourd’hui, on branche le setup côté interface : vraie liste des joueurs, compteur et génération des mardis. L’écriture dans les tables viendra ensuite.
-          </div>
         </form>
       </section>
 
       <aside class="card">
         <h2>Résumé</h2>
-        <p>Petit panneau de contrôle qui se met déjà à jour pendant la préparation.</p>
 
         <div class="summary-box">
           <h3>Saison en préparation</h3>
@@ -391,11 +366,8 @@
 
         <div class="section-title">Étapes prévues</div>
         <p>
-          1. Charger les joueurs automatiquement depuis l'API.<br />
-          2. Générer les mardis entre la date de début et la date de fin.<br />
-          3. Créer la saison dans <strong>saisons</strong>.<br />
-          4. Créer les lignes dans <strong>saison_joueurs</strong>.<br />
-          5. Préparer les sessions de la saison.
+          1. Décider des dates.<br />
+          2. Par la suite, tous les mardis entre ces deux dates, on crée une session automatique.
         </p>
       </aside>
     </div>
@@ -662,10 +634,13 @@ removePlayerBtn.addEventListener('click', async () => {
   }
 
   const joueurId = selected[0].value;
+  const rowEl = selected[0].closest('label');
   const joueurName =
-    selected[0].closest('label')?.querySelector('.player-name')?.textContent || joueurId;
+    rowEl?.querySelector('.player-name')?.textContent?.trim() || joueurId;
+  const joueurCode =
+    rowEl?.querySelector('.player-code')?.textContent?.trim() || joueurId;
 
-  const ok = confirm(`Retirer ce joueur de la liste active ?\n\n${joueurName} (${joueurId})`);
+  const ok = confirm(`Retirer ce joueur de la liste active ?\n\n${joueurName} (${joueurCode})`);
   if (!ok) {
     return;
   }
@@ -678,7 +653,10 @@ removePlayerBtn.addEventListener('click', async () => {
       },
       body: JSON.stringify({
         action: 'removePlayer',
-        joueur_id: joueurId
+        joueur_id: joueurId,
+        player_id: joueurId,
+        id: joueurId,
+        nom: joueurName
       })
     });
 
