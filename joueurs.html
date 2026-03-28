@@ -257,6 +257,103 @@
       flex-wrap: wrap;
     }
 
+    .stats-section {
+      margin-top: 28px;
+      padding-top: 22px;
+      border-top: 1px solid var(--line);
+    }
+
+    .stats-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .stats-title-wrap h3 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .stats-title-wrap p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .stats-badge {
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--soft-line);
+      background: var(--soft);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .stat-card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px;
+      background: #fbfdff;
+    }
+
+    .stat-card h4 {
+      margin: 0 0 12px;
+      font-size: 16px;
+    }
+
+    .stat-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px dashed #e5e7eb;
+    }
+
+    .stat-row:last-child {
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.35;
+    }
+
+    .stat-value {
+      font-size: 18px;
+      font-weight: bold;
+      color: var(--text);
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .stat-value.text {
+      font-size: 14px;
+      white-space: normal;
+      max-width: 58%;
+      line-height: 1.35;
+    }
+
+
     .btn.save-disabled {
       background: #e5e7eb;
       color: #6b7280;
@@ -276,7 +373,15 @@
         flex-direction: column;
         align-items: stretch;
       }
-.hero {
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stat-value.text {
+        max-width: 62%;
+      }
+hero {
   flex-direction: column;
   align-items: stretch;
 }
@@ -369,6 +474,109 @@
           <div id="playerStatus" class="status">
             La sauvegarde serveur sera branchée à l’étape suivante.
           </div>
+
+          <section class="stats-section" aria-label="Statistiques du joueur">
+            <div class="stats-header">
+              <div class="stats-title-wrap">
+                <h3>Statistiques du joueur</h3>
+                <p>
+                  Aperçu visuel pour la fiche joueur. Les vraies données seront branchées à l’étape suivante.
+                </p>
+              </div>
+              <div class="stats-badge">Vue club pro</div>
+            </div>
+
+            <div class="stats-grid">
+              <article class="stat-card">
+                <h4>Bilan</h4>
+                <div class="stat-list">
+                  <div class="stat-row">
+                    <div class="stat-label">Victoires saison</div>
+                    <div id="statSeasonWins" class="stat-value">—</div>
+                  </div>
+                  <div class="stat-row">
+                    <div class="stat-label">Matchs joués saison</div>
+                    <div id="statSeasonMatches" class="stat-value">—</div>
+                  </div>
+                  <div class="stat-row">
+                    <div class="stat-label">Victoires global</div>
+                    <div id="statGlobalWins" class="stat-value">—</div>
+                  </div>
+                  <div class="stat-row">
+                    <div class="stat-label">Taux de victoire</div>
+                    <div id="statWinRate" class="stat-value">—</div>
+                  </div>
+                </div>
+              </article>
+
+              <article class="stat-card">
+                <h4>Points</h4>
+                <div class="stat-list">
+                  <div class="stat-row">
+                    <div class="stat-label">Points pour</div>
+                    <div id="statPointsFor" class="stat-value">—</div>
+                  </div>
+                  <div class="stat-row">
+                    <div class="stat-label">Points contre</div>
+                    <div id="statPointsAgainst" class="stat-value">—</div>
+                  </div>
+                  <div class="stat-row">
+                    <div class="stat-label">Différentiel</div>
+                    <div id="statPointDiff" class="stat-value">—</div>
+                  </div>
+                  <div class="stat-row">
+                    <div class="stat-label">Plus gros écart</div>
+                    <div id="statBiggestGap" class="stat-value">—</div>
+                  </div>
+                </div>
+              </article>
+
+              <article class="stat-card">
+                <h4>Duos et rivalités</h4>
+                <div class="stat-list">
+                  <div class="stat-row">
+                    <div class="stat-label">Partenaire le plus gagnant</div>
+                    <div id="statBestPartner" class="stat-value text">—</div>
+                  </div>
+                  <div class="stat-row">
+                    <div class="stat-label">Partenaire le plus fréquent</div>
+                    <div id="statMostFrequentPartner" class="stat-value text">—</div>
+                  </div>
+                  <div class="stat-row">
+                    <div class="stat-label">Bête noire</div>
+                    <div id="statNemesis" class="stat-value text">—</div>
+                  </div>
+                  <div class="stat-row">
+                    <div class="stat-label">Adversaire le plus joué</div>
+                    <div id="statMostPlayedOpponent" class="stat-value text">—</div>
+                  </div>
+                </div>
+              </article>
+
+              <article class="stat-card">
+                <h4>Records express</h4>
+                <div class="stat-list">
+                  <div class="stat-row">
+                    <div class="stat-label">Plus grosse victoire</div>
+                    <div id="statBiggestWin" class="stat-value text">—</div>
+                  </div>
+                  <div class="stat-row">
+                    <div class="stat-label">Défaite la plus serrée</div>
+                    <div id="statClosestLoss" class="stat-value text">—</div>
+                  </div>
+                  <div class="stat-row">
+                    <div class="stat-label">Meilleure série</div>
+                    <div id="statBestStreak" class="stat-value">—</div>
+                  </div>
+                  <div class="stat-row">
+                    <div class="stat-label">Terrain favori</div>
+                    <div id="statFavoriteCourt" class="stat-value text">—</div>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </section>
+
         </div>
       </section>
     </section>
