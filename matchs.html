@@ -825,7 +825,7 @@
   const COURTS_PER_ROUND = 3;
   const MAX_ROUNDS = 3;
   const GROUP_CODES = ['A', 'B', 'C', 'D', 'E'];
-  const ROUND_ONE_FREEZE_STORAGE_PREFIX = 'badminton_round1_freeze_v1';
+  const ROUND_ONE_FREEZE_STORAGE_PREFIX = 'badminton_round1_freeze_v2';
 
   let seasonsCache = [];
   let attendanceCache = [];
@@ -1087,6 +1087,52 @@ async function saveSessionLockState(locked) {
     return JSON.parse(JSON.stringify(structure || { groups: [], extraBenchPlayers: [] }));
   }
 
+  function getStructurePlayerIds(structure) {
+    const ids = [];
+
+    (structure?.groups || []).forEach(group => {
+      (group?.players || []).forEach(player => {
+        const joueurId = String(player?.joueur_id || '').trim();
+        if (joueurId) {
+          ids.push(joueurId);
+        }
+      });
+    });
+
+    (structure?.extraBenchPlayers || []).forEach(player => {
+      const joueurId = String(player?.joueur_id || '').trim();
+      if (joueurId) {
+        ids.push(joueurId);
+      }
+    });
+
+    return ids;
+  }
+
+  function hasOnlyActivePlayersInStructure(structure, activePlayers) {
+    const structureIds = getStructurePlayerIds(structure).sort();
+    const activeIds = getActivePlayersSignature(activePlayers).split('|').filter(Boolean).sort();
+
+    if (structureIds.length !== activeIds.length) {
+      return false;
+    }
+
+    return structureIds.every((joueurId, index) => joueurId === activeIds[index]);
+  }
+
+  function clearFrozenRoundOneStructureForCurrentSession() {
+    const storageKey = getRoundOneFreezeStorageKey();
+    if (!storageKey) {
+      return;
+    }
+
+    try {
+      localStorage.removeItem(storageKey);
+    } catch (error) {
+      console.warn('Impossible de supprimer la structure gelée du round 1:', error);
+    }
+  }
+
   function readFrozenRoundOneStructure(activePlayers) {
     const storageKey = getRoundOneFreezeStorageKey();
     if (!storageKey) {
@@ -1108,6 +1154,11 @@ async function saveSessionLockState(locked) {
       }
 
       if (!parsed.structure || !Array.isArray(parsed.structure.groups)) {
+        localStorage.removeItem(storageKey);
+        return null;
+      }
+
+      if (!hasOnlyActivePlayersInStructure(parsed.structure, activePlayers)) {
         localStorage.removeItem(storageKey);
         return null;
       }
@@ -2632,6 +2683,10 @@ roundPlan.matches.forEach(match => {
         fetchRanking()
       ]);
 
+      if (!Array.isArray(sessionMatchesCache) || !sessionMatchesCache.length) {
+        clearFrozenRoundOneStructureForCurrentSession();
+      }
+
       await buildSessionSeedOrderIds();
 
       const activePlayers = getActivePlayers();
@@ -2706,6 +2761,7 @@ function syncSelectedSession() {
 
   currentStageNo = 1;
   currentMatchNo = 1;
+  clearFrozenRoundOneStructureForCurrentSession();
   loadSessionContext({ resetRemovals: true });
   applySessionLockUI();
 }
