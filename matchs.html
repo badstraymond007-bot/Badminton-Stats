@@ -2645,7 +2645,6 @@ const simulatedNextGroups = Array.isArray(simulatedNextStructure?.groups)
 async function fetchRanking() {
   const season = getSelectedSeason();
   const saisonId = season ? String(season.saison_id || '').trim() : '';
-  const noSession = String(matchSessionNoEl.value || '').trim();
 
   if (!saisonId) {
     rankingCache = [];
@@ -2654,8 +2653,7 @@ async function fetchRanking() {
 
   const params = new URLSearchParams({
     action: 'getRanking',
-    saison_id: saisonId,
-    no_session: noSession
+    saison_id: saisonId
   });
 
   const response = await fetch(`${API_URL}?${params.toString()}`);
