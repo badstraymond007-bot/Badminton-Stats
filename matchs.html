@@ -2636,29 +2636,31 @@ roundPlan.matches.forEach(match => {
     sessionSeedOrderIdsCache = seededIds;
   }
 
-  async function fetchRanking() {
-    const season = getSelectedSeason();
-    const saisonId = season ? String(season.saison_id || '').trim() : '';
+async function fetchRanking() {
+  const season = getSelectedSeason();
+  const saisonId = season ? String(season.saison_id || '').trim() : '';
+  const noSession = String(matchSessionNoEl.value || '').trim();
 
-    if (!saisonId) {
-      rankingCache = [];
-      return;
-    }
-
-    const params = new URLSearchParams({
-      action: 'getRanking',
-      saison_id: saisonId
-    });
-
-    const response = await fetch(`${API_URL}?${params.toString()}`);
-    const result = await response.json();
-
-    if (!result.ok) {
-      throw new Error(result.error || 'Erreur API inconnue');
-    }
-
-    rankingCache = Array.isArray(result.rows) ? result.rows : [];
+  if (!saisonId) {
+    rankingCache = [];
+    return;
   }
+
+  const params = new URLSearchParams({
+    action: 'getRanking',
+    saison_id: saisonId,
+    no_session: noSession
+  });
+
+  const response = await fetch(`${API_URL}?${params.toString()}`);
+  const result = await response.json();
+
+  if (!result.ok) {
+    throw new Error(result.error || 'Erreur API inconnue');
+  }
+
+  rankingCache = Array.isArray(result.rows) ? result.rows : [];
+}
 
   async function loadSessionContext({ resetRemovals = false, jumpToNextPlayable = false } = {}) {
     if (resetRemovals) {
