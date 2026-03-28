@@ -221,7 +221,9 @@
       border: 1px solid var(--line);
       font-size: 14px;
     }
-
+.field-photo-drive {
+  display: none;
+}
     .photo-actions {
       display: grid;
       gap: 10px;
@@ -338,10 +340,10 @@
               <input id="playerName" type="text" />
             </div>
 
-            <div class="field">
-              <label for="playerPhotoDrive">Photo Drive ID</label>
-              <input id="playerPhotoDrive" type="text" placeholder="FILE_ID Google Drive" />
-            </div>
+            <div class="field field-photo-drive">
+  <label for="playerPhotoDrive">Photo Drive ID</label>
+  <input id="playerPhotoDrive" type="text" placeholder="FILE_ID Google Drive" />
+</div>
 
             <div class="field">
               <label for="playerPhotoFile">Photo depuis l’appareil</label>
