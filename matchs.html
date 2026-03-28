@@ -1561,10 +1561,10 @@ async function saveSessionLockState(locked) {
     const aStats = statsMap[aId] || createEmptyStageStats(a);
     const bStats = statsMap[bId] || createEmptyStageStats(b);
 
-    if (bStats.total_points !== aStats.total_points) return bStats.total_points - aStats.total_points;
     if (bStats.plus_moins !== aStats.plus_moins) return bStats.plus_moins - aStats.plus_moins;
     if (bStats.points_pour !== aStats.points_pour) return bStats.points_pour - aStats.points_pour;
     if (bStats.victoires !== aStats.victoires) return bStats.victoires - aStats.victoires;
+    if (bStats.total_points !== aStats.total_points) return bStats.total_points - aStats.total_points;
 
     const aRank = rankingMap[aId];
     const bRank = rankingMap[bId];
