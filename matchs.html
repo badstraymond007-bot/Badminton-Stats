@@ -2706,8 +2706,8 @@ document.querySelector('.courts-grid').addEventListener('click', event => {
         throw new Error(result.error || 'Erreur API inconnue');
       }
 
-      await loadSessionContext({ resetRemovals: false, jumpToNextPlayable: true });
-      alert(`Round ${payload.round_no}, match ${payload.match_no} sauvegardé et classement mis à jour.`);
+      await loadSessionContext({ resetRemovals: false, jumpToNextPlayable: false });
+      alert(`Round ${payload.round_no}, match ${payload.match_no} sauvegardé.`);
     } catch (error) {
       console.error(error);
       alert('Erreur lors de la sauvegarde des scores : ' + (error.message || error));
