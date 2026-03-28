@@ -499,13 +499,13 @@
     });
 
 const sorted = [...filtered].sort((a, b) => {
-  const pfA = Number(a.points_pour || 0);
-  const pfB = Number(b.points_pour || 0);
-  if (pfB !== pfA) return pfB - pfA;
-
   const diffA = Number(a.plus_moins || 0);
   const diffB = Number(b.plus_moins || 0);
   if (diffB !== diffA) return diffB - diffA;
+
+  const pfA = Number(a.points_pour || 0);
+  const pfB = Number(b.points_pour || 0);
+  if (pfB !== pfA) return pfB - pfA;
 
   const pcA = Number(a.points_contre || 0);
   const pcB = Number(b.points_contre || 0);
