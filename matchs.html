@@ -823,6 +823,7 @@
   const courtCards = Array.from(document.querySelectorAll('.court-card'));
 
   const COURTS_PER_ROUND = 3;
+  const MAX_ROUNDS = 3;
   const GROUP_CODES = ['A', 'B', 'C', 'D', 'E'];
   const ROUND_ONE_FREEZE_STORAGE_PREFIX = 'badminton_round1_freeze_v1';
 
@@ -1244,6 +1245,15 @@ async function saveSessionLockState(locked) {
         sensitivity: 'base'
       });
     });
+  }
+
+  function getAlphabeticalOrderIds(players) {
+    return [...players]
+      .sort((a, b) => String(a?.nom || a?.joueur_id || '').localeCompare(String(b?.nom || b?.joueur_id || ''), 'fr', {
+        sensitivity: 'base'
+      }))
+      .map(player => String(player?.joueur_id || '').trim())
+      .filter(Boolean);
   }
 
   function getInitialOrderedPlayers(players) {
@@ -1743,7 +1753,7 @@ async function saveSessionLockState(locked) {
   function getNextPlayablePosition(activePlayers) {
     let stageNo = 1;
 
-    while (stageNo <= 25) {
+    while (stageNo <= MAX_ROUNDS) {
       const stageContext = getCurrentSchedule(stageNo, activePlayers);
       const savedStage = getSavedStage(stageNo);
       const savedMatchNos = new Set(
@@ -1813,6 +1823,17 @@ async function saveSessionLockState(locked) {
       return {
         stage_no: stageNo,
         match_no: Number(currentContext.schedule[currentIndex + 1].match_no || 1)
+      };
+    }
+
+    if (Number(stageNo || 0) >= MAX_ROUNDS) {
+      const lastMatchNo = currentContext.schedule.length
+        ? Number(currentContext.schedule[currentContext.schedule.length - 1].match_no || 1)
+        : 1;
+
+      return {
+        stage_no: MAX_ROUNDS,
+        match_no: lastMatchNo
       };
     }
 
@@ -2514,7 +2535,7 @@ roundPlan.matches.forEach(match => {
 
     const previousSession = getPreviousSessionMeta();
     if (!previousSession) {
-      sessionSeedOrderIdsCache = fallbackIds;
+      sessionSeedOrderIdsCache = getAlphabeticalOrderIds(activePlayers);
       return;
     }
 
@@ -2621,6 +2642,7 @@ roundPlan.matches.forEach(match => {
         currentMatchNo = nextPlayable.match_no;
       } else {
         if (currentStageNo < 1) currentStageNo = 1;
+        if (currentStageNo > MAX_ROUNDS) currentStageNo = MAX_ROUNDS;
         if (currentMatchNo < 1) currentMatchNo = 1;
 
         const currentContext = getCurrentSchedule(currentStageNo, activePlayers);
@@ -2698,14 +2720,19 @@ function syncSelectedSession() {
       attendanceCache = [];
       sessionMatchesCache = [];
       rankingCache = [];
+      sessionSeedOrderIdsCache = [];
       removedPlayerIds = new Set();
+      currentRoundPlan = null;
+      selectedSwapRef = null;
       currentStageNo = 1;
       currentMatchNo = 1;
       renderRound();
       return;
     }
 
-    const sessions = Array.isArray(season.sessions) ? season.sessions : [];
+    const sessions = Array.isArray(season.sessions)
+      ? [...season.sessions].sort(compareSessionNo)
+      : [];
 
     sessions.forEach(session => {
       const noSession = String(session.no_session || '').trim();
@@ -2728,7 +2755,10 @@ function syncSelectedSession() {
       attendanceCache = [];
       sessionMatchesCache = [];
       rankingCache = [];
+      sessionSeedOrderIdsCache = [];
       removedPlayerIds = new Set();
+      currentRoundPlan = null;
+      selectedSwapRef = null;
       currentStageNo = 1;
       currentMatchNo = 1;
       renderRound();
@@ -2772,7 +2802,10 @@ function syncSelectedSession() {
       attendanceCache = [];
       sessionMatchesCache = [];
       rankingCache = [];
+      sessionSeedOrderIdsCache = [];
       removedPlayerIds = new Set();
+      currentRoundPlan = null;
+      selectedSwapRef = null;
       currentStageNo = 1;
       currentMatchNo = 1;
       renderRound();
