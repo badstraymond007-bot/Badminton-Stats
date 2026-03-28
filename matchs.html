@@ -948,6 +948,66 @@ function setMatchControlsDisabled(disabled) {
     return seasonsCache.find(s => String(s.saison_id || '').trim() === saisonId) || null;
   }
 
+  function getSelectedSessionMeta() {
+  const season = getSelectedSeason();
+  const noSession = String(matchSessionEl.value || '').trim();
+
+  if (!season || !noSession) {
+    return null;
+  }
+
+  const sessions = Array.isArray(season.sessions) ? season.sessions : [];
+
+  return sessions.find(session =>
+    String(session.no_session || '').trim() === noSession
+  ) || null;
+}
+
+async function saveSessionLockState(locked) {
+  const season = getSelectedSeason();
+  const saisonId = season ? String(season.saison_id || '').trim() : '';
+  const noSession = String(matchSessionEl.value || '').trim();
+
+  if (!saisonId || !noSession) {
+    throw new Error('Saison ou session manquante.');
+  }
+
+  const response = await fetch(API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'text/plain;charset=utf-8'
+    },
+    body: JSON.stringify({
+      action: 'setSessionLock',
+      saison_id: saisonId,
+      no_session: noSession,
+      barree: !!locked
+    })
+  });
+
+  const result = await response.json();
+
+  if (!result.ok) {
+    throw new Error(result.error || 'Erreur API inconnue');
+  }
+
+  const sessionMeta = getSelectedSessionMeta();
+  if (sessionMeta) {
+    sessionMeta.barree = !!locked;
+  }
+
+  const option = matchSessionEl.options[matchSessionEl.selectedIndex];
+  if (option) {
+    option.dataset.locked = locked ? '1' : '0';
+  }
+
+  sessionLocked = !!locked;
+  lockSessionToggle.checked = !!locked;
+  applySessionLockUI();
+
+  return result;
+}
+  
   function clearSessionFields() {
     matchSessionEl.innerHTML = '<option value="">Choisir une session</option>';
     matchDateEl.value = '';
@@ -2284,33 +2344,44 @@ roundPlan.matches.forEach(match => {
     }
   }
 
-  function syncSelectedSession() {
+function syncSelectedSession() {
+  const option = matchSessionEl.options[matchSessionEl.selectedIndex];
+
+  if (!option || !option.value) {
     clearSessionLockState();
-    const option = matchSessionEl.options[matchSessionEl.selectedIndex];
-
-    if (!option || !option.value) {
-      matchDateEl.value = '';
-      matchSessionNoEl.value = '';
-      attendanceCache = [];
-      sessionMatchesCache = [];
-      rankingCache = [];
-      removedPlayerIds = new Set();
-      currentStageNo = 1;
-      currentMatchNo = 1;
-      renderRound();
-      return;
-    }
-
-    matchDateEl.value = option.dataset.date || '';
-    matchSessionNoEl.value = option.value || '';
+    matchDateEl.value = '';
+    matchSessionNoEl.value = '';
+    attendanceCache = [];
+    sessionMatchesCache = [];
+    rankingCache = [];
+    removedPlayerIds = new Set();
     currentStageNo = 1;
     currentMatchNo = 1;
-    loadSessionContext({ resetRemovals: true });
+    renderRound();
+    applySessionLockUI();
+    return;
   }
+
+  matchDateEl.value = option.dataset.date || '';
+  matchSessionNoEl.value = option.value || '';
+
+  const lockedFromOption =
+    option.dataset.locked === '1' ||
+    option.dataset.locked === 'true';
+
+  sessionLocked = !!lockedFromOption;
+  lockSessionToggle.checked = !!lockedFromOption;
+
+  currentStageNo = 1;
+  currentMatchNo = 1;
+  loadSessionContext({ resetRemovals: true });
+  applySessionLockUI();
+}
 
   function populateSessions() {
     clearSessionFields();
     clearSessionLockState();
+    
     
     const season = getSelectedSeason();
     if (!season) {
@@ -2336,6 +2407,7 @@ roundPlan.matches.forEach(match => {
       option.value = noSession;
       option.textContent = `Session ${noSession} — ${dateSession}`;
       option.dataset.date = dateSession;
+      option.dataset.locked = session.barree ? '1' : '0';
       matchSessionEl.appendChild(option);
     });
 
@@ -2431,9 +2503,22 @@ roundPlan.matches.forEach(match => {
     alert(`Le prochain match à jouer est préparé : round ${currentStageNo}, match ${currentMatchNo}.`);
   });
 
-lockSessionToggle.addEventListener('change', () => {
-  sessionLocked = !!lockSessionToggle.checked;
-  applySessionLockUI();
+lockSessionToggle.addEventListener('change', async () => {
+  const wantedState = !!lockSessionToggle.checked;
+  const previousState = sessionLocked;
+
+  try {
+    lockSessionToggle.disabled = true;
+    await saveSessionLockState(wantedState);
+  } catch (error) {
+    console.error(error);
+    sessionLocked = previousState;
+    lockSessionToggle.checked = previousState;
+    applySessionLockUI();
+    alert('Erreur lors du verrouillage de la session : ' + (error.message || error));
+  } finally {
+    applySessionLockUI();
+  }
 });
   
 document.querySelector('.courts-grid').addEventListener('click', event => {
@@ -2443,6 +2528,10 @@ document.querySelector('.courts-grid').addEventListener('click', event => {
 });
   
   saveScoresBtn.addEventListener('click', async () => {
+    if (sessionLocked) {
+  alert('Cette session est barrée. Décoche-la pour pouvoir modifier les scores.');
+  return;
+}
     try {
       const payload = buildSaveScoresPayload();
 
