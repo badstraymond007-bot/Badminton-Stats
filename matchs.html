@@ -20,7 +20,10 @@
       --ok-bg: #ecfdf5;
       --ok-line: #a7f3d0;
     }
-
+    .btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
     * { box-sizing: border-box; }
 
     body {
@@ -670,7 +673,21 @@
   prevRoundBtn.textContent = 'Tour précédent';
   nextRoundBtn.textContent = 'Tour suivant';
   copyPrevRoundBtn.textContent = 'Prochain à jouer';
+  
+  function setMatchControlsDisabled(disabled) {
+    prevRoundBtn.disabled = disabled;
+    nextRoundBtn.disabled = disabled;
+    copyPrevRoundBtn.disabled = disabled;
+    saveScoresBtn.disabled = disabled;
+    applyRemovalBtn.disabled = disabled;
+    removeSearchEl.disabled = disabled;
 
+    courtCards.forEach(card => {
+      card.querySelectorAll('[data-score]').forEach(input => {
+        input.disabled = disabled;
+      });
+    });
+  }
   function escapeHtml(value) {
     return String(value ?? '')
       .replace(/&/g, '&amp;')
@@ -1609,12 +1626,83 @@
     const seasonName = season ? (season.nom_saison || season.saison_id) : '—';
     const activePlayers = getActivePlayers();
 
-    roundTitleEl.textContent = `Round ${currentStageNo} • Match ${currentMatchNo}`;
+    const attendancePending =
+      !!matchSessionEl.value &&
+      attendanceCache.length === 0 &&
+      sessionMatchesCache.length === 0;
+
     sumSeasonEl.textContent = seasonName;
     sumDateEl.textContent = matchDateEl.value || '—';
+    sumPresentCountEl.textContent = String(attendanceCache.length);
+
+    if (!matchSessionEl.value) {
+      currentRoundPlan = null;
+      roundTitleEl.textContent = 'Choisir une session';
+      sumRoundEl.textContent = '—';
+      sumMatchEl.textContent = '—';
+      sumActiveCountEl.textContent = '0';
+      sumGroupCountEl.textContent = '—';
+      saveScoresBtn.textContent = 'Enregistrer les scores';
+      setMatchControlsDisabled(true);
+      resetCourts();
+
+      removeListEl.innerHTML = `
+        <div class="mini-player">
+          <div>
+            <div class="mini-player-name">Aucune session sélectionnée</div>
+            <div class="mini-player-code">Choisis une session pour commencer.</div>
+          </div>
+        </div>
+      `;
+
+      benchListEl.innerHTML = `
+        <div class="mini-player">
+          <div>
+            <div class="mini-player-name">En attente</div>
+            <div class="mini-player-code">La présence et les matchs apparaîtront après le choix d'une session.</div>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    if (attendancePending) {
+      currentRoundPlan = null;
+      roundTitleEl.textContent = `Présence requise • Session ${matchSessionNoEl.value || '—'}`;
+      sumRoundEl.textContent = '—';
+      sumMatchEl.textContent = '—';
+      sumActiveCountEl.textContent = '0';
+      sumGroupCountEl.textContent = '—';
+      saveScoresBtn.textContent = 'Enregistrer les scores';
+      setMatchControlsDisabled(true);
+      resetCourts();
+
+      removeListEl.innerHTML = `
+        <div class="mini-player">
+          <div style="width:100%">
+            <div class="mini-player-name">Présence non prise</div>
+            <div class="mini-player-code">Commence par prendre la présence pour la session ${escapeHtml(matchSessionNoEl.value || '')} du ${escapeHtml(matchDateEl.value || '')}.</div>
+            <div style="margin-top:12px;">
+              <a class="btn" href="presence.html">Aller à la présence</a>
+            </div>
+          </div>
+        </div>
+      `;
+
+      benchListEl.innerHTML = `
+        <div class="mini-player">
+          <div>
+            <div class="mini-player-name">Étape 1 obligatoire</div>
+            <div class="mini-player-code">Dès que la présence sera prise, cette page pourra commencer au round 1.</div>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    roundTitleEl.textContent = `Round ${currentStageNo} • Match ${currentMatchNo}`;
     sumRoundEl.textContent = String(currentStageNo);
     sumMatchEl.textContent = `Match ${currentMatchNo}`;
-    sumPresentCountEl.textContent = String(attendanceCache.length);
 
     renderRemoveList(attendanceCache);
 
@@ -1622,6 +1710,8 @@
       currentRoundPlan = null;
       sumActiveCountEl.textContent = String(activePlayers.length);
       sumGroupCountEl.textContent = '—';
+      saveScoresBtn.textContent = 'Enregistrer les scores';
+      setMatchControlsDisabled(true);
       resetCourts();
       benchListEl.innerHTML = `
         <div class="mini-player">
@@ -1634,6 +1724,7 @@
       return;
     }
 
+    setMatchControlsDisabled(false);
     currentRoundPlan = buildRoundPlanForPosition(currentStageNo, currentMatchNo, activePlayers);
     renderCourts(currentRoundPlan);
     renderBench(currentRoundPlan);
@@ -1653,7 +1744,9 @@
 
     sumActiveCountEl.textContent = String(uniquePlayersOnCourt.size);
     sumGroupCountEl.textContent = `${currentRoundPlan.matches.length} / ${currentRoundPlan.total_groups}`;
-    saveScoresBtn.textContent = currentRoundPlan.source === 'saved' ? 'Mettre à jour ce match' : 'Enregistrer ce match';
+    saveScoresBtn.textContent = currentRoundPlan.source === 'saved'
+      ? 'Mettre à jour ce match'
+      : 'Enregistrer ce match';
   }
 
   async function fetchAttendanceForSelectedSession() {
