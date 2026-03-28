@@ -466,10 +466,8 @@ function populateSessions() {
     sessionPickerEl.appendChild(option);
   });
 
-  if (sessions.length > 0) {
-    sessionPickerEl.value = String(sessions[0].no_session || '');
-    syncSelectedSession();
-  }
+  sessionPickerEl.value = '';
+  syncSelectedSession();
 }
     
     async function loadPlayers() {
@@ -543,6 +541,26 @@ sessionPickerEl.addEventListener('change', syncSelectedSession);
     
 saveAttendanceBtn.addEventListener('click', async () => {
   const payload = buildAttendancePayload();
+
+  if (!sessionPickerEl.value) {
+  alert('Choisis explicitement la session avant d’enregistrer.');
+  return;
+}
+
+const seasonLabel =
+  sessionSeasonEl.options[sessionSeasonEl.selectedIndex]?.text || payload.saison_id;
+
+const confirmSave = confirm(
+  `Tu vas enregistrer les présences pour :\n\n` +
+  `Saison : ${seasonLabel}\n` +
+  `Session : ${payload.no_session}\n` +
+  `Date : ${payload.date_session}\n\n` +
+  `Continuer ?`
+);
+
+if (!confirmSave) {
+  return;
+}
 
   if (!payload.date_session) {
     alert('Choisis une date de session.');
