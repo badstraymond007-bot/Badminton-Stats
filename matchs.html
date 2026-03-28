@@ -2605,10 +2605,16 @@ roundPlan.matches.forEach(match => {
     }
 
     const previousRoundTwoPlayers = previousGroups.flatMap(group => group.players || []).filter(Boolean);
-    const simulatedNextStructure = buildNextStageGroupsFromPreviousStage(previousRoundTwo, previousRoundTwoPlayers);
-    const simulatedNextGroups = Array.isArray(simulatedNextStructure?.groups)
-      ? simulatedNextStructure.groups
-      : [];
+
+if (!samePlayerSet(previousRoundTwoPlayers, activePlayers)) {
+  sessionSeedOrderIdsCache = fallbackIds;
+  return;
+}
+
+const simulatedNextStructure = buildNextStageGroupsFromPreviousStage(previousRoundTwo, previousRoundTwoPlayers);
+const simulatedNextGroups = Array.isArray(simulatedNextStructure?.groups)
+  ? simulatedNextStructure.groups
+  : [];
 
     const seededIds = [];
     const usedIds = new Set();
