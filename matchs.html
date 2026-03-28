@@ -1097,6 +1097,76 @@ async function saveSessionLockState(locked) {
     }
   }
 
+  function buildFrozenRoundOneStructureFromCurrentRoundPlan() {
+    if (!currentRoundPlan) {
+      return null;
+    }
+
+    const groupsMap = {};
+
+    (currentRoundPlan.matches || []).forEach(match => {
+      const groupCode = String(match?.group_code || '').trim();
+      if (!groupCode) return;
+
+      const players = reconstructGroupOrderFromFirstMatch(match);
+      if (!players.length) return;
+
+      groupsMap[groupCode] = {
+        group_code: groupCode,
+        players
+      };
+    });
+
+    (currentRoundPlan.benchEntries || []).forEach(entry => {
+      if (entry?.type !== 'group_rest') return;
+
+      const groupCode = String(entry.group_code || '').trim();
+      if (!groupCode || groupsMap[groupCode]) return;
+
+      const players = Array.isArray(entry.players) ? entry.players.filter(Boolean) : [];
+      if (!players.length) return;
+
+      groupsMap[groupCode] = {
+        group_code: groupCode,
+        players
+      };
+    });
+
+    const groups = Object.values(groupsMap).sort((a, b) => {
+      return GROUP_CODES.indexOf(a.group_code) - GROUP_CODES.indexOf(b.group_code);
+    });
+
+    const extraBenchPlayers = (currentRoundPlan.benchEntries || [])
+      .filter(entry => entry?.type === 'bench_only' && entry.player)
+      .map(entry => entry.player);
+
+    if (!groups.length) {
+      return null;
+    }
+
+    return {
+      groups,
+      extraBenchPlayers
+    };
+  }
+
+  function syncFrozenRoundOneStructureFromCurrentRoundPlan() {
+    if (Number(currentStageNo || 0) !== 1) {
+      return;
+    }
+
+    if (Number(currentMatchNo || 0) !== 1) {
+      return;
+    }
+
+    const structure = buildFrozenRoundOneStructureFromCurrentRoundPlan();
+    if (!structure) {
+      return;
+    }
+
+    writeFrozenRoundOneStructure(getActivePlayers(), structure);
+  }
+
   function getRankingMap() {
     const map = {};
     rankingCache.forEach((row, index) => {
@@ -1771,6 +1841,7 @@ function swapPlayersInCurrentRound(refA, refB) {
   matchB[refB.field] = temp;
 
   refreshWaitingBenchEntriesFromMatches();
+  syncFrozenRoundOneStructureFromCurrentRoundPlan();
   return true;
 }
 
@@ -2264,6 +2335,7 @@ roundPlan.matches.forEach(match => {
 
     setMatchControlsDisabled(false);
     currentRoundPlan = buildRoundPlanForPosition(currentStageNo, currentMatchNo, activePlayers);
+    syncFrozenRoundOneStructureFromCurrentRoundPlan();
     renderCourts(currentRoundPlan);
     renderBench(currentRoundPlan);
 
