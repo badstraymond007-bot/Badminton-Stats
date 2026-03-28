@@ -292,6 +292,40 @@
       font-weight: bold;
     }
 
+        .slot-player,
+    .waiting-player-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 42px;
+    }
+
+    .slot-photo {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: #e5e7eb;
+      border: 1px solid var(--line);
+      flex: 0 0 42px;
+    }
+
+    .slot-text {
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+
+    .slot-name {
+      font-weight: bold;
+      line-height: 1.2;
+      word-break: break-word;
+    }
+
+    .slot-empty {
+      font-weight: bold;
+      color: var(--muted);
+    }
+    
     .waiting-box {
       margin-top: 12px;
       padding: 12px;
@@ -688,6 +722,58 @@
       });
     });
   }
+
+    const DEFAULT_AVATAR =
+    'data:image/svg+xml;utf8,' +
+    encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+        <rect width="200" height="200" fill="#e5e7eb"/>
+        <circle cx="100" cy="78" r="34" fill="#9ca3af"/>
+        <path d="M40 170c10-30 34-46 60-46s50 16 60 46" fill="#9ca3af"/>
+      </svg>
+    `);
+
+  function safeText(value) {
+    return value == null ? '' : String(value);
+  }
+
+  function getPlayerPhoto(player) {
+    const fileId = safeText(player && player.photo_drive).trim();
+    return fileId
+      ? ('https://drive.google.com/thumbnail?id=' + encodeURIComponent(fileId) + '&sz=w300')
+      : DEFAULT_AVATAR;
+  }
+
+  function renderPlayerCard(player) {
+    if (!player) {
+      return `<div class="slot-empty">—</div>`;
+    }
+
+    return `
+      <div class="slot-player">
+        <img class="slot-photo" src="${getPlayerPhoto(player)}" alt="${escapeHtml(safeText(player.nom || player.joueur_id || 'Joueur'))}">
+        <div class="slot-text">
+          <div class="slot-name">${escapeHtml(safeText(player.nom || player.joueur_id || '—'))}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderWaitingPlayerCard(player) {
+    if (!player) {
+      return `<div class="slot-empty">—</div>`;
+    }
+
+    return `
+      <div class="waiting-player-card">
+        <img class="slot-photo" src="${getPlayerPhoto(player)}" alt="${escapeHtml(safeText(player.nom || player.joueur_id || 'Joueur'))}">
+        <div class="slot-text">
+          <div class="slot-name">${escapeHtml(safeText(player.nom || player.joueur_id || '—'))}</div>
+        </div>
+      </div>
+    `;
+  }
+  
   function escapeHtml(value) {
     return String(value ?? '')
       .replace(/&/g, '&amp;')
@@ -1286,10 +1372,12 @@
     courtCards.forEach(card => {
       card.querySelector('[data-role="group-badge"]').textContent = 'Aucun groupe';
       card.querySelector('[data-role="group-meta"]').textContent = 'En attente de joueurs';
-      card.querySelector('[data-role="waiting-player"]').textContent = '—';
+      card.querySelector('[data-role="waiting-player"]').innerHTML = '<div class="slot-empty">—</div>';
+
       card.querySelectorAll('[data-slot]').forEach(slot => {
-        slot.textContent = '—';
+        slot.innerHTML = '<div class="slot-empty">—</div>';
       });
+
       card.querySelectorAll('[data-score]').forEach(input => {
         input.value = '';
       });
@@ -1443,11 +1531,11 @@
           ? `Round ${currentStageNo} • match ${currentMatchNo} • sauvegardé`
           : `Round ${currentStageNo} • match ${currentMatchNo} • ${match.group_size} joueurs`;
 
-      card.querySelector('[data-role="waiting-player"]').textContent = formatPlayer(match.waiting_player);
-      card.querySelector('[data-slot="team1_player1"]').textContent = formatPlayer(match.team1_player1);
-      card.querySelector('[data-slot="team1_player2"]').textContent = formatPlayer(match.team1_player2);
-      card.querySelector('[data-slot="team2_player1"]').textContent = formatPlayer(match.team2_player1);
-      card.querySelector('[data-slot="team2_player2"]').textContent = formatPlayer(match.team2_player2);
+      card.querySelector('[data-role="waiting-player"]').innerHTML = renderWaitingPlayerCard(match.waiting_player);
+      card.querySelector('[data-slot="team1_player1"]').innerHTML = renderPlayerCard(match.team1_player1);
+      card.querySelector('[data-slot="team1_player2"]').innerHTML = renderPlayerCard(match.team1_player2);
+      card.querySelector('[data-slot="team2_player1"]').innerHTML = renderPlayerCard(match.team2_player1);
+      card.querySelector('[data-slot="team2_player2"]').innerHTML = renderPlayerCard(match.team2_player2);
 
       score1Input.value = match.team1_score === '' || match.team1_score === null || match.team1_score === undefined
         ? ''
