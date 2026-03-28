@@ -824,6 +824,7 @@
 
   const COURTS_PER_ROUND = 3;
   const GROUP_CODES = ['A', 'B', 'C', 'D', 'E'];
+  const ROUND_ONE_FREEZE_STORAGE_PREFIX = 'badminton_round1_freeze_v1';
 
   let seasonsCache = [];
   let attendanceCache = [];
@@ -1022,6 +1023,78 @@ async function saveSessionLockState(locked) {
 
   function getActivePlayers() {
     return attendanceCache.filter(player => !removedPlayerIds.has(String(player.joueur_id || '').trim()));
+  }
+
+  function getRoundOneFreezeStorageKey() {
+    const season = getSelectedSeason();
+    const saisonId = String(season?.saison_id || '').trim();
+    const noSession = String(matchSessionEl.value || matchSessionNoEl.value || '').trim();
+
+    if (!saisonId || !noSession) {
+      return '';
+    }
+
+    return `${ROUND_ONE_FREEZE_STORAGE_PREFIX}:${saisonId}:${noSession}`;
+  }
+
+  function getActivePlayersSignature(players) {
+    return players
+      .map(player => String(player?.joueur_id || '').trim())
+      .filter(Boolean)
+      .sort()
+      .join('|');
+  }
+
+  function cloneStageStructure(structure) {
+    return JSON.parse(JSON.stringify(structure || { groups: [], extraBenchPlayers: [] }));
+  }
+
+  function readFrozenRoundOneStructure(activePlayers) {
+    const storageKey = getRoundOneFreezeStorageKey();
+    if (!storageKey) {
+      return null;
+    }
+
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (!raw) {
+        return null;
+      }
+
+      const parsed = JSON.parse(raw);
+      const expectedSignature = getActivePlayersSignature(activePlayers);
+
+      if (parsed.signature !== expectedSignature) {
+        localStorage.removeItem(storageKey);
+        return null;
+      }
+
+      if (!parsed.structure || !Array.isArray(parsed.structure.groups)) {
+        localStorage.removeItem(storageKey);
+        return null;
+      }
+
+      return cloneStageStructure(parsed.structure);
+    } catch (error) {
+      console.warn('Impossible de relire la structure gelée du round 1:', error);
+      return null;
+    }
+  }
+
+  function writeFrozenRoundOneStructure(activePlayers, structure) {
+    const storageKey = getRoundOneFreezeStorageKey();
+    if (!storageKey) {
+      return;
+    }
+
+    try {
+      localStorage.setItem(storageKey, JSON.stringify({
+        signature: getActivePlayersSignature(activePlayers),
+        structure: cloneStageStructure(structure)
+      }));
+    } catch (error) {
+      console.warn('Impossible de geler la structure du round 1:', error);
+    }
   }
 
   function getRankingMap() {
@@ -1486,11 +1559,20 @@ async function saveSessionLockState(locked) {
   }
 
   function buildStageStructure(stageNo, activePlayers) {
-    if (Number(stageNo || 1) <= 1) {
-      return partitionPlayers(getOrderedPlayers(activePlayers));
+    const numericStageNo = Number(stageNo || 1);
+
+    if (numericStageNo <= 1) {
+      const frozenStructure = readFrozenRoundOneStructure(activePlayers);
+      if (frozenStructure) {
+        return frozenStructure;
+      }
+
+      const initialStructure = partitionPlayers(getOrderedPlayers(activePlayers));
+      writeFrozenRoundOneStructure(activePlayers, initialStructure);
+      return initialStructure;
     }
 
-    const previousStage = getSavedStage(Number(stageNo) - 1);
+    const previousStage = getSavedStage(numericStageNo - 1);
     if (!previousStage || !Array.isArray(previousStage.matches) || !previousStage.matches.length) {
       return partitionPlayers(getOrderedPlayers(activePlayers));
     }
