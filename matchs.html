@@ -408,6 +408,22 @@
       text-align: right;
     }
 
+.slot.swap-enabled,
+.waiting-box.swap-enabled {
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.slot.swap-enabled:hover,
+.waiting-box.swap-enabled:hover {
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.18);
+}
+
+.slot.swap-selected,
+.waiting-box.swap-selected {
+  box-shadow: 0 0 0 3px #f59e0b;
+}
+    
     .note {
       margin-top: 14px;
       font-size: 14px;
@@ -733,7 +749,9 @@
   let currentStageNo = 1;
   let currentMatchNo = 1;
   let currentRoundPlan = null;
+  let selectedSwapRef = null;
 
+  
   prevRoundBtn.textContent = 'Tour précédent';
   nextRoundBtn.textContent = 'Tour suivant';
   copyPrevRoundBtn.textContent = 'Prochain à jouer';
@@ -1398,27 +1416,144 @@
     };
   }
 
-  function resetCourts() {
-    courtCards.forEach(card => {
-      card.querySelector('[data-role="group-badge"]').textContent = 'Aucun groupe';
-      card.querySelector('[data-role="group-meta"]').textContent = 'En attente de joueurs';
-      card.querySelector('[data-role="waiting-player"]').innerHTML = '<div class="slot-empty">—</div>';
+function resetCourts() {
+  courtCards.forEach(card => {
+    card.querySelector('[data-role="group-badge"]').textContent = 'Aucun groupe';
+    card.querySelector('[data-role="group-meta"]').textContent = 'En attente de joueurs';
+    card.querySelector('[data-role="waiting-player"]').innerHTML = '<div class="slot-empty">—</div>';
 
-      card.querySelectorAll('[data-slot]').forEach(slot => {
-        slot.innerHTML = '<div class="slot-empty">—</div>';
-      });
-
-      card.querySelectorAll('[data-score]').forEach(input => {
-        input.value = '';
-      });
+    card.querySelectorAll('[data-slot]').forEach(slot => {
+      slot.innerHTML = '<div class="slot-empty">—</div>';
     });
-  }
+
+    card.querySelectorAll('.slot, .waiting-box').forEach(box => {
+      box.classList.remove('swap-enabled', 'swap-selected');
+      delete box.dataset.playerId;
+      delete box.dataset.courtNo;
+      delete box.dataset.field;
+    });
+
+    card.querySelectorAll('[data-score]').forEach(input => {
+      input.value = '';
+    });
+  });
+}
 
   function formatPlayer(player) {
     if (!player) return '—';
     return player.nom || player.joueur_id || '—';
   }
 
+function isSameSwapRef(a, b) {
+  return !!a && !!b &&
+    String(a.player_id || '').trim() === String(b.player_id || '').trim() &&
+    String(a.court_no || '').trim() === String(b.court_no || '').trim() &&
+    String(a.field || '').trim() === String(b.field || '').trim();
+}
+
+function findMatchByCourtNo(courtNo) {
+  return (currentRoundPlan?.matches || []).find(match =>
+    Number(match.court_no || 0) === Number(courtNo || 0)
+  ) || null;
+}
+
+function decorateSwapContainer(container, player, ref) {
+  if (!container) return;
+
+  container.classList.remove('swap-enabled', 'swap-selected');
+  delete container.dataset.playerId;
+  delete container.dataset.courtNo;
+  delete container.dataset.field;
+
+  const joueurId = String(player?.joueur_id || '').trim();
+  if (!joueurId) return;
+
+  container.classList.add('swap-enabled');
+  container.dataset.playerId = joueurId;
+  container.dataset.courtNo = String(ref.court_no || '').trim();
+  container.dataset.field = String(ref.field || '').trim();
+
+  if (selectedSwapRef && isSameSwapRef(selectedSwapRef, {
+    player_id: joueurId,
+    court_no: ref.court_no,
+    field: ref.field
+  })) {
+    container.classList.add('swap-selected');
+  }
+}
+
+function refreshWaitingBenchEntriesFromMatches() {
+  if (!currentRoundPlan || !Array.isArray(currentRoundPlan.benchEntries)) return;
+
+  const waitingByGroup = {};
+  (currentRoundPlan.matches || []).forEach(match => {
+    const groupCode = String(match.group_code || '').trim();
+    if (!groupCode) return;
+    waitingByGroup[groupCode] = match.waiting_player || null;
+  });
+
+  currentRoundPlan.benchEntries = currentRoundPlan.benchEntries.map(entry => {
+    if (entry.type !== 'waiting') return entry;
+
+    const updatedPlayer = waitingByGroup[String(entry.group_code || '').trim()];
+    if (!updatedPlayer) return entry;
+
+    return {
+      ...entry,
+      player: updatedPlayer
+    };
+  });
+}
+
+function swapPlayersInCurrentRound(refA, refB) {
+  const matchA = findMatchByCourtNo(refA.court_no);
+  const matchB = findMatchByCourtNo(refB.court_no);
+
+  if (!matchA || !matchB) return false;
+  if (!matchA[refA.field] || !matchB[refB.field]) return false;
+
+  const temp = matchA[refA.field];
+  matchA[refA.field] = matchB[refB.field];
+  matchB[refB.field] = temp;
+
+  refreshWaitingBenchEntriesFromMatches();
+  return true;
+}
+
+function handleSwapClickFromContainer(container) {
+  if (!container || !currentRoundPlan) return;
+
+  const ref = {
+    player_id: String(container.dataset.playerId || '').trim(),
+    court_no: String(container.dataset.courtNo || '').trim(),
+    field: String(container.dataset.field || '').trim()
+  };
+
+  if (!ref.player_id || !ref.court_no || !ref.field) return;
+
+  if (!selectedSwapRef) {
+    selectedSwapRef = ref;
+    renderCourts(currentRoundPlan);
+    renderBench(currentRoundPlan);
+    return;
+  }
+
+  if (isSameSwapRef(selectedSwapRef, ref)) {
+    selectedSwapRef = null;
+    renderCourts(currentRoundPlan);
+    renderBench(currentRoundPlan);
+    return;
+  }
+
+  if (swapPlayersInCurrentRound(selectedSwapRef, ref)) {
+    selectedSwapRef = null;
+    renderCourts(currentRoundPlan);
+    renderBench(currentRoundPlan);
+  }
+}
+
+
+  
   function buildGeneratedMatchFromTask(task, groups, courtNo) {
     const group = groups.find(entry => entry.group_code === task.group_code);
     if (!group) return null;
@@ -1548,33 +1683,64 @@
   function renderCourts(roundPlan) {
     resetCourts();
 
-    roundPlan.matches.forEach(match => {
-      const card = document.querySelector(`.court-card[data-court="${match.court_no}"]`);
-      if (!card) return;
+roundPlan.matches.forEach(match => {
+  const card = document.querySelector(`.court-card[data-court="${match.court_no}"]`);
+  if (!card) return;
 
-      const score1Input = card.querySelector('[data-score="team1"]');
-      const score2Input = card.querySelector('[data-score="team2"]');
+  const score1Input = card.querySelector('[data-score="team1"]');
+  const score2Input = card.querySelector('[data-score="team2"]');
 
-      card.querySelector('[data-role="group-badge"]').textContent = `Groupe ${match.group_code}`;
-      card.querySelector('[data-role="group-meta"]').textContent =
-        roundPlan.source === 'saved'
-          ? `Round ${currentStageNo} • match ${currentMatchNo} • sauvegardé`
-          : `Round ${currentStageNo} • match ${currentMatchNo} • ${match.group_size} joueurs`;
+  card.querySelector('[data-role="group-badge"]').textContent = `Groupe ${match.group_code}`;
+  card.querySelector('[data-role="group-meta"]').textContent =
+    roundPlan.source === 'saved'
+      ? `Round ${currentStageNo} • match ${currentMatchNo} • sauvegardé`
+      : `Round ${currentStageNo} • match ${currentMatchNo} • ${match.group_size} joueurs`;
 
-      card.querySelector('[data-role="waiting-player"]').innerHTML = renderWaitingPlayerCard(match.waiting_player);
-      card.querySelector('[data-slot="team1_player1"]').innerHTML = renderPlayerCard(match.team1_player1);
-      card.querySelector('[data-slot="team1_player2"]').innerHTML = renderPlayerCard(match.team1_player2);
-      card.querySelector('[data-slot="team2_player1"]').innerHTML = renderPlayerCard(match.team2_player1);
-      card.querySelector('[data-slot="team2_player2"]').innerHTML = renderPlayerCard(match.team2_player2);
+  const waitingValue = card.querySelector('[data-role="waiting-player"]');
+  const team1p1 = card.querySelector('[data-slot="team1_player1"]');
+  const team1p2 = card.querySelector('[data-slot="team1_player2"]');
+  const team2p1 = card.querySelector('[data-slot="team2_player1"]');
+  const team2p2 = card.querySelector('[data-slot="team2_player2"]');
 
-      score1Input.value = match.team1_score === '' || match.team1_score === null || match.team1_score === undefined
-        ? ''
-        : String(match.team1_score);
+  waitingValue.innerHTML = renderWaitingPlayerCard(match.waiting_player);
+  team1p1.innerHTML = renderPlayerCard(match.team1_player1);
+  team1p2.innerHTML = renderPlayerCard(match.team1_player2);
+  team2p1.innerHTML = renderPlayerCard(match.team2_player1);
+  team2p2.innerHTML = renderPlayerCard(match.team2_player2);
 
-      score2Input.value = match.team2_score === '' || match.team2_score === null || match.team2_score === undefined
-        ? ''
-        : String(match.team2_score);
-    });
+  decorateSwapContainer(team1p1.closest('.slot'), match.team1_player1, {
+    court_no: match.court_no,
+    field: 'team1_player1'
+  });
+
+  decorateSwapContainer(team1p2.closest('.slot'), match.team1_player2, {
+    court_no: match.court_no,
+    field: 'team1_player2'
+  });
+
+  decorateSwapContainer(team2p1.closest('.slot'), match.team2_player1, {
+    court_no: match.court_no,
+    field: 'team2_player1'
+  });
+
+  decorateSwapContainer(team2p2.closest('.slot'), match.team2_player2, {
+    court_no: match.court_no,
+    field: 'team2_player2'
+  });
+
+  decorateSwapContainer(waitingValue.closest('.waiting-box'), match.waiting_player, {
+    court_no: match.court_no,
+    field: 'waiting_player'
+  });
+
+  score1Input.value = match.team1_score === '' || match.team1_score === null || match.team1_score === undefined
+    ? ''
+    : String(match.team1_score);
+
+  score2Input.value = match.team2_score === '' || match.team2_score === null || match.team2_score === undefined
+    ? ''
+    : String(match.team2_score);
+});
   }
 
   function renderBench(roundPlan) {
@@ -2150,7 +2316,13 @@
     renderRound();
     alert(`Le prochain match à jouer est préparé : round ${currentStageNo}, match ${currentMatchNo}.`);
   });
-
+  
+document.querySelector('.courts-grid').addEventListener('click', event => {
+  const container = event.target.closest('.swap-enabled');
+  if (!container) return;
+  handleSwapClickFromContainer(container);
+});
+  
   saveScoresBtn.addEventListener('click', async () => {
     try {
       const payload = buildSaveScoresPayload();
