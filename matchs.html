@@ -315,6 +315,38 @@
       flex: 1 1 auto;
     }
 
+.session-lock-bar {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid #fde68a;
+  background: #fefce8;
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.session-lock-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: bold;
+  color: #92400e;
+}
+
+.session-lock-toggle input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
+
+.session-lock-note {
+  font-size: 14px;
+  color: #78716c;
+}
+    
     .slot-name {
       font-weight: bold;
       line-height: 1.2;
@@ -513,6 +545,17 @@
           </div>
         </div>
 
+<div class="session-lock-bar">
+  <label class="session-lock-toggle" for="lockSessionToggle">
+    <input type="checkbox" id="lockSessionToggle" />
+    <span>Barrer cette session</span>
+  </label>
+
+  <div class="session-lock-note" id="lockSessionNote">
+    Choisis une session pour pouvoir la barrer.
+  </div>
+</div>
+        
         <div class="subgrid">
           <div class="courts-grid">
             <article class="court-card" data-court="1">
@@ -747,7 +790,9 @@
   const nextRoundBtn = document.getElementById('nextRoundBtn');
   const copyPrevRoundBtn = document.getElementById('copyPrevRoundBtn');
   const saveScoresBtn = document.getElementById('saveScoresBtn');
-
+  const lockSessionToggle = document.getElementById('lockSessionToggle');
+  const lockSessionNote = document.getElementById('lockSessionNote');
+  
   const removeListEl = document.getElementById('removeList');
   const benchListEl = document.getElementById('benchList');
   const removeSearchEl = document.getElementById('removeSearch');
@@ -775,6 +820,8 @@
   let currentStageNo = 1;
   let currentMatchNo = 1;
   let currentRoundPlan = null;
+  let sessionLocked = false;
+  let matchControlsBaseDisabled = true;
   let selectedSwapRef = null;
 
   
@@ -782,20 +829,45 @@
   nextRoundBtn.textContent = 'Tour suivant';
   copyPrevRoundBtn.textContent = 'Prochain à jouer';
   
-  function setMatchControlsDisabled(disabled) {
-    prevRoundBtn.disabled = disabled;
-    nextRoundBtn.disabled = disabled;
-    copyPrevRoundBtn.disabled = disabled;
-    saveScoresBtn.disabled = disabled;
-    applyRemovalBtn.disabled = disabled;
-    removeSearchEl.disabled = disabled;
+function clearSessionLockState() {
+  sessionLocked = false;
+  lockSessionToggle.checked = false;
+}
 
-    courtCards.forEach(card => {
-      card.querySelectorAll('[data-score]').forEach(input => {
-        input.disabled = disabled;
-      });
-    });
+function applySessionLockUI() {
+  const hasSession = !!String(matchSessionEl.value || '').trim();
+  const blocked = matchControlsBaseDisabled || !hasSession || sessionLocked;
+
+  lockSessionToggle.disabled = !hasSession;
+
+  if (!hasSession) {
+    lockSessionNote.textContent = 'Choisis une session pour pouvoir la barrer.';
+  } else if (sessionLocked) {
+    lockSessionNote.textContent = 'Session barrée : modification des scores bloquée.';
+  } else {
+    lockSessionNote.textContent = 'Session modifiable.';
   }
+
+  saveScoresBtn.disabled = blocked;
+
+  courtCards.forEach(card => {
+    card.querySelectorAll('[data-score]').forEach(input => {
+      input.disabled = blocked;
+    });
+  });
+}
+
+function setMatchControlsDisabled(disabled) {
+  matchControlsBaseDisabled = !!disabled;
+
+  prevRoundBtn.disabled = disabled;
+  nextRoundBtn.disabled = disabled;
+  copyPrevRoundBtn.disabled = disabled;
+  applyRemovalBtn.disabled = disabled;
+  removeSearchEl.disabled = disabled;
+
+  applySessionLockUI();
+}
 
     const DEFAULT_AVATAR =
     'data:image/svg+xml;utf8,' +
@@ -2199,6 +2271,7 @@ roundPlan.matches.forEach(match => {
   }
 
   function syncSelectedSession() {
+    clearSessionLockState();
     const option = matchSessionEl.options[matchSessionEl.selectedIndex];
 
     if (!option || !option.value) {
@@ -2223,7 +2296,8 @@ roundPlan.matches.forEach(match => {
 
   function populateSessions() {
     clearSessionFields();
-
+    clearSessionLockState();
+    
     const season = getSelectedSeason();
     if (!season) {
       attendanceCache = [];
@@ -2342,6 +2416,11 @@ roundPlan.matches.forEach(match => {
     renderRound();
     alert(`Le prochain match à jouer est préparé : round ${currentStageNo}, match ${currentMatchNo}.`);
   });
+
+lockSessionToggle.addEventListener('change', () => {
+  sessionLocked = !!lockSessionToggle.checked;
+  applySessionLockUI();
+});
   
 document.querySelector('.courts-grid').addEventListener('click', event => {
   const container = event.target.closest('.swap-enabled');
