@@ -830,6 +830,7 @@
   let attendanceCache = [];
   let sessionMatchesCache = [];
   let rankingCache = [];
+  let sessionSeedOrderIdsCache = [];
   let removedPlayerIds = new Set();
 
   let currentStageNo = 1;
@@ -962,6 +963,42 @@ function setMatchControlsDisabled(disabled) {
   return sessions.find(session =>
     String(session.no_session || '').trim() === noSession
   ) || null;
+}
+
+function compareSessionNo(a, b) {
+  const aNum = Number(String(a?.no_session || '').trim());
+  const bNum = Number(String(b?.no_session || '').trim());
+
+  if (Number.isFinite(aNum) && Number.isFinite(bNum) && aNum !== bNum) {
+    return aNum - bNum;
+  }
+
+  return String(a?.no_session || '').localeCompare(String(b?.no_session || ''), 'fr', {
+    numeric: true,
+    sensitivity: 'base'
+  });
+}
+
+function getPreviousSessionMeta() {
+  const season = getSelectedSeason();
+  const currentSession = getSelectedSessionMeta();
+
+  if (!season || !currentSession) {
+    return null;
+  }
+
+  const sessions = Array.isArray(season.sessions) ? [...season.sessions] : [];
+  sessions.sort(compareSessionNo);
+
+  const currentIndex = sessions.findIndex(session =>
+    String(session.no_session || '').trim() === String(currentSession.no_session || '').trim()
+  );
+
+  if (currentIndex <= 0) {
+    return null;
+  }
+
+  return sessions[currentIndex - 1] || null;
 }
 
 async function saveSessionLockState(locked) {
@@ -1207,6 +1244,38 @@ async function saveSessionLockState(locked) {
         sensitivity: 'base'
       });
     });
+  }
+
+  function getInitialOrderedPlayers(players) {
+    const fallbackOrdered = getOrderedPlayers(players);
+    if (!Array.isArray(sessionSeedOrderIdsCache) || !sessionSeedOrderIdsCache.length) {
+      return fallbackOrdered;
+    }
+
+    const playerMap = buildPlayerMapFromPlayers(players);
+    const seededPlayers = [];
+    const usedIds = new Set();
+
+    sessionSeedOrderIdsCache.forEach(joueurId => {
+      const safeId = String(joueurId || '').trim();
+      if (!safeId || !playerMap[safeId] || usedIds.has(safeId)) {
+        return;
+      }
+
+      seededPlayers.push(playerMap[safeId]);
+      usedIds.add(safeId);
+    });
+
+    fallbackOrdered.forEach(player => {
+      const joueurId = String(player?.joueur_id || '').trim();
+      if (!joueurId || usedIds.has(joueurId)) {
+        return;
+      }
+      seededPlayers.push(player);
+      usedIds.add(joueurId);
+    });
+
+    return seededPlayers;
   }
 
   function comparePlayerNames(a, b) {
@@ -1650,14 +1719,14 @@ async function saveSessionLockState(locked) {
         return frozenStructure;
       }
 
-      const initialStructure = partitionPlayers(getOrderedPlayers(activePlayers));
+      const initialStructure = partitionPlayers(getInitialOrderedPlayers(activePlayers));
       writeFrozenRoundOneStructure(activePlayers, initialStructure);
       return initialStructure;
     }
 
     const previousStage = getSavedStage(numericStageNo - 1);
     if (!previousStage || !Array.isArray(previousStage.matches) || !previousStage.matches.length) {
-      return partitionPlayers(getOrderedPlayers(activePlayers));
+      return partitionPlayers(getInitialOrderedPlayers(activePlayers));
     }
 
     return buildNextStageGroupsFromPreviousStage(previousStage, activePlayers);
@@ -2400,20 +2469,19 @@ roundPlan.matches.forEach(match => {
     attendanceCache = Array.isArray(result.joueurs) ? result.joueurs : [];
   }
 
-  async function fetchSessionMatches() {
+  async function fetchSessionMatchesForNoSession(noSession) {
     const season = getSelectedSeason();
     const saisonId = season ? String(season.saison_id || '').trim() : '';
-    const noSession = String(matchSessionNoEl.value || '').trim();
+    const safeNoSession = String(noSession || '').trim();
 
-    if (!saisonId || !noSession) {
-      sessionMatchesCache = [];
-      return;
+    if (!saisonId || !safeNoSession) {
+      return [];
     }
 
     const params = new URLSearchParams({
       action: 'getSessionMatches',
       saison_id: saisonId,
-      no_session: noSession
+      no_session: safeNoSession
     });
 
     const response = await fetch(`${API_URL}?${params.toString()}`);
@@ -2423,7 +2491,66 @@ roundPlan.matches.forEach(match => {
       throw new Error(result.error || 'Erreur API inconnue');
     }
 
-    sessionMatchesCache = Array.isArray(result.rounds) ? result.rounds : [];
+    return Array.isArray(result.rounds) ? result.rounds : [];
+  }
+
+  async function fetchSessionMatches() {
+    const noSession = String(matchSessionNoEl.value || '').trim();
+
+    if (!noSession) {
+      sessionMatchesCache = [];
+      return;
+    }
+
+    sessionMatchesCache = await fetchSessionMatchesForNoSession(noSession);
+  }
+
+  async function buildSessionSeedOrderIds() {
+    const activePlayers = getActivePlayers();
+    const activePlayerMap = buildPlayerMapFromPlayers(activePlayers);
+    const fallbackIds = getOrderedPlayers(activePlayers)
+      .map(player => String(player?.joueur_id || '').trim())
+      .filter(Boolean);
+
+    const previousSession = getPreviousSessionMeta();
+    if (!previousSession) {
+      sessionSeedOrderIdsCache = fallbackIds;
+      return;
+    }
+
+    const previousRounds = await fetchSessionMatchesForNoSession(previousSession.no_session);
+    const previousRoundTwo = previousRounds.find(round => Number(round?.round_no || 0) === 2) || null;
+
+    if (!previousRoundTwo || !Array.isArray(previousRoundTwo.matches) || !previousRoundTwo.matches.length) {
+      sessionSeedOrderIdsCache = fallbackIds;
+      return;
+    }
+
+    const previousGroups = extractGroupsFromSavedStage(previousRoundTwo);
+    const seededIds = [];
+    const usedIds = new Set();
+
+    previousGroups.forEach(group => {
+      (group.players || []).forEach(player => {
+        const joueurId = String(player?.joueur_id || '').trim();
+        if (!joueurId || !activePlayerMap[joueurId] || usedIds.has(joueurId)) {
+          return;
+        }
+
+        seededIds.push(joueurId);
+        usedIds.add(joueurId);
+      });
+    });
+
+    fallbackIds.forEach(joueurId => {
+      if (!joueurId || usedIds.has(joueurId)) {
+        return;
+      }
+      seededIds.push(joueurId);
+      usedIds.add(joueurId);
+    });
+
+    sessionSeedOrderIdsCache = seededIds;
   }
 
   async function fetchRanking() {
@@ -2459,6 +2586,7 @@ roundPlan.matches.forEach(match => {
       attendanceCache = [];
       sessionMatchesCache = [];
       rankingCache = [];
+      sessionSeedOrderIdsCache = [];
       currentStageNo = 1;
       currentMatchNo = 1;
       renderRound();
@@ -2471,6 +2599,8 @@ roundPlan.matches.forEach(match => {
         fetchSessionMatches(),
         fetchRanking()
       ]);
+
+      await buildSessionSeedOrderIds();
 
       const activePlayers = getActivePlayers();
       const nextPlayable = getNextPlayablePosition(activePlayers);
@@ -2497,6 +2627,7 @@ roundPlan.matches.forEach(match => {
       attendanceCache = [];
       sessionMatchesCache = [];
       rankingCache = [];
+      sessionSeedOrderIdsCache = [];
       currentRoundPlan = null;
       resetCourts();
       removeListEl.innerHTML = `
@@ -2521,6 +2652,7 @@ function syncSelectedSession() {
     attendanceCache = [];
     sessionMatchesCache = [];
     rankingCache = [];
+    sessionSeedOrderIdsCache = [];
     removedPlayerIds = new Set();
     currentStageNo = 1;
     currentMatchNo = 1;
