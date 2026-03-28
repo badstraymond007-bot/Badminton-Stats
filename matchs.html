@@ -2527,10 +2527,21 @@ roundPlan.matches.forEach(match => {
     }
 
     const previousGroups = extractGroupsFromSavedStage(previousRoundTwo);
+    if (!previousGroups.length) {
+      sessionSeedOrderIdsCache = fallbackIds;
+      return;
+    }
+
+    const previousRoundTwoPlayers = previousGroups.flatMap(group => group.players || []).filter(Boolean);
+    const simulatedNextStructure = buildNextStageGroupsFromPreviousStage(previousRoundTwo, previousRoundTwoPlayers);
+    const simulatedNextGroups = Array.isArray(simulatedNextStructure?.groups)
+      ? simulatedNextStructure.groups
+      : [];
+
     const seededIds = [];
     const usedIds = new Set();
 
-    previousGroups.forEach(group => {
+    simulatedNextGroups.forEach(group => {
       (group.players || []).forEach(player => {
         const joueurId = String(player?.joueur_id || '').trim();
         if (!joueurId || !activePlayerMap[joueurId] || usedIds.has(joueurId)) {
