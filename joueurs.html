@@ -479,11 +479,11 @@ hero {
             <div class="stats-header">
               <div class="stats-title-wrap">
                 <h3>Statistiques du joueur</h3>
-                <p>
-                  Aperçu visuel pour la fiche joueur. Les vraies données seront branchées à l’étape suivante.
+                <p id="statsIntroText">
+                  Les statistiques se chargent automatiquement quand tu ouvres la fiche d’un joueur.
                 </p>
               </div>
-              <div class="stats-badge">Vue club pro</div>
+              <div id="statsBadge" class="stats-badge">Prêt à charger</div>
             </div>
 
             <div class="stats-grid">
@@ -652,6 +652,182 @@ hero {
       document.getElementById('playerDetailCard').style.display = show ? 'block' : 'none';
     }
 
+    let statsRequestSeq = 0;
+
+    function setStatValue(id, value) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = value == null || value === '' ? '—' : String(value);
+    }
+
+    function resetPlayerStats(message, badgeText) {
+      setStatValue('statSeasonWins', '—');
+      setStatValue('statSeasonMatches', '—');
+      setStatValue('statGlobalWins', '—');
+      setStatValue('statWinRate', '—');
+      setStatValue('statPointsFor', '—');
+      setStatValue('statPointsAgainst', '—');
+      setStatValue('statPointDiff', '—');
+      setStatValue('statBiggestGap', '—');
+      setStatValue('statBestPartner', '—');
+      setStatValue('statMostFrequentPartner', '—');
+      setStatValue('statNemesis', '—');
+      setStatValue('statMostPlayedOpponent', '—');
+      setStatValue('statBiggestWin', '—');
+      setStatValue('statClosestLoss', '—');
+      setStatValue('statBestStreak', '—');
+      setStatValue('statFavoriteCourt', '—');
+
+      const intro = document.getElementById('statsIntroText');
+      const badge = document.getElementById('statsBadge');
+
+      if (intro) {
+        intro.textContent = message || 'Les statistiques se chargent automatiquement quand tu ouvres la fiche d’un joueur.';
+      }
+
+      if (badge) {
+        badge.textContent = badgeText || 'Prêt à charger';
+      }
+    }
+
+    function formatPercent(value) {
+      const num = Number(value || 0);
+      return Number.isFinite(num) ? (Math.round(num * 10) / 10).toFixed(1) + ' %' : '—';
+    }
+
+    function formatSigned(value) {
+      const num = Number(value || 0);
+      if (!Number.isFinite(num)) return '—';
+      return (num > 0 ? '+' : '') + String(num);
+    }
+
+    function formatPartnerStat(item, primaryKey, suffix) {
+      if (!item || !item.name) return '—';
+      const primaryValue = Number(item[primaryKey] || 0);
+      const matches = Number(item.matches || 0);
+      const winRate = Number(item.winRate || 0);
+      const extra = [];
+      if (Number.isFinite(primaryValue) && primaryValue > 0) {
+        extra.push(primaryValue + ' ' + suffix);
+      }
+      if (matches > 0) {
+        extra.push(matches + ' matchs');
+      }
+      if (winRate > 0) {
+        extra.push((Math.round(winRate * 10) / 10).toFixed(1) + ' %');
+      }
+      return extra.length ? item.name + ' (' + extra.join(' • ') + ')' : item.name;
+    }
+
+    function formatOpponentStat(item, primaryKey, suffix) {
+      if (!item || !item.name) return '—';
+      const primaryValue = Number(item[primaryKey] || 0);
+      const matches = Number(item.matches || 0);
+      const extra = [];
+      if (Number.isFinite(primaryValue) && primaryValue > 0) {
+        extra.push(primaryValue + ' ' + suffix);
+      }
+      if (matches > 0) {
+        extra.push(matches + ' matchs');
+      }
+      return extra.length ? item.name + ' (' + extra.join(' • ') + ')' : item.name;
+    }
+
+    function formatRecord(record, isLoss) {
+      if (!record) return '—';
+      const scoreFor = Number(record.scoreFor || 0);
+      const scoreAgainst = Number(record.scoreAgainst || 0);
+      const diffValue = Number(record.diff || 0);
+      const diffAbs = Math.abs(diffValue);
+      const prefix = Number.isFinite(scoreFor) && Number.isFinite(scoreAgainst)
+        ? (scoreFor + '-' + scoreAgainst)
+        : '—';
+      const bits = [];
+      if (diffAbs > 0) {
+        bits.push((isLoss ? '-' : '+') + diffAbs);
+      }
+      if (record.sessionNo) {
+        bits.push('session ' + record.sessionNo);
+      }
+      if (record.courtNo) {
+        bits.push('terrain ' + record.courtNo);
+      }
+      return bits.length ? prefix + ' (' + bits.join(' • ') + ')' : prefix;
+    }
+
+    function formatFavoriteCourt(court) {
+      if (!court || !court.courtNo) return '—';
+      const matches = Number(court.matches || 0);
+      const wins = Number(court.wins || 0);
+      const extras = [];
+      if (matches > 0) extras.push(matches + ' matchs');
+      if (wins > 0) extras.push(wins + ' victoires');
+      return extras.length
+        ? ('Terrain ' + court.courtNo + ' (' + extras.join(' • ') + ')')
+        : ('Terrain ' + court.courtNo);
+    }
+
+    async function loadPlayerStats(playerId) {
+      const requestId = ++statsRequestSeq;
+      resetPlayerStats('Chargement des statistiques du joueur...', 'Chargement');
+
+      try {
+        const response = await fetch(
+          API_BASE + '?action=getPlayerStats&joueur_id=' + encodeURIComponent(playerId)
+        );
+        const data = await response.json();
+
+        if (requestId !== statsRequestSeq) return;
+
+        if (!data || !data.ok || !data.stats) {
+          throw new Error((data && data.error) || 'Réponse getPlayerStats invalide.');
+        }
+
+        const stats = data.stats;
+        const season = stats.season || {};
+        const global = stats.global || {};
+        const relations = stats.relationships || {};
+        const records = stats.records || {};
+
+        setStatValue('statSeasonWins', season.wins ?? 0);
+        setStatValue('statSeasonMatches', season.matches ?? 0);
+        setStatValue('statGlobalWins', global.wins ?? 0);
+        setStatValue('statWinRate', formatPercent(global.winRate ?? 0));
+        setStatValue('statPointsFor', global.pointsFor ?? 0);
+        setStatValue('statPointsAgainst', global.pointsAgainst ?? 0);
+        setStatValue('statPointDiff', formatSigned(global.pointDiff ?? 0));
+        setStatValue('statBiggestGap', global.biggestGap != null ? String(global.biggestGap) : '—');
+        setStatValue('statBestPartner', formatPartnerStat(relations.bestPartner, 'wins', 'victoires'));
+        setStatValue('statMostFrequentPartner', formatPartnerStat(relations.mostFrequentPartner, 'matches', 'matchs'));
+        setStatValue('statNemesis', formatOpponentStat(relations.nemesis, 'losses', 'défaites'));
+        setStatValue('statMostPlayedOpponent', formatOpponentStat(relations.mostPlayedOpponent, 'matches', 'matchs'));
+        setStatValue('statBiggestWin', formatRecord(records.biggestWin, false));
+        setStatValue('statClosestLoss', formatRecord(records.closestLoss, true));
+        setStatValue('statBestStreak', records.bestWinStreak != null ? (records.bestWinStreak + ' victoires') : '—');
+        setStatValue('statFavoriteCourt', formatFavoriteCourt(records.favoriteCourt));
+
+        const intro = document.getElementById('statsIntroText');
+        const badge = document.getElementById('statsBadge');
+
+        if (intro) {
+          const seasonName = safeText(stats.seasonName).trim();
+          const globalMatches = Number(global.matches || 0);
+          const presenceCount = Number(season.presences || 0);
+          intro.textContent = seasonName
+            ? (seasonName + ' • ' + globalMatches + ' matchs analysés au total • ' + presenceCount + ' présences cette saison')
+            : (globalMatches + ' matchs analysés au total');
+        }
+
+        if (badge) {
+          badge.textContent = stats.seasonName ? ('Saison active • ' + stats.seasonName) : 'Stats à jour';
+        }
+      } catch (error) {
+        console.error(error);
+        if (requestId !== statsRequestSeq) return;
+        resetPlayerStats('Impossible de charger les statistiques pour le moment.', 'Indisponible');
+      }
+    }
+
     function openPlayer(playerId) {
       const player = findPlayerById(playerId);
       if (!player) return;
@@ -668,11 +844,13 @@ hero {
 
       refreshPhotoPreview();
       renderPlayersList(filteredPlayers);
+      loadPlayerStats(selectedPlayerId);
     }
 
     function closePlayer() {
       selectedPlayerId = '';
       showPlayerCard(false);
+      resetPlayerStats('Les statistiques se chargent automatiquement quand tu ouvres la fiche d’un joueur.', 'Prêt à charger');
       renderPlayersList(filteredPlayers);
     }
 
