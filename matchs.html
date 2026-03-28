@@ -291,39 +291,7 @@
     .slot-value {
       font-weight: bold;
     }
-    .slot-player,
-    .waiting-player-card {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      min-height: 42px;
-    }
 
-    .slot-photo {
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
-      object-fit: cover;
-      background: #e5e7eb;
-      border: 1px solid var(--line);
-      flex: 0 0 42px;
-    }
-
-    .slot-text {
-      min-width: 0;
-      flex: 1 1 auto;
-    }
-
-    .slot-name {
-      font-weight: bold;
-      line-height: 1.2;
-      word-break: break-word;
-    }
-
-    .slot-empty {
-      font-weight: bold;
-      color: var(--muted);
-    }
     .waiting-box {
       margin-top: 12px;
       padding: 12px;
@@ -341,35 +309,7 @@
     .waiting-value {
       font-weight: bold;
     }
-    .slot.team1-slot {
-      background: #eff6ff;
-      border-color: #bfdbfe;
-    }
 
-    .slot.team2-slot {
-      background: #f0fdf4;
-      border-color: #bbf7d0;
-    }
-
-    .waiting-box.waiting-highlight {
-      background: #fefce8;
-      border-color: #fde68a;
-    }
-
-    .slot.team1-slot .slot-label {
-      color: #1d4ed8;
-      font-weight: bold;
-    }
-
-    .slot.team2-slot .slot-label {
-      color: #15803d;
-      font-weight: bold;
-    }
-
-    .waiting-box.waiting-highlight .waiting-label {
-      color: #a16207;
-      font-weight: bold;
-    }
     .score-row {
       display: grid;
       grid-template-columns: 1fr 80px;
@@ -486,25 +426,25 @@
               </div>
 
               <div class="court-players">
-                <div class="slot team1-slot">
+                <div class="slot">
                   <div class="slot-label">Équipe 1 • Joueur 1</div>
                   <div class="slot-value" data-slot="team1_player1">—</div>
                 </div>
-                <div class="slot team1-slot">
+                <div class="slot">
                   <div class="slot-label">Équipe 1 • Joueur 2</div>
                   <div class="slot-value" data-slot="team1_player2">—</div>
                 </div>
-                <div class="slot team2-slot">
+                <div class="slot">
                   <div class="slot-label">Équipe 2 • Joueur 1</div>
                   <div class="slot-value" data-slot="team2_player1">—</div>
                 </div>
-                <div class="slot team2-slot">
+                <div class="slot">
                   <div class="slot-label">Équipe 2 • Joueur 2</div>
                   <div class="slot-value" data-slot="team2_player2">—</div>
                 </div>
               </div>
 
-              <div class="waiting-box waiting-highlight">
+              <div class="waiting-box">
                 <div class="waiting-label">Joueur en attente</div>
                 <div class="waiting-value" data-role="waiting-player">—</div>
               </div>
@@ -525,25 +465,25 @@
               </div>
 
               <div class="court-players">
-                <div class="slot team1-slot">
+                <div class="slot">
                   <div class="slot-label">Équipe 1 • Joueur 1</div>
                   <div class="slot-value" data-slot="team1_player1">—</div>
                 </div>
-                <div class="slot team1-slot">
+                <div class="slot">
                   <div class="slot-label">Équipe 1 • Joueur 2</div>
                   <div class="slot-value" data-slot="team1_player2">—</div>
                 </div>
-                <div class="slot-label">Équipe 2 • Joueur 1</div>
+                <div class="slot">
                   <div class="slot-label">Équipe 2 • Joueur 1</div>
                   <div class="slot-value" data-slot="team2_player1">—</div>
                 </div>
-                <div class="slot-label">Équipe 2 • Joueur 1</div>
+                <div class="slot">
                   <div class="slot-label">Équipe 2 • Joueur 2</div>
                   <div class="slot-value" data-slot="team2_player2">—</div>
                 </div>
               </div>
 
-              <div class="waiting-box waiting-highlight">
+              <div class="waiting-box">
                 <div class="waiting-label">Joueur en attente</div>
                 <div class="waiting-value" data-role="waiting-player">—</div>
               </div>
@@ -564,25 +504,25 @@
               </div>
 
               <div class="court-players">
-                <div class="slot team1-slot">
+                <div class="slot">
                   <div class="slot-label">Équipe 1 • Joueur 1</div>
                   <div class="slot-value" data-slot="team1_player1">—</div>
                 </div>
-                <div class="slot team1-slot">
+                <div class="slot">
                   <div class="slot-label">Équipe 1 • Joueur 2</div>
                   <div class="slot-value" data-slot="team1_player2">—</div>
                 </div>
-                <div class="slot-label">Équipe 2 • Joueur 1</div>
+                <div class="slot">
                   <div class="slot-label">Équipe 2 • Joueur 1</div>
                   <div class="slot-value" data-slot="team2_player1">—</div>
                 </div>
-                <div class="slot-label">Équipe 2 • Joueur 1</div>
+                <div class="slot">
                   <div class="slot-label">Équipe 2 • Joueur 2</div>
                   <div class="slot-value" data-slot="team2_player2">—</div>
                 </div>
               </div>
 
-              <div class="waiting-box waiting-highlight">
+              <div class="waiting-box">
                 <div class="waiting-label">Joueur en attente</div>
                 <div class="waiting-value" data-role="waiting-player">—</div>
               </div>
@@ -748,58 +688,6 @@
       });
     });
   }
-
-  const DEFAULT_AVATAR =
-    'data:image/svg+xml;utf8,' +
-    encodeURIComponent(`
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
-        <rect width="200" height="200" fill="#e5e7eb"/>
-        <circle cx="100" cy="78" r="34" fill="#9ca3af"/>
-        <path d="M40 170c10-30 34-46 60-46s50 16 60 46" fill="#9ca3af"/>
-      </svg>
-    `);
-
-  function safeText(value) {
-    return value == null ? '' : String(value);
-  }
-
-  function getPlayerPhoto(player) {
-    const fileId = safeText(player && player.photo_drive).trim();
-    return fileId
-      ? ('https://drive.google.com/thumbnail?id=' + encodeURIComponent(fileId) + '&sz=w300')
-      : DEFAULT_AVATAR;
-  }
-
-  function renderPlayerCard(player) {
-    if (!player) {
-      return `<div class="slot-empty">—</div>`;
-    }
-
-    return `
-      <div class="slot-player">
-        <img class="slot-photo" src="${getPlayerPhoto(player)}" alt="${escapeHtml(safeText(player.nom || player.joueur_id || 'Joueur'))}">
-        <div class="slot-text">
-          <div class="slot-name">${escapeHtml(safeText(player.nom || player.joueur_id || '—'))}</div>
-        </div>
-      </div>
-    `;
-  }
-
-  function renderWaitingPlayerCard(player) {
-    if (!player) {
-      return `<div class="slot-empty">—</div>`;
-    }
-
-    return `
-      <div class="waiting-player-card">
-        <img class="slot-photo" src="${getPlayerPhoto(player)}" alt="${escapeHtml(safeText(player.nom || player.joueur_id || 'Joueur'))}">
-        <div class="slot-text">
-          <div class="slot-name">${escapeHtml(safeText(player.nom || player.joueur_id || '—'))}</div>
-        </div>
-      </div>
-    `;
-  }
-  
   function escapeHtml(value) {
     return String(value ?? '')
       .replace(/&/g, '&amp;')
@@ -1398,17 +1286,16 @@
     courtCards.forEach(card => {
       card.querySelector('[data-role="group-badge"]').textContent = 'Aucun groupe';
       card.querySelector('[data-role="group-meta"]').textContent = 'En attente de joueurs';
-      card.querySelector('[data-role="waiting-player"]').innerHTML = '<div class="slot-empty">—</div>';
-
+      card.querySelector('[data-role="waiting-player"]').textContent = '—';
       card.querySelectorAll('[data-slot]').forEach(slot => {
-        slot.innerHTML = '<div class="slot-empty">—</div>';
+        slot.textContent = '—';
       });
-
       card.querySelectorAll('[data-score]').forEach(input => {
         input.value = '';
       });
     });
   }
+
   function formatPlayer(player) {
     if (!player) return '—';
     return player.nom || player.joueur_id || '—';
@@ -1556,11 +1443,11 @@
           ? `Round ${currentStageNo} • match ${currentMatchNo} • sauvegardé`
           : `Round ${currentStageNo} • match ${currentMatchNo} • ${match.group_size} joueurs`;
 
-      card.querySelector('[data-role="waiting-player"]').innerHTML = renderWaitingPlayerCard(match.waiting_player);
-      card.querySelector('[data-slot="team1_player1"]').innerHTML = renderPlayerCard(match.team1_player1);
-      card.querySelector('[data-slot="team1_player2"]').innerHTML = renderPlayerCard(match.team1_player2);
-      card.querySelector('[data-slot="team2_player1"]').innerHTML = renderPlayerCard(match.team2_player1);
-      card.querySelector('[data-slot="team2_player2"]').innerHTML = renderPlayerCard(match.team2_player2);
+      card.querySelector('[data-role="waiting-player"]').textContent = formatPlayer(match.waiting_player);
+      card.querySelector('[data-slot="team1_player1"]').textContent = formatPlayer(match.team1_player1);
+      card.querySelector('[data-slot="team1_player2"]').textContent = formatPlayer(match.team1_player2);
+      card.querySelector('[data-slot="team2_player1"]').textContent = formatPlayer(match.team2_player1);
+      card.querySelector('[data-slot="team2_player2"]').textContent = formatPlayer(match.team2_player2);
 
       score1Input.value = match.team1_score === '' || match.team1_score === null || match.team1_score === undefined
         ? ''
@@ -1796,7 +1683,7 @@
             <div class="mini-player-name">Présence non prise</div>
             <div class="mini-player-code">Commence par prendre la présence pour la session ${escapeHtml(matchSessionNoEl.value || '')} du ${escapeHtml(matchDateEl.value || '')}.</div>
             <div style="margin-top:12px;">
-              <a class="btn" href="./presences.html">Aller à la présence</a>
+              <a class="btn" href="presences.html">Aller à la présence</a>
             </div>
           </div>
         </div>
