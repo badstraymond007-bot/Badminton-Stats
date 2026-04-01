@@ -19,10 +19,11 @@
       --warn-line: #fdba74;
       --ok-bg: #ecfdf5;
       --ok-line: #a7f3d0;
-      --rest-bg: #fefce8;
-      --rest-line: #fde68a;
     }
-
+    .btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
     * { box-sizing: border-box; }
 
     body {
@@ -33,7 +34,7 @@
     }
 
     .wrap {
-      max-width: 1400px;
+      max-width: 1200px;
       margin: 0 auto;
       padding: 24px;
     }
@@ -69,7 +70,9 @@
       cursor: pointer;
     }
 
-    .btn:hover { background: var(--accent-hover); }
+    .btn:hover {
+      background: var(--accent-hover);
+    }
 
     .btn.secondary {
       background: #fff;
@@ -81,14 +84,9 @@
       color: var(--accent);
     }
 
-    .btn:disabled {
-      opacity: 0.55;
-      cursor: not-allowed;
-    }
-
     .layout {
       display: grid;
-      grid-template-columns: minmax(0, 1.9fr) minmax(320px, 1fr);
+      grid-template-columns: 1.7fr 1fr;
       gap: 20px;
     }
 
@@ -128,7 +126,8 @@
       font-size: 14px;
     }
 
-    input, select {
+    input,
+    select {
       width: 100%;
       padding: 12px 14px;
       border: 1px solid var(--line);
@@ -161,38 +160,6 @@
       flex-wrap: wrap;
     }
 
-    .session-lock-bar {
-      margin-top: 14px;
-      padding: 12px 14px;
-      border: 1px solid var(--rest-line);
-      background: var(--rest-bg);
-      border-radius: 12px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .session-lock-toggle {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-weight: bold;
-      color: #92400e;
-    }
-
-    .session-lock-toggle input[type="checkbox"] {
-      width: 18px;
-      height: 18px;
-      margin: 0;
-    }
-
-    .session-lock-note {
-      font-size: 14px;
-      color: #78716c;
-    }
-
     .subgrid {
       display: grid;
       grid-template-columns: 1fr;
@@ -200,194 +167,19 @@
       margin-top: 18px;
     }
 
-    .groups-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 16px;
-    }
-
-    .group-card,
-    .bench-card,
-    .summary-box,
-    .remove-box {
-      border-radius: 14px;
-      padding: 16px;
-      border: 1px solid var(--line);
-      background: #fafafa;
-    }
-
-    .group-card.is-rest {
-      background: #fffef5;
-      border-color: var(--rest-line);
-    }
-
-    .group-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 10px;
-    }
-
-    .group-title {
-      margin: 0;
-      font-size: 20px;
-    }
-
-    .group-badge {
-      display: inline-block;
-      padding: 5px 10px;
-      border-radius: 999px;
-      background: var(--soft);
-      border: 1px solid var(--soft-line);
-      color: var(--accent);
-      font-weight: bold;
-      font-size: 13px;
-      margin-top: 6px;
-    }
-
-    .group-card.is-rest .group-badge {
-      background: var(--rest-bg);
-      border-color: var(--rest-line);
-      color: #a16207;
-    }
-
-    .group-meta {
-      font-size: 13px;
-      color: var(--muted);
-      margin-top: 4px;
-    }
-
-    .group-players {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-top: 12px;
-    }
-
-    .slot {
-      border: 1px dashed #cbd5e1;
-      border-radius: 12px;
-      padding: 12px;
-      background: #fff;
-      min-height: 68px;
-    }
-
-    .slot.team1-slot {
-      background: #eff6ff;
-      border-color: #bfdbfe;
-    }
-
-    .slot.team2-slot {
-      background: #f0fdf4;
-      border-color: #bbf7d0;
-    }
-
-    .slot-label,
-    .waiting-label {
-      font-size: 13px;
-      color: var(--muted);
-      margin-bottom: 6px;
-    }
-
-    .slot.team1-slot .slot-label {
-      color: #1d4ed8;
-      font-weight: bold;
-    }
-
-    .slot.team2-slot .slot-label {
-      color: #15803d;
-      font-weight: bold;
-    }
-
-    .slot-player,
-    .waiting-player-card,
-    .mini-player {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .slot-photo,
-    .mini-photo {
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
-      object-fit: cover;
-      background: #e5e7eb;
-      border: 1px solid var(--line);
-      flex: 0 0 42px;
-    }
-
-    .slot-text,
-    .mini-text {
-      min-width: 0;
-      flex: 1 1 auto;
-    }
-
-    .slot-name,
-    .mini-player-name {
-      font-weight: bold;
-      line-height: 1.2;
-      word-break: break-word;
-    }
-
-    .slot-empty,
-    .mini-player-code {
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    .waiting-box {
-      margin-top: 12px;
-      padding: 12px;
-      border-radius: 12px;
-      background: #fff;
-      border: 1px solid var(--line);
-    }
-
-    .waiting-box.waiting-highlight {
-      background: var(--rest-bg);
-      border-color: var(--rest-line);
-    }
-
-    .waiting-box.waiting-highlight .waiting-label {
-      color: #a16207;
-      font-weight: bold;
-    }
-
-    .score-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-top: 12px;
-    }
-
-    .group-save-wrap {
-      margin-top: 12px;
-    }
-
-    .group-save-wrap .btn {
-      width: 100%;
-      text-align: center;
-    }
-
-    .score-box {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .score-label {
-      font-size: 13px;
-      font-weight: bold;
-    }
-
-    .score-label.team1 { color: #1d4ed8; }
-    .score-label.team2 { color: #15803d; }
-
     .remove-box {
       background: var(--warn-bg);
-      border-color: var(--warn-line);
+      border: 1px solid var(--warn-line);
+      border-radius: 14px;
+      padding: 16px;
+    }
+
+    .remove-box h3,
+    .summary-box h3,
+    .court-card h3,
+    .bench-card h3 {
+      margin: 0 0 10px;
+      font-size: 18px;
     }
 
     .remove-tools {
@@ -406,10 +198,12 @@
       display: flex;
       flex-direction: column;
       gap: 10px;
-      margin-top: 12px;
     }
 
     .mini-player {
+      display: flex;
+      align-items: center;
+      gap: 12px;
       padding: 12px 14px;
       border: 1px solid var(--line);
       border-radius: 12px;
@@ -422,6 +216,202 @@
       margin: 0;
       flex: 0 0 auto;
     }
+
+    .mini-player-name {
+      font-weight: bold;
+    }
+
+    .mini-player-code {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .courts-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .court-card,
+    .bench-card,
+    .summary-box {
+      border-radius: 14px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      background: #fafafa;
+    }
+
+    .court-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .group-badge {
+      display: inline-block;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: var(--soft);
+      border: 1px solid var(--soft-line);
+      color: var(--accent);
+      font-weight: bold;
+      font-size: 13px;
+      margin-top: 6px;
+    }
+
+    .court-meta {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .court-players {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .slot {
+      border: 1px dashed #cbd5e1;
+      border-radius: 12px;
+      padding: 12px;
+      background: #fff;
+      min-height: 68px;
+    }
+
+    .slot-label {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .slot-value {
+      font-weight: bold;
+    }
+
+        .slot-player,
+    .waiting-player-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 42px;
+    }
+
+    .slot-photo {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: #e5e7eb;
+      border: 1px solid var(--line);
+      flex: 0 0 42px;
+    }
+
+    .slot-text {
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+
+.session-lock-bar {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid #fde68a;
+  background: #fefce8;
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.session-lock-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: bold;
+  color: #92400e;
+}
+
+.session-lock-toggle input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
+
+.session-lock-note {
+  font-size: 14px;
+  color: #78716c;
+}
+    
+    .slot-name {
+      font-weight: bold;
+      line-height: 1.2;
+      word-break: break-word;
+    }
+
+    .slot-empty {
+      font-weight: bold;
+      color: var(--muted);
+    }
+    
+    .waiting-box {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 12px;
+      background: #fff;
+      border: 1px solid var(--line);
+    }
+
+    .waiting-label {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .waiting-value {
+      font-weight: bold;
+    }
+
+    .slot.team1-slot {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+    }
+
+    .slot.team2-slot {
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+    }
+
+    .waiting-box.waiting-highlight {
+      background: #fefce8;
+      border-color: #fde68a;
+    }
+
+    .slot.team1-slot .slot-label {
+      color: #1d4ed8;
+      font-weight: bold;
+    }
+
+    .slot.team2-slot .slot-label {
+      color: #15803d;
+      font-weight: bold;
+    }
+
+    .waiting-box.waiting-highlight .waiting-label {
+      color: #a16207;
+      font-weight: bold;
+    }
+    
+.score-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
 
     .summary-box {
       background: var(--ok-bg);
@@ -441,42 +431,65 @@
       padding-bottom: 0;
     }
 
-    .summary-label { color: var(--muted); }
-    .summary-value { font-weight: bold; text-align: right; }
-
-    .swap-enabled {
-      cursor: pointer;
-      transition: box-shadow 0.15s ease;
+    .summary-label {
+      color: var(--muted);
     }
 
-    .swap-enabled:hover {
-      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.18);
+    .summary-value {
+      font-weight: bold;
+      text-align: right;
     }
 
-    .swap-selected {
-      box-shadow: 0 0 0 3px #f59e0b;
-    }
+.score-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
 
-    .group-card.empty-card {
-      background: #fff;
-      border-style: dashed;
+.score-label {
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.score-label.team1 {
+  color: #1d4ed8;
+}
+
+.score-label.team2 {
+  color: #15803d;
+}
+    
+.slot.swap-enabled,
+.waiting-box.swap-enabled {
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.slot.swap-enabled:hover,
+.waiting-box.swap-enabled:hover {
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.18);
+}
+
+.slot.swap-selected,
+.waiting-box.swap-selected {
+  box-shadow: 0 0 0 3px #f59e0b;
+}
+    
+    .note {
+      margin-top: 14px;
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.5;
     }
 
     @media (max-width: 980px) {
-      .layout { grid-template-columns: 1fr; }
-      .session-grid { grid-template-columns: 1fr; }
-      .groups-grid {
-        display: flex;
-        gap: 14px;
-        overflow-x: auto;
-        padding-bottom: 8px;
-        scroll-snap-type: x mandatory;
-        -webkit-overflow-scrolling: touch;
+      .layout {
+        grid-template-columns: 1fr;
       }
-      .group-card {
-        flex: 0 0 calc(100vw - 56px);
-        min-width: calc(100vw - 56px);
-        scroll-snap-align: start;
+
+      .session-grid,
+      .courts-grid {
+        grid-template-columns: 1fr;
       }
     }
   </style>
@@ -486,7 +499,7 @@
     <div class="topbar">
       <div>
         <h1>Matchs et rounds</h1>
-        <p>Tous les groupes existants du round sont visibles ici, même ceux au repos.</p>
+        <p>Organiser les joueurs actifs, répartir les terrains et entrer les résultats.</p>
       </div>
       <a class="btn secondary" href="index.html">← Retour à l'accueil</a>
     </div>
@@ -494,7 +507,7 @@
     <div class="layout">
       <section class="card">
         <h2>Session active</h2>
-        <p>Choisis la saison et la session, puis ajuste les groupes directement à l'écran.</p>
+        <p>Cette page sert à gérer un round à la fois. Les joueurs présents sont la base, puis on ajuste les joueurs actifs selon les départs, blessures ou pauses.</p>
 
         <div class="session-grid">
           <div class="field">
@@ -525,46 +538,199 @@
         <div class="round-bar">
           <div class="round-title" id="roundTitle">Round 1 • Match 1</div>
           <div class="round-actions">
-            <button type="button" class="btn ghost" id="prevRoundBtn">Tour précédent</button>
-            <button type="button" class="btn ghost" id="nextRoundBtn">Tour suivant</button>
-            <button type="button" class="btn secondary" id="copyPrevRoundBtn">Prochain à jouer</button>
+            <button type="button" class="btn ghost" id="prevRoundBtn">Match précédent</button>
+            <button type="button" class="btn ghost" id="nextRoundBtn">Match suivant</button>
+            <button type="button" class="btn secondary" id="copyPrevRoundBtn">Copier le match précédent</button>
             <button type="button" class="btn" id="saveScoresBtn">Enregistrer les scores</button>
           </div>
         </div>
 
-        <div class="session-lock-bar">
-          <label class="session-lock-toggle" for="lockSessionToggle">
-            <input type="checkbox" id="lockSessionToggle" />
-            <span>Barrer cette session</span>
-          </label>
-          <div class="session-lock-note" id="lockSessionNote">Choisis une session pour pouvoir la barrer.</div>
-        </div>
+<div class="session-lock-bar">
+  <label class="session-lock-toggle" for="lockSessionToggle">
+    <input type="checkbox" id="lockSessionToggle" />
+    <span>Barrer cette session</span>
+  </label>
 
+  <div class="session-lock-note" id="lockSessionNote">
+    Choisis une session pour pouvoir la barrer.
+  </div>
+</div>
+        
         <div class="subgrid">
-          <div class="groups-grid" id="groupsGrid"></div>
+          <div class="courts-grid">
+            <article class="court-card" data-court="1">
+              <div class="court-top">
+                <div>
+                  <h3>Terrain 1</h3>
+                  <div class="group-badge" data-role="group-badge">Aucun groupe</div>
+                  <div class="court-meta" data-role="group-meta">En attente de joueurs</div>
+                </div>
+              </div>
+
+              <div class="court-players">
+               <div class="slot team1-slot">
+                  <div class="slot-label">Équipe 1 • Joueur 1</div>
+                  <div class="slot-value" data-slot="team1_player1">—</div>
+                </div>
+                <div class="slot team1-slot">
+                  <div class="slot-label">Équipe 1 • Joueur 2</div>
+                  <div class="slot-value" data-slot="team1_player2">—</div>
+                </div>
+                <div class="slot team2-slot">
+                  <div class="slot-label">Équipe 2 • Joueur 1</div>
+                  <div class="slot-value" data-slot="team2_player1">—</div>
+                </div>
+                <div class="slot team2-slot">
+                  <div class="slot-label">Équipe 2 • Joueur 2</div>
+                  <div class="slot-value" data-slot="team2_player2">—</div>
+                </div>
+              </div>
+
+              <div class="waiting-box waiting-highlight">
+                <div class="waiting-label">Joueur en attente</div>
+                <div class="waiting-value" data-role="waiting-player">—</div>
+              </div>
+
+<div class="score-row">
+  <div class="score-box">
+    <div class="score-label team1">Équipe 1</div>
+    <input type="number" min="0" placeholder="Score équipe 1" data-score="team1" />
+  </div>
+
+  <div class="score-box">
+    <div class="score-label team2">Équipe 2</div>
+    <input type="number" min="0" placeholder="Score équipe 2" data-score="team2" />
+  </div>
+</div>
+            </article>
+
+            <article class="court-card" data-court="2">
+              <div class="court-top">
+                <div>
+                  <h3>Terrain 2</h3>
+                  <div class="group-badge" data-role="group-badge">Aucun groupe</div>
+                  <div class="court-meta" data-role="group-meta">En attente de joueurs</div>
+                </div>
+              </div>
+
+              <div class="court-players">
+                <div class="slot team1-slot">
+                  <div class="slot-label">Équipe 1 • Joueur 1</div>
+                  <div class="slot-value" data-slot="team1_player1">—</div>
+                </div>
+               <div class="slot team1-slot">
+                  <div class="slot-label">Équipe 1 • Joueur 2</div>
+                  <div class="slot-value" data-slot="team1_player2">—</div>
+                </div>
+                <div class="slot team2-slot">
+                  <div class="slot-label">Équipe 2 • Joueur 1</div>
+                  <div class="slot-value" data-slot="team2_player1">—</div>
+                </div>
+                <div class="slot team2-slot">
+                  <div class="slot-label">Équipe 2 • Joueur 2</div>
+                  <div class="slot-value" data-slot="team2_player2">—</div>
+                </div>
+              </div>
+
+              <div class="waiting-box waiting-highlight">
+                <div class="waiting-label">Joueur en attente</div>
+                <div class="waiting-value" data-role="waiting-player">—</div>
+              </div>
+
+<div class="score-row">
+  <div class="score-box">
+    <div class="score-label team1">Équipe 1</div>
+    <input type="number" min="0" placeholder="Score équipe 1" data-score="team1" />
+  </div>
+
+  <div class="score-box">
+    <div class="score-label team2">Équipe 2</div>
+    <input type="number" min="0" placeholder="Score équipe 2" data-score="team2" />
+  </div>
+</div>
+            </article>
+
+            <article class="court-card" data-court="3">
+              <div class="court-top">
+                <div>
+                  <h3>Terrain 3</h3>
+                  <div class="group-badge" data-role="group-badge">Aucun groupe</div>
+                  <div class="court-meta" data-role="group-meta">En attente de joueurs</div>
+                </div>
+              </div>
+
+              <div class="court-players">
+                <div class="slot team1-slot">
+                  <div class="slot-label">Équipe 1 • Joueur 1</div>
+                  <div class="slot-value" data-slot="team1_player1">—</div>
+                </div>
+                <div class="slot team1-slot">
+                  <div class="slot-label">Équipe 1 • Joueur 2</div>
+                  <div class="slot-value" data-slot="team1_player2">—</div>
+                </div>
+                <div class="slot team2-slot">
+                  <div class="slot-label">Équipe 2 • Joueur 1</div>
+                  <div class="slot-value" data-slot="team2_player1">—</div>
+                </div>
+                <div class="slot team2-slot">
+                  <div class="slot-label">Équipe 2 • Joueur 2</div>
+                  <div class="slot-value" data-slot="team2_player2">—</div>
+                </div>
+              </div>
+
+              <div class="waiting-box waiting-highlight">
+                <div class="waiting-label">Joueur en attente</div>
+                <div class="waiting-value" data-role="waiting-player">—</div>
+              </div>
+
+<div class="score-row">
+  <div class="score-box">
+    <div class="score-label team1">Équipe 1</div>
+    <input type="number" min="0" placeholder="Score équipe 1" data-score="team1" />
+  </div>
+
+  <div class="score-box">
+    <div class="score-label team2">Équipe 2</div>
+    <input type="number" min="0" placeholder="Score équipe 2" data-score="team2" />
+  </div>
+</div>
+            </article>
+          </div>
 
           <div class="remove-box">
-            <h3>Retirer un joueur de la session</h3>
-            <p>Décoche visuellement les joueurs qui ne jouent plus ce round-ci, puis l'écran se régénère.</p>
+            <h3>Retirer un joueur de ce round</h3>
+            <p>Zone visuelle prévue pour les joueurs qui quittent, se blessent ou ne jouent pas ce round-ci. On prépare la place maintenant, sans brancher la logique de sauvegarde.</p>
 
             <div class="remove-tools">
-              <input type="text" id="removeSearch" placeholder="Rechercher un joueur..." />
+              <input type="text" id="removeSearch" placeholder="Rechercher un joueur à retirer..." />
               <button type="button" class="btn secondary" id="applyRemovalBtn">Appliquer le retrait</button>
             </div>
 
             <div class="remove-list" id="removeList">
               <div class="mini-player">
-                <div class="mini-text">
+                <div>
                   <div class="mini-player-name">Aucun joueur chargé</div>
                   <div class="mini-player-code">Choisis une session pour voir les joueurs présents</div>
                 </div>
               </div>
             </div>
 
-            <div class="bench-card" style="margin-top:16px;">
-              <h3>En pause / en attente</h3>
-              <p>Cette zone contient seulement les joueurs isolés en attente. Les groupes au repos sont affichés comme cartes.</p>
-              <div class="bench-list" id="benchList"></div>
+            <div class="bench-card" style="margin-top: 16px;">
+              <h3>En pause / en attente / groupes hors terrain</h3>
+              <p>Zone visuelle pour voir les joueurs qui ne sont pas placés sur un terrain dans ce round.</p>
+
+              <div class="bench-list" id="benchList" style="margin-top: 12px;">
+                <div class="mini-player">
+                  <div>
+                    <div class="mini-player-name">Aucun joueur en pause</div>
+                    <div class="mini-player-code">Les joueurs non placés apparaîtront ici plus tard</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="note">
+              Version prototype : ce fichier affiche maintenant la répartition automatique du round. La sauvegarde et la logique de montée/descente viendront ensuite.
             </div>
           </div>
         </div>
@@ -572,7 +738,7 @@
 
       <aside class="card">
         <h2>Résumé du round</h2>
-        <p>Petit panneau de contrôle pour suivre la soirée.</p>
+        <p>Petit panneau de contrôle pour t’aider à suivre rapidement la soirée.</p>
 
         <div class="summary-box">
           <h3>Vue rapide</h3>
@@ -581,1478 +747,2230 @@
             <div class="summary-label">Saison</div>
             <div class="summary-value" id="sumSeason">—</div>
           </div>
+
           <div class="summary-row">
             <div class="summary-label">Date</div>
             <div class="summary-value" id="sumDate">—</div>
           </div>
+
           <div class="summary-row">
             <div class="summary-label">Round</div>
             <div class="summary-value" id="sumRound">1</div>
           </div>
+
           <div class="summary-row">
             <div class="summary-label">Match</div>
             <div class="summary-value" id="sumMatch">1</div>
           </div>
+
           <div class="summary-row">
             <div class="summary-label">Joueurs présents</div>
             <div class="summary-value" id="sumPresentCount">0</div>
           </div>
+
           <div class="summary-row">
             <div class="summary-label">Joueurs actifs</div>
             <div class="summary-value" id="sumActiveCount">0</div>
           </div>
+
           <div class="summary-row">
-            <div class="summary-label">Groupes visibles</div>
+            <div class="summary-label">Groupes utilisés</div>
             <div class="summary-value" id="sumGroupCount">—</div>
           </div>
         </div>
+
+        <h2 style="margin-top: 18px;">Étapes prévues</h2>
+        <p>
+          1. Récupérer les joueurs présents de la session.<br />
+          2. Définir les joueurs actifs pour le round.<br />
+          3. Répartir les joueurs par groupes A/B/C/D/E et sur 3 terrains.<br />
+          4. Sauvegarder les matchs et les scores.<br />
+          5. Préparer le round suivant avec ajustements.
+        </p>
       </aside>
     </div>
   </div>
 
-  <script>
-    const API_URL = 'https://script.google.com/macros/s/AKfycbwddJ7s8j6uWH2fXP_h7161F_MT5ZU12X15oMx6Xx7icxud1jg9_e3iq28bjfs3X4_y/exec';
 
-    const matchSeasonEl = document.getElementById('matchSeason');
-    const matchSessionEl = document.getElementById('matchSession');
-    const matchDateEl = document.getElementById('matchDate');
-    const matchSessionNoEl = document.getElementById('matchSessionNo');
-    const roundTitleEl = document.getElementById('roundTitle');
-    const prevRoundBtn = document.getElementById('prevRoundBtn');
-    const nextRoundBtn = document.getElementById('nextRoundBtn');
-    const copyPrevRoundBtn = document.getElementById('copyPrevRoundBtn');
-    const saveScoresBtn = document.getElementById('saveScoresBtn');
-    const lockSessionToggle = document.getElementById('lockSessionToggle');
-    const lockSessionNote = document.getElementById('lockSessionNote');
-    const groupsGridEl = document.getElementById('groupsGrid');
-    const removeListEl = document.getElementById('removeList');
-    const benchListEl = document.getElementById('benchList');
-    const removeSearchEl = document.getElementById('removeSearch');
-    const applyRemovalBtn = document.getElementById('applyRemovalBtn');
+<script>
+  const API_URL = 'https://script.google.com/macros/s/AKfycbwddJ7s8j6uWH2fXP_h7161F_MT5ZU12X15oMx6Xx7icxud1jg9_e3iq28bjfs3X4_y/exec';
 
-    const sumSeasonEl = document.getElementById('sumSeason');
-    const sumDateEl = document.getElementById('sumDate');
-    const sumRoundEl = document.getElementById('sumRound');
-    const sumMatchEl = document.getElementById('sumMatch');
-    const sumPresentCountEl = document.getElementById('sumPresentCount');
-    const sumActiveCountEl = document.getElementById('sumActiveCount');
-    const sumGroupCountEl = document.getElementById('sumGroupCount');
+  const matchSeasonEl = document.getElementById('matchSeason');
+  const matchSessionEl = document.getElementById('matchSession');
+  const matchDateEl = document.getElementById('matchDate');
+  const matchSessionNoEl = document.getElementById('matchSessionNo');
+  const roundTitleEl = document.getElementById('roundTitle');
+  const prevRoundBtn = document.getElementById('prevRoundBtn');
+  const nextRoundBtn = document.getElementById('nextRoundBtn');
+  const copyPrevRoundBtn = document.getElementById('copyPrevRoundBtn');
+  const saveScoresBtn = document.getElementById('saveScoresBtn');
+  const lockSessionToggle = document.getElementById('lockSessionToggle');
+  const lockSessionNote = document.getElementById('lockSessionNote');
+  
+  const removeListEl = document.getElementById('removeList');
+  const benchListEl = document.getElementById('benchList');
+  const removeSearchEl = document.getElementById('removeSearch');
+  const applyRemovalBtn = document.getElementById('applyRemovalBtn');
 
-    const GROUP_CODES = ['A', 'B', 'C', 'D', 'E'];
-    const COURTS_PER_MATCH = 3;
-    const MAX_ROUNDS = 3;
+  const sumSeasonEl = document.getElementById('sumSeason');
+  const sumDateEl = document.getElementById('sumDate');
+  const sumRoundEl = document.getElementById('sumRound');
+  const sumMatchEl = document.getElementById('sumMatch');
+  const sumPresentCountEl = document.getElementById('sumPresentCount');
+  const sumActiveCountEl = document.getElementById('sumActiveCount');
+  const sumGroupCountEl = document.getElementById('sumGroupCount');
+
+  const courtCards = Array.from(document.querySelectorAll('.court-card'));
+
+  const COURTS_PER_ROUND = 3;
+  const MAX_ROUNDS = 3;
+  const GROUP_CODES = ['A', 'B', 'C', 'D', 'E'];
+  const ROUND_ONE_FREEZE_STORAGE_PREFIX = 'badminton_round1_freeze_v2';
+
+  let seasonsCache = [];
+  let attendanceCache = [];
+  let sessionMatchesCache = [];
+  let rankingCache = [];
+  let sessionSeedOrderIdsCache = [];
+  let removedPlayerIds = new Set();
+
+  let currentStageNo = 1;
+  let currentMatchNo = 1;
+  let currentRoundPlan = null;
+  let sessionLocked = false;
+  let matchControlsBaseDisabled = true;
+  let selectedSwapRef = null;
+
+  
+  prevRoundBtn.textContent = 'Tour précédent';
+  nextRoundBtn.textContent = 'Tour suivant';
+  copyPrevRoundBtn.textContent = 'Prochain à jouer';
+  
+function clearSessionLockState() {
+  sessionLocked = false;
+  lockSessionToggle.checked = false;
+}
+
+function applySessionLockUI() {
+  const hasSession = !!String(matchSessionEl.value || '').trim();
+  const blocked = matchControlsBaseDisabled || !hasSession || sessionLocked;
+
+  lockSessionToggle.disabled = !hasSession;
+
+  if (!hasSession) {
+    lockSessionNote.textContent = 'Choisis une session pour pouvoir la barrer.';
+  } else if (sessionLocked) {
+    lockSessionNote.textContent = 'Session barrée : modification des scores bloquée.';
+  } else {
+    lockSessionNote.textContent = 'Session modifiable.';
+  }
+
+  saveScoresBtn.disabled = blocked;
+
+  courtCards.forEach(card => {
+    card.querySelectorAll('[data-score]').forEach(input => {
+      input.disabled = blocked;
+    });
+  });
+}
+
+function setMatchControlsDisabled(disabled) {
+  matchControlsBaseDisabled = !!disabled;
+
+  prevRoundBtn.disabled = disabled;
+  nextRoundBtn.disabled = disabled;
+  copyPrevRoundBtn.disabled = disabled;
+  applyRemovalBtn.disabled = disabled;
+  removeSearchEl.disabled = disabled;
+
+  applySessionLockUI();
+}
 
     const DEFAULT_AVATAR =
-      'data:image/svg+xml;utf8,' +
-      encodeURIComponent(`
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
-          <rect width="200" height="200" fill="#e5e7eb"/>
-          <circle cx="100" cy="78" r="34" fill="#9ca3af"/>
-          <path d="M40 170c10-30 34-46 60-46s50 16 60 46" fill="#9ca3af"/>
-        </svg>
-      `);
+    'data:image/svg+xml;utf8,' +
+    encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+        <rect width="200" height="200" fill="#e5e7eb"/>
+        <circle cx="100" cy="78" r="34" fill="#9ca3af"/>
+        <path d="M40 170c10-30 34-46 60-46s50 16 60 46" fill="#9ca3af"/>
+      </svg>
+    `);
 
-    let seasonsCache = [];
-    let attendanceCache = [];
-    let rankingCache = [];
-    let sessionMatchesCache = [];
-    let removedPlayerIds = new Set();
-    let currentRoundPlan = null;
-    let currentStageNo = 1;
-    let currentMatchNo = 1;
-    let sessionLocked = false;
-    let matchControlsBaseDisabled = true;
-    let selectedSwapRef = null;
+  function safeText(value) {
+    return value == null ? '' : String(value);
+  }
 
-    function escapeHtml(value) {
-      return String(value ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
+  function getPlayerPhoto(player) {
+    const fileId = safeText(player && player.photo_drive).trim();
+    return fileId
+      ? ('https://drive.google.com/thumbnail?id=' + encodeURIComponent(fileId) + '&sz=w300')
+      : DEFAULT_AVATAR;
+  }
+
+  function renderPlayerCard(player) {
+    if (!player) {
+      return `<div class="slot-empty">—</div>`;
     }
 
-    function safeText(value) {
-      return value == null ? '' : String(value);
-    }
-
-    function compareNames(a, b) {
-      return safeText(a?.nom || a?.joueur_id || '').localeCompare(safeText(b?.nom || b?.joueur_id || ''), 'fr', {
-        sensitivity: 'base'
-      });
-    }
-
-    function compareNumericLike(a, b) {
-      const na = Number(String(a ?? '').trim());
-      const nb = Number(String(b ?? '').trim());
-      if (Number.isFinite(na) && Number.isFinite(nb) && na !== nb) return na - nb;
-      return String(a ?? '').localeCompare(String(b ?? ''), 'fr', { numeric: true, sensitivity: 'base' });
-    }
-
-    function safeSessionNo(value) {
-      return String(value ?? '').trim().replace(/\.0+$/, '');
-    }
-
-    function getPlayerPhoto(player) {
-      const fileId = safeText(player?.photo_drive).trim();
-      return fileId ? `https://drive.google.com/thumbnail?id=${encodeURIComponent(fileId)}&sz=w300` : DEFAULT_AVATAR;
-    }
-
-    function renderPlayerCard(player) {
-      if (!player) return '<div class="slot-empty">—</div>';
-      return `
-        <div class="slot-player">
-          <img class="slot-photo" src="${getPlayerPhoto(player)}" alt="${escapeHtml(safeText(player.nom || player.joueur_id || 'Joueur'))}">
-          <div class="slot-text">
-            <div class="slot-name">${escapeHtml(safeText(player.nom || player.joueur_id || '—'))}</div>
-          </div>
+    return `
+      <div class="slot-player">
+        <img class="slot-photo" src="${getPlayerPhoto(player)}" alt="${escapeHtml(safeText(player.nom || player.joueur_id || 'Joueur'))}">
+        <div class="slot-text">
+          <div class="slot-name">${escapeHtml(safeText(player.nom || player.joueur_id || '—'))}</div>
         </div>
-      `;
+      </div>
+    `;
+  }
+
+  function renderWaitingPlayerCard(player) {
+    if (!player) {
+      return `<div class="slot-empty">—</div>`;
     }
 
-    function renderWaitingPlayerCard(player) {
-      if (!player) return '<div class="slot-empty">—</div>';
-      return `
-        <div class="waiting-player-card">
-          <img class="slot-photo" src="${getPlayerPhoto(player)}" alt="${escapeHtml(safeText(player.nom || player.joueur_id || 'Joueur'))}">
-          <div class="slot-text">
-            <div class="slot-name">${escapeHtml(safeText(player.nom || player.joueur_id || '—'))}</div>
-          </div>
+    return `
+      <div class="waiting-player-card">
+        <img class="slot-photo" src="${getPlayerPhoto(player)}" alt="${escapeHtml(safeText(player.nom || player.joueur_id || 'Joueur'))}">
+        <div class="slot-text">
+          <div class="slot-name">${escapeHtml(safeText(player.nom || player.joueur_id || '—'))}</div>
         </div>
-      `;
+      </div>
+    `;
+  }
+  
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function getSelectedSeason() {
+    const saisonId = String(matchSeasonEl.value || '').trim();
+    return seasonsCache.find(s => String(s.saison_id || '').trim() === saisonId) || null;
+  }
+
+  function getSelectedSessionMeta() {
+  const season = getSelectedSeason();
+  const noSession = String(matchSessionEl.value || '').trim();
+
+  if (!season || !noSession) {
+    return null;
+  }
+
+  const sessions = Array.isArray(season.sessions) ? season.sessions : [];
+
+  return sessions.find(session =>
+    String(session.no_session || '').trim() === noSession
+  ) || null;
+}
+
+function compareSessionNo(a, b) {
+  const aNum = Number(String(a?.no_session || '').trim());
+  const bNum = Number(String(b?.no_session || '').trim());
+
+  if (Number.isFinite(aNum) && Number.isFinite(bNum) && aNum !== bNum) {
+    return aNum - bNum;
+  }
+
+  return String(a?.no_session || '').localeCompare(String(b?.no_session || ''), 'fr', {
+    numeric: true,
+    sensitivity: 'base'
+  });
+}
+
+function getPreviousSessionMeta() {
+  const season = getSelectedSeason();
+  const currentSession = getSelectedSessionMeta();
+
+  if (!season || !currentSession) {
+    return null;
+  }
+
+  const sessions = Array.isArray(season.sessions) ? [...season.sessions] : [];
+  sessions.sort(compareSessionNo);
+
+  const currentIndex = sessions.findIndex(session =>
+    String(session.no_session || '').trim() === String(currentSession.no_session || '').trim()
+  );
+
+  if (currentIndex <= 0) {
+    return null;
+  }
+
+  return sessions[currentIndex - 1] || null;
+}
+
+async function saveSessionLockState(locked) {
+  const season = getSelectedSeason();
+  const saisonId = season ? String(season.saison_id || '').trim() : '';
+  const noSession = String(matchSessionEl.value || '').trim();
+
+  if (!saisonId || !noSession) {
+    throw new Error('Saison ou session manquante.');
+  }
+
+  const response = await fetch(API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'text/plain;charset=utf-8'
+    },
+    body: JSON.stringify({
+      action: 'setSessionLock',
+      saison_id: saisonId,
+      no_session: noSession,
+      barree: !!locked
+    })
+  });
+
+  const result = await response.json();
+
+  if (!result.ok) {
+    throw new Error(result.error || 'Erreur API inconnue');
+  }
+
+  const sessionMeta = getSelectedSessionMeta();
+  if (sessionMeta) {
+    sessionMeta.barree = !!locked;
+  }
+
+  const option = matchSessionEl.options[matchSessionEl.selectedIndex];
+  if (option) {
+    option.dataset.locked = locked ? '1' : '0';
+  }
+
+  sessionLocked = !!locked;
+  lockSessionToggle.checked = !!locked;
+  applySessionLockUI();
+
+  return result;
+}
+  
+  function clearSessionFields() {
+    matchSessionEl.innerHTML = '<option value="">Choisir une session</option>';
+    matchDateEl.value = '';
+    matchSessionNoEl.value = '';
+  }
+
+  function getRemovedIdsFromUI() {
+    return Array.from(removeListEl.querySelectorAll('input[type="checkbox"]:checked'))
+      .map(input => String(input.value || '').trim())
+      .filter(Boolean);
+  }
+
+  function getActivePlayers() {
+    return attendanceCache.filter(player => !removedPlayerIds.has(String(player.joueur_id || '').trim()));
+  }
+
+  function getRoundOneFreezeStorageKey() {
+    const season = getSelectedSeason();
+    const saisonId = String(season?.saison_id || '').trim();
+    const noSession = String(matchSessionEl.value || matchSessionNoEl.value || '').trim();
+
+    if (!saisonId || !noSession) {
+      return '';
     }
 
-    function renderMiniPlayer(player, extraHtml = '') {
-      if (!player) {
-        return `
-          <div class="mini-player">
-            <div class="mini-text">
-              <div class="mini-player-name">Aucun joueur</div>
-              <div class="mini-player-code">—</div>
-            </div>
-          </div>
-        `;
-      }
+    return `${ROUND_ONE_FREEZE_STORAGE_PREFIX}:${saisonId}:${noSession}`;
+  }
 
-      return `
-        <label class="mini-player">
-          ${extraHtml}
-          <img class="mini-photo" src="${getPlayerPhoto(player)}" alt="${escapeHtml(safeText(player.nom || player.joueur_id || 'Joueur'))}">
-          <div class="mini-text">
-            <div class="mini-player-name">${escapeHtml(safeText(player.nom || player.joueur_id || '—'))}</div>
-            <div class="mini-player-code">${escapeHtml(safeText(player.joueur_id || ''))}</div>
-          </div>
-        </label>
-      `;
-    }
+  function getActivePlayersSignature(players) {
+    return players
+      .map(player => String(player?.joueur_id || '').trim())
+      .filter(Boolean)
+      .sort()
+      .join('|');
+  }
 
-    function clearSessionFields() {
-      matchSessionEl.innerHTML = '<option value="">Choisir une session</option>';
-      matchDateEl.value = '';
-      matchSessionNoEl.value = '';
-    }
+  function cloneStageStructure(structure) {
+    return JSON.parse(JSON.stringify(structure || { groups: [], extraBenchPlayers: [] }));
+  }
 
-    function getSelectedSeason() {
-      const saisonId = safeText(matchSeasonEl.value).trim();
-      return seasonsCache.find(season => safeText(season.saison_id).trim() === saisonId) || null;
-    }
+  function getStructurePlayerIds(structure) {
+    const ids = [];
 
-    function getSelectedSessionMeta() {
-      const season = getSelectedSeason();
-      const noSession = safeText(matchSessionEl.value).trim();
-      if (!season || !noSession) return null;
-      const sessions = Array.isArray(season.sessions) ? season.sessions : [];
-      return sessions.find(session => safeSessionNo(session.no_session) === noSession) || null;
-    }
-
-    function buildPlayerMap(players) {
-      const map = {};
-      (players || []).forEach(player => {
-        const id = safeText(player?.joueur_id).trim();
-        if (id) map[id] = player;
-      });
-      return map;
-    }
-
-    function getActivePlayers() {
-      return attendanceCache.filter(player => !removedPlayerIds.has(safeText(player.joueur_id).trim()));
-    }
-
-    function setMatchControlsDisabled(disabled) {
-      matchControlsBaseDisabled = !!disabled;
-      prevRoundBtn.disabled = disabled;
-      nextRoundBtn.disabled = disabled;
-      copyPrevRoundBtn.disabled = disabled;
-      applyRemovalBtn.disabled = disabled;
-      removeSearchEl.disabled = disabled;
-      applySessionLockUI();
-    }
-
-    function applySessionLockUI() {
-      const hasSession = !!safeText(matchSessionEl.value).trim();
-      const blocked = matchControlsBaseDisabled || !hasSession || sessionLocked;
-      lockSessionToggle.disabled = !hasSession;
-
-      if (!hasSession) {
-        lockSessionNote.textContent = 'Choisis une session pour pouvoir la barrer.';
-      } else if (sessionLocked) {
-        lockSessionNote.textContent = 'Session barrée : modification des scores bloquée.';
-      } else {
-        lockSessionNote.textContent = 'Session modifiable.';
-      }
-
-      saveScoresBtn.disabled = blocked;
-      groupsGridEl.querySelectorAll('[data-score-field]').forEach(input => {
-        input.disabled = blocked || input.dataset.isRest === '1';
-      });
-    }
-
-    function getCurrentSessionSavedRounds() {
-      return Array.isArray(sessionMatchesCache) ? sessionMatchesCache : [];
-    }
-
-    function getSavedStage(stageNo) {
-      return getCurrentSessionSavedRounds().find(round => Number(round.round_no || 0) === Number(stageNo || 0)) || null;
-    }
-
-    function getSavedMatchesForStageAndMatch(stageNo, matchNo) {
-      const stage = getSavedStage(stageNo);
-      if (!stage || !Array.isArray(stage.matches)) return [];
-      return stage.matches
-        .filter(match => Number(match.match_no || 0) === Number(matchNo || 0))
-        .sort((a, b) => compareNumericLike(a.group_code, b.group_code));
-    }
-
-    function getRankingMap() {
-      const map = {};
-      rankingCache.forEach((row, index) => {
-        const joueurId = safeText(row?.joueur_id).trim();
-        if (!joueurId) return;
-        map[joueurId] = {
-          rang: Number(row.rang || index + 1),
-          total_points: Number(row.total_points || 0),
-          plus_moins: Number(row.plus_moins || 0),
-          points_pour: Number(row.points_pour || 0)
-        };
-      });
-      return map;
-    }
-
-    function getInitialOrderedPlayers(players) {
-      const rankingMap = getRankingMap();
-      return [...players].sort((a, b) => {
-        const aRank = rankingMap[safeText(a?.joueur_id).trim()];
-        const bRank = rankingMap[safeText(b?.joueur_id).trim()];
-
-        if (aRank && bRank) {
-          if (aRank.rang !== bRank.rang) return aRank.rang - bRank.rang;
-          if (aRank.total_points !== bRank.total_points) return bRank.total_points - aRank.total_points;
-          if (aRank.plus_moins !== bRank.plus_moins) return bRank.plus_moins - aRank.plus_moins;
-          if (aRank.points_pour !== bRank.points_pour) return bRank.points_pour - aRank.points_pour;
-        } else if (aRank && !bRank) {
-          return -1;
-        } else if (!aRank && bRank) {
-          return 1;
+    (structure?.groups || []).forEach(group => {
+      (group?.players || []).forEach(player => {
+        const joueurId = String(player?.joueur_id || '').trim();
+        if (joueurId) {
+          ids.push(joueurId);
         }
-
-        return compareNames(a, b);
       });
+    });
+
+    (structure?.extraBenchPlayers || []).forEach(player => {
+      const joueurId = String(player?.joueur_id || '').trim();
+      if (joueurId) {
+        ids.push(joueurId);
+      }
+    });
+
+    return ids;
+  }
+
+  function hasOnlyActivePlayersInStructure(structure, activePlayers) {
+    const structureIds = getStructurePlayerIds(structure).sort();
+    const activeIds = getActivePlayersSignature(activePlayers).split('|').filter(Boolean).sort();
+
+    if (structureIds.length !== activeIds.length) {
+      return false;
     }
 
-    function partitionPlayers(players) {
-      const ordered = [...players];
-      const total = ordered.length;
+    return structureIds.every((joueurId, index) => joueurId === activeIds[index]);
+  }
 
-      if (total < 4) {
-        return { groups: [], extraBenchPlayers: ordered };
-      }
-
-      let groupCount = Math.min(GROUP_CODES.length, Math.max(1, Math.floor(total / 4)));
-      while (groupCount > 0) {
-        const extras = total - (groupCount * 4);
-        if (extras <= groupCount) break;
-        groupCount -= 1;
-      }
-
-      if (groupCount <= 0) {
-        return { groups: [], extraBenchPlayers: ordered };
-      }
-
-      const sizes = Array(groupCount).fill(4);
-      const extras = Math.max(0, total - (groupCount * 4));
-      for (let i = 0; i < extras; i += 1) {
-        const targetIndex = groupCount - 1 - i;
-        if (targetIndex >= 0) sizes[targetIndex] += 1;
-      }
-
-      const groups = [];
-      let cursor = 0;
-      sizes.forEach((size, idx) => {
-        groups.push({
-          group_code: GROUP_CODES[idx] || `G${idx + 1}`,
-          players: ordered.slice(cursor, cursor + size)
-        });
-        cursor += size;
-      });
-
-      return {
-        groups,
-        extraBenchPlayers: ordered.slice(cursor)
-      };
+  function clearFrozenRoundOneStructureForCurrentSession() {
+    const storageKey = getRoundOneFreezeStorageKey();
+    if (!storageKey) {
+      return;
     }
 
-    function getRequiredAppearances(group) {
-      return Array.isArray(group?.players) && group.players.length === 5 ? 4 : 3;
+    try {
+      localStorage.removeItem(storageKey);
+    } catch (error) {
+      console.warn('Impossible de supprimer la structure gelée du round 1:', error);
     }
+  }
 
-    function getRotationForGroup(groupPlayers, appearanceNo) {
-      const size = groupPlayers.length;
-      if (size === 4) {
-        const p = groupPlayers;
-        const rotations = [
-          { team1: [p[0], p[1]], team2: [p[2], p[3]], waiting: null },
-          { team1: [p[0], p[2]], team2: [p[1], p[3]], waiting: null },
-          { team1: [p[0], p[3]], team2: [p[1], p[2]], waiting: null }
-        ];
-        return rotations[(appearanceNo - 1) % rotations.length];
-      }
-
-      if (size === 5) {
-        const p = groupPlayers;
-        const rotations = [
-          { team1: [p[0], p[2]], team2: [p[1], p[3]], waiting: p[4] },
-          { team1: [p[0], p[3]], team2: [p[2], p[4]], waiting: p[1] },
-          { team1: [p[0], p[4]], team2: [p[1], p[2]], waiting: p[3] },
-          { team1: [p[1], p[4]], team2: [p[2], p[3]], waiting: p[0] }
-        ];
-        return rotations[(appearanceNo - 1) % rotations.length];
-      }
-
+  function readFrozenRoundOneStructure(activePlayers) {
+    const storageKey = getRoundOneFreezeStorageKey();
+    if (!storageKey) {
       return null;
     }
 
-    function buildStageSchedule(groups) {
-      if (!groups.length) return [];
-
-      const remaining = {};
-      const nextAppearance = {};
-      const groupCodes = groups.map(group => group.group_code);
-
-      groupCodes.forEach(code => {
-        const group = groups.find(item => item.group_code === code);
-        remaining[code] = getRequiredAppearances(group);
-        nextAppearance[code] = 1;
-      });
-
-      const slots = [];
-      let cursor = 0;
-      while (groupCodes.some(code => remaining[code] > 0)) {
-        const tasks = [];
-        const used = new Set();
-        let attempts = 0;
-
-        while (tasks.length < COURTS_PER_MATCH && attempts < groupCodes.length * 3) {
-          const code = groupCodes[cursor % groupCodes.length];
-          cursor += 1;
-          attempts += 1;
-          if (used.has(code)) continue;
-          if ((remaining[code] || 0) <= 0) continue;
-
-          tasks.push({ group_code: code, appearance_no: nextAppearance[code] });
-          used.add(code);
-          nextAppearance[code] += 1;
-          remaining[code] -= 1;
-        }
-
-        if (!tasks.length) break;
-        slots.push({ match_no: slots.length + 1, tasks });
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (!raw) {
+        return null;
       }
 
-      return slots;
-    }
+      const parsed = JSON.parse(raw);
+      const expectedSignature = getActivePlayersSignature(activePlayers);
 
-    function buildGeneratedMatchFromTask(task, groups) {
-      const group = groups.find(entry => entry.group_code === task.group_code);
-      if (!group) return null;
-      const rotation = getRotationForGroup(group.players, task.appearance_no);
-      if (!rotation) return null;
-      return {
-        group_code: group.group_code,
-        group_size: group.players.length,
-        team1_player1: rotation.team1[0] || null,
-        team1_player2: rotation.team1[1] || null,
-        team2_player1: rotation.team2[0] || null,
-        team2_player2: rotation.team2[1] || null,
-        waiting_player: rotation.waiting || null,
-        team1_score: '',
-        team2_score: '',
-        winner_team: ''
-      };
-    }
-
-    function createEmptyStageStats(player) {
-      return {
-        joueur_id: safeText(player?.joueur_id).trim(),
-        nom: safeText(player?.nom || player?.joueur_id).trim(),
-        matchs_joues: 0,
-        victoires: 0,
-        defaites: 0,
-        points_pour: 0,
-        points_contre: 0,
-        plus_moins: 0,
-        total_points: 0
-      };
-    }
-
-    function applyStageMatchStats(statsMap, teamPlayers, ownScore, otherScore, didWin, didLose) {
-      teamPlayers.forEach(player => {
-        const joueurId = safeText(player?.joueur_id).trim();
-        if (!joueurId) return;
-        if (!statsMap[joueurId]) statsMap[joueurId] = createEmptyStageStats(player);
-        const stats = statsMap[joueurId];
-        stats.matchs_joues += 1;
-        stats.points_pour += ownScore;
-        stats.points_contre += otherScore;
-        stats.plus_moins = stats.points_pour - stats.points_contre;
-        if (didWin) {
-          stats.victoires += 1;
-          stats.total_points += 3;
-        }
-        if (didLose) {
-          stats.defaites += 1;
-        }
-      });
-    }
-
-    function extractGroupsFromSavedStage(savedStage) {
-      if (!savedStage || !Array.isArray(savedStage.matches) || !savedStage.matches.length) return [];
-      const byGroup = {};
-      savedStage.matches.forEach(match => {
-        const code = safeText(match.group_code).trim();
-        if (!code) return;
-        if (!byGroup[code]) byGroup[code] = [];
-        byGroup[code].push(match);
-      });
-
-      return Object.keys(byGroup)
-        .sort(compareNumericLike)
-        .map(groupCode => {
-          const match = byGroup[groupCode][0];
-          const players = [
-            match.team1_player1,
-            match.team1_player2,
-            match.team2_player1,
-            match.team2_player2,
-            match.waiting_player
-          ].filter(Boolean);
-
-          const unique = [];
-          const seen = new Set();
-          players.forEach(player => {
-            const id = safeText(player?.joueur_id).trim();
-            if (!id || seen.has(id)) return;
-            seen.add(id);
-            unique.push(player);
-          });
-
-          return { group_code: groupCode, players: unique };
-        });
-    }
-
-    function samePlayerSet(playersA, playersB) {
-      const a = playersA.map(player => safeText(player?.joueur_id).trim()).filter(Boolean).sort();
-      const b = playersB.map(player => safeText(player?.joueur_id).trim()).filter(Boolean).sort();
-      if (a.length !== b.length) return false;
-      return a.every((id, idx) => id === b[idx]);
-    }
-
-    function buildStageStatsByGroup(savedStage, groups) {
-      const byGroup = {};
-      const overall = {};
-
-      groups.forEach(group => {
-        byGroup[group.group_code] = {};
-        group.players.forEach(player => {
-          const id = safeText(player?.joueur_id).trim();
-          if (!id) return;
-          byGroup[group.group_code][id] = createEmptyStageStats(player);
-          if (!overall[id]) overall[id] = createEmptyStageStats(player);
-        });
-      });
-
-      if (!savedStage || !Array.isArray(savedStage.matches)) {
-        return { byGroup, overall };
+      if (parsed.signature !== expectedSignature) {
+        localStorage.removeItem(storageKey);
+        return null;
       }
 
-      savedStage.matches.forEach(match => {
-        const code = safeText(match.group_code).trim();
-        if (!code || !byGroup[code]) return;
+      if (!parsed.structure || !Array.isArray(parsed.structure.groups)) {
+        localStorage.removeItem(storageKey);
+        return null;
+      }
 
-        const team1 = [match.team1_player1, match.team1_player2].filter(Boolean);
-        const team2 = [match.team2_player1, match.team2_player2].filter(Boolean);
-        const score1 = Number(match.team1_score || 0);
-        const score2 = Number(match.team2_score || 0);
-        if (team1.length !== 2 || team2.length !== 2) return;
+      if (!hasOnlyActivePlayersInStructure(parsed.structure, activePlayers)) {
+        localStorage.removeItem(storageKey);
+        return null;
+      }
 
-        const team1Won = score1 > score2;
-        const team2Won = score2 > score1;
+      return cloneStageStructure(parsed.structure);
+    } catch (error) {
+      console.warn('Impossible de relire la structure gelée du round 1:', error);
+      return null;
+    }
+  }
 
-        applyStageMatchStats(byGroup[code], team1, score1, score2, team1Won, team2Won);
-        applyStageMatchStats(byGroup[code], team2, score2, score1, team2Won, team1Won);
-        applyStageMatchStats(overall, team1, score1, score2, team1Won, team2Won);
-        applyStageMatchStats(overall, team2, score2, score1, team2Won, team1Won);
-      });
-
-      return { byGroup, overall };
+  function writeFrozenRoundOneStructure(activePlayers, structure) {
+    const storageKey = getRoundOneFreezeStorageKey();
+    if (!storageKey) {
+      return;
     }
 
-    function comparePlayersForMovement(a, b, statsMap) {
-      const rankingMap = getRankingMap();
-      const aId = safeText(a?.joueur_id).trim();
-      const bId = safeText(b?.joueur_id).trim();
-      const aStats = statsMap[aId] || createEmptyStageStats(a);
-      const bStats = statsMap[bId] || createEmptyStageStats(b);
+    try {
+      localStorage.setItem(storageKey, JSON.stringify({
+        signature: getActivePlayersSignature(activePlayers),
+        structure: cloneStageStructure(structure)
+      }));
+    } catch (error) {
+      console.warn('Impossible de geler la structure du round 1:', error);
+    }
+  }
 
-      if (bStats.plus_moins !== aStats.plus_moins) return bStats.plus_moins - aStats.plus_moins;
-      if (bStats.points_pour !== aStats.points_pour) return bStats.points_pour - aStats.points_pour;
-      if (bStats.victoires !== aStats.victoires) return bStats.victoires - aStats.victoires;
-      if (bStats.total_points !== aStats.total_points) return bStats.total_points - aStats.total_points;
+  function buildFrozenRoundOneStructureFromCurrentRoundPlan() {
+    if (!currentRoundPlan) {
+      return null;
+    }
 
+    const groupsMap = {};
+
+    (currentRoundPlan.matches || []).forEach(match => {
+      const groupCode = String(match?.group_code || '').trim();
+      if (!groupCode) return;
+
+      const players = reconstructGroupOrderFromFirstMatch(match);
+      if (!players.length) return;
+
+      groupsMap[groupCode] = {
+        group_code: groupCode,
+        players
+      };
+    });
+
+    (currentRoundPlan.benchEntries || []).forEach(entry => {
+      if (entry?.type !== 'group_rest') return;
+
+      const groupCode = String(entry.group_code || '').trim();
+      if (!groupCode || groupsMap[groupCode]) return;
+
+      const players = Array.isArray(entry.players) ? entry.players.filter(Boolean) : [];
+      if (!players.length) return;
+
+      groupsMap[groupCode] = {
+        group_code: groupCode,
+        players
+      };
+    });
+
+    const groups = Object.values(groupsMap).sort((a, b) => {
+      return GROUP_CODES.indexOf(a.group_code) - GROUP_CODES.indexOf(b.group_code);
+    });
+
+    const extraBenchPlayers = (currentRoundPlan.benchEntries || [])
+      .filter(entry => entry?.type === 'bench_only' && entry.player)
+      .map(entry => entry.player);
+
+    if (!groups.length) {
+      return null;
+    }
+
+    return {
+      groups,
+      extraBenchPlayers
+    };
+  }
+
+  function syncFrozenRoundOneStructureFromCurrentRoundPlan() {
+    if (Number(currentStageNo || 0) !== 1) {
+      return;
+    }
+
+    if (Number(currentMatchNo || 0) !== 1) {
+      return;
+    }
+
+    const structure = buildFrozenRoundOneStructureFromCurrentRoundPlan();
+    if (!structure) {
+      return;
+    }
+
+    writeFrozenRoundOneStructure(getActivePlayers(), structure);
+  }
+
+  function getRankingMap() {
+    const map = {};
+    rankingCache.forEach((row, index) => {
+      const joueurId = String(row.joueur_id || '').trim();
+      if (!joueurId) return;
+      map[joueurId] = {
+        rang: Number(row.rang || index + 1),
+        index,
+        total_points: Number(row.total_points || 0),
+        plus_moins: Number(row.plus_moins || 0),
+        points_pour: Number(row.points_pour || 0)
+      };
+    });
+    return map;
+  }
+
+  function getOrderedPlayers(players) {
+    const rankingMap = getRankingMap();
+
+    return [...players].sort((a, b) => {
+      const aId = String(a.joueur_id || '').trim();
+      const bId = String(b.joueur_id || '').trim();
       const aRank = rankingMap[aId];
       const bRank = rankingMap[bId];
-      if (aRank && bRank && aRank.rang !== bRank.rang) return aRank.rang - bRank.rang;
-      if (aRank && !bRank) return -1;
-      if (!aRank && bRank) return 1;
-      return compareNames(a, b);
-    }
 
-    function orderPlayersInsideNewGroup(players, overallStats, options = {}) {
-      const sorted = [...players].sort((a, b) => comparePlayersForMovement(a, b, overallStats));
-      const fixedMiddleId = safeText(options.fixedMiddlePlayer?.joueur_id).trim();
-      if (fixedMiddleId && sorted.length === 5) {
-        const middlePlayer = sorted.find(player => safeText(player?.joueur_id).trim() === fixedMiddleId) || options.fixedMiddlePlayer;
-        const others = sorted.filter(player => safeText(player?.joueur_id).trim() !== fixedMiddleId);
-        return [others[0], others[1], middlePlayer, others[2], others[3]].filter(Boolean);
-      }
-      return sorted;
-    }
-
-    function buildNextStageGroupsFromPreviousStage(previousStage, activePlayers) {
-      const previousGroups = extractGroupsFromSavedStage(previousStage);
-      if (!previousGroups.length) return partitionPlayers(getInitialOrderedPlayers(activePlayers));
-
-      const previousPlayers = previousGroups.flatMap(group => group.players);
-      if (!samePlayerSet(previousPlayers, activePlayers)) {
-        return partitionPlayers(getInitialOrderedPlayers(activePlayers));
+      if (aRank && bRank) {
+        if (aRank.rang !== bRank.rang) return aRank.rang - bRank.rang;
+        if (aRank.total_points !== bRank.total_points) return bRank.total_points - aRank.total_points;
+        if (aRank.plus_moins !== bRank.plus_moins) return bRank.plus_moins - aRank.plus_moins;
+        if (aRank.points_pour !== bRank.points_pour) return bRank.points_pour - aRank.points_pour;
+      } else if (aRank && !bRank) {
+        return -1;
+      } else if (!aRank && bRank) {
+        return 1;
       }
 
-      const stageStats = buildStageStatsByGroup(previousStage, previousGroups);
-      const buckets = previousGroups.map(group => {
-        const ranked = [...group.players].sort((a, b) => comparePlayersForMovement(a, b, stageStats.byGroup[group.group_code] || {}));
-        const isFive = group.players.length === 5;
+      return String(a.nom || '').localeCompare(String(b.nom || ''), 'fr', {
+        sensitivity: 'base'
+      });
+    });
+  }
+
+  function getAlphabeticalOrderIds(players) {
+    return [...players]
+      .sort((a, b) => String(a?.nom || a?.joueur_id || '').localeCompare(String(b?.nom || b?.joueur_id || ''), 'fr', {
+        sensitivity: 'base'
+      }))
+      .map(player => String(player?.joueur_id || '').trim())
+      .filter(Boolean);
+  }
+
+  function getInitialOrderedPlayers(players) {
+    const fallbackOrdered = getOrderedPlayers(players);
+    if (!Array.isArray(sessionSeedOrderIdsCache) || !sessionSeedOrderIdsCache.length) {
+      return fallbackOrdered;
+    }
+
+    const playerMap = buildPlayerMapFromPlayers(players);
+    const seededPlayers = [];
+    const usedIds = new Set();
+
+    sessionSeedOrderIdsCache.forEach(joueurId => {
+      const safeId = String(joueurId || '').trim();
+      if (!safeId || !playerMap[safeId] || usedIds.has(safeId)) {
+        return;
+      }
+
+      seededPlayers.push(playerMap[safeId]);
+      usedIds.add(safeId);
+    });
+
+    fallbackOrdered.forEach(player => {
+      const joueurId = String(player?.joueur_id || '').trim();
+      if (!joueurId || usedIds.has(joueurId)) {
+        return;
+      }
+      seededPlayers.push(player);
+      usedIds.add(joueurId);
+    });
+
+    return seededPlayers;
+  }
+
+  function comparePlayerNames(a, b) {
+    return String(a?.nom || a?.joueur_id || '').localeCompare(String(b?.nom || b?.joueur_id || ''), 'fr', {
+      sensitivity: 'base'
+    });
+  }
+
+  function samePlayerSet(playersA, playersB) {
+    const idsA = playersA.map(player => String(player.joueur_id || '').trim()).filter(Boolean).sort();
+    const idsB = playersB.map(player => String(player.joueur_id || '').trim()).filter(Boolean).sort();
+
+    if (idsA.length !== idsB.length) {
+      return false;
+    }
+
+    return idsA.every((id, index) => id === idsB[index]);
+  }
+
+  function partitionPlayers(players) {
+    const ordered = [...players];
+    const total = ordered.length;
+
+    if (total < 4) {
+      return {
+        groups: [],
+        extraBenchPlayers: ordered
+      };
+    }
+
+    let groupCount = Math.min(GROUP_CODES.length, Math.max(1, Math.floor(total / 4)));
+
+    while (groupCount > 0) {
+      const extras = total - (groupCount * 4);
+      if (extras <= groupCount) {
+        break;
+      }
+      groupCount -= 1;
+    }
+
+    if (groupCount <= 0) {
+      return {
+        groups: [],
+        extraBenchPlayers: ordered
+      };
+    }
+
+    const baseSizes = Array(groupCount).fill(4);
+    const extras = Math.max(0, total - (groupCount * 4));
+
+    for (let i = 0; i < extras; i += 1) {
+      const targetIndex = groupCount - 1 - i;
+      if (targetIndex >= 0) {
+        baseSizes[targetIndex] += 1;
+      }
+    }
+
+    const groups = [];
+    let index = 0;
+
+    baseSizes.forEach((size, idx) => {
+      groups.push({
+        group_code: GROUP_CODES[idx] || `G${idx + 1}`,
+        players: ordered.slice(index, index + size)
+      });
+      index += size;
+    });
+
+    return {
+      groups,
+      extraBenchPlayers: ordered.slice(index)
+    };
+  }
+
+  function getRequiredAppearances(group) {
+    return group && Array.isArray(group.players) && group.players.length === 5 ? 4 : 3;
+  }
+
+  function getRotationForGroup(groupPlayers, appearanceNo) {
+    const size = groupPlayers.length;
+
+    if (size === 4) {
+      const p = groupPlayers;
+      const rotation4 = [
+        { team1: [p[0], p[1]], team2: [p[2], p[3]], waiting: null },
+        { team1: [p[0], p[2]], team2: [p[1], p[3]], waiting: null },
+        { team1: [p[0], p[3]], team2: [p[1], p[2]], waiting: null }
+      ];
+      return rotation4[(appearanceNo - 1) % rotation4.length];
+    }
+
+    if (size === 5) {
+      const p = groupPlayers;
+      const rotation5 = [
+        { team1: [p[0], p[2]], team2: [p[1], p[3]], waiting: p[4] },
+        { team1: [p[0], p[3]], team2: [p[2], p[4]], waiting: p[1] },
+        { team1: [p[0], p[4]], team2: [p[1], p[2]], waiting: p[3] },
+        { team1: [p[1], p[4]], team2: [p[2], p[3]], waiting: p[0] }
+      ];
+      return rotation5[(appearanceNo - 1) % rotation5.length];
+    }
+
+    return null;
+  }
+
+  function buildStageSchedule(groups) {
+    if (!groups.length) {
+      return [];
+    }
+
+    const remainingByGroup = {};
+    const nextAppearanceByGroup = {};
+    const groupCodes = groups.map(group => group.group_code);
+
+    groupCodes.forEach(code => {
+      const group = groups.find(entry => entry.group_code === code);
+      remainingByGroup[code] = getRequiredAppearances(group);
+      nextAppearanceByGroup[code] = 1;
+    });
+
+    const slots = [];
+    let cursor = 0;
+
+    while (groupCodes.some(code => remainingByGroup[code] > 0)) {
+      const tasks = [];
+      const usedThisSlot = new Set();
+      let attempts = 0;
+
+      while (tasks.length < COURTS_PER_ROUND && attempts < groupCodes.length * 3) {
+        const code = groupCodes[cursor % groupCodes.length];
+        cursor += 1;
+        attempts += 1;
+
+        if (usedThisSlot.has(code)) continue;
+        if ((remainingByGroup[code] || 0) <= 0) continue;
+
+        tasks.push({
+          group_code: code,
+          appearance_no: nextAppearanceByGroup[code]
+        });
+
+        usedThisSlot.add(code);
+        nextAppearanceByGroup[code] += 1;
+        remainingByGroup[code] -= 1;
+      }
+
+      if (!tasks.length) {
+        break;
+      }
+
+      slots.push({
+        match_no: slots.length + 1,
+        tasks
+      });
+    }
+
+    return slots;
+  }
+
+  function getSavedStage(stageNo) {
+    return sessionMatchesCache.find(round => Number(round.round_no || 0) === Number(stageNo || 0)) || null;
+  }
+
+  function getSavedMatchesForStageAndMatch(stageNo, matchNo) {
+    const savedStage = getSavedStage(stageNo);
+    if (!savedStage || !Array.isArray(savedStage.matches)) {
+      return [];
+    }
+
+    return savedStage.matches
+      .filter(match => Number(match.match_no || 0) === Number(matchNo || 0))
+      .sort((a, b) => Number(a.court_no || 0) - Number(b.court_no || 0));
+  }
+
+  function buildPlayerMapFromPlayers(players) {
+    const map = {};
+    players.forEach(player => {
+      const joueurId = String(player?.joueur_id || '').trim();
+      if (!joueurId) return;
+      map[joueurId] = player;
+    });
+    return map;
+  }
+
+  function getPlayersFromSavedMatch(match) {
+    if (!match) return [];
+
+    const map = {};
+    [
+      match.team1_player1,
+      match.team1_player2,
+      match.team2_player1,
+      match.team2_player2,
+      match.waiting_player
+    ].forEach(player => {
+      const joueurId = String(player?.joueur_id || '').trim();
+      if (!joueurId) return;
+      if (!map[joueurId]) {
+        map[joueurId] = player;
+      }
+    });
+
+    return Object.values(map);
+  }
+
+  function reconstructGroupOrderFromFirstMatch(match) {
+    if (!match) return [];
+
+    const isFive = !!String(match.waiting_player?.joueur_id || '').trim();
+
+    if (isFive) {
+      return [
+        match.team1_player1,
+        match.team2_player1,
+        match.team1_player2,
+        match.team2_player2,
+        match.waiting_player
+      ].filter(Boolean);
+    }
+
+    return [
+      match.team1_player1,
+      match.team1_player2,
+      match.team2_player1,
+      match.team2_player2
+    ].filter(Boolean);
+  }
+
+  function extractGroupsFromSavedStage(savedStage) {
+    if (!savedStage || !Array.isArray(savedStage.matches) || !savedStage.matches.length) {
+      return [];
+    }
+
+    const byGroup = {};
+
+    savedStage.matches.forEach(match => {
+      const groupCode = String(match.group_code || '').trim();
+      if (!groupCode) return;
+      if (!byGroup[groupCode]) {
+        byGroup[groupCode] = [];
+      }
+      byGroup[groupCode].push(match);
+    });
+
+    return Object.keys(byGroup)
+      .sort((a, b) => GROUP_CODES.indexOf(a) - GROUP_CODES.indexOf(b))
+      .map(groupCode => {
+        const matches = byGroup[groupCode].sort((a, b) => Number(a.match_no || 0) - Number(b.match_no || 0));
+        const players = reconstructGroupOrderFromFirstMatch(matches[0]);
         return {
-          group_code: group.group_code,
-          top: ranked.slice(0, 2),
-          middle: isFive ? ranked.slice(2, 3) : [],
-          bottom: isFive ? ranked.slice(3, 5) : ranked.slice(2, 4)
+          group_code: groupCode,
+          players
         };
       });
+  }
 
-      const nextGroups = buckets.map((bucket, index) => {
-        const fromAbove = index > 0 ? buckets[index - 1].bottom : [];
-        const fromBelow = index < buckets.length - 1 ? buckets[index + 1].top : [];
-        const fixedMiddlePlayer = bucket.middle[0] || null;
-        let nextPlayers = [];
+  function createEmptyStageStats(player) {
+    return {
+      joueur_id: String(player?.joueur_id || '').trim(),
+      nom: String(player?.nom || player?.joueur_id || '').trim(),
+      matchs_joues: 0,
+      victoires: 0,
+      defaites: 0,
+      points_pour: 0,
+      points_contre: 0,
+      plus_moins: 0,
+      total_points: 0
+    };
+  }
 
-        if (index === 0) {
-          nextPlayers = [...bucket.top, ...bucket.middle, ...fromBelow];
-        } else if (index === buckets.length - 1) {
-          nextPlayers = [...fromAbove, ...bucket.middle, ...bucket.bottom];
-        } else {
-          nextPlayers = [...fromAbove, ...bucket.middle, ...fromBelow];
+  function applyStageMatchStats(statsMap, teamPlayers, ownScore, otherScore, didWin, didLose) {
+    teamPlayers.forEach(player => {
+      const joueurId = String(player?.joueur_id || '').trim();
+      if (!joueurId) return;
+
+      if (!statsMap[joueurId]) {
+        statsMap[joueurId] = createEmptyStageStats(player);
+      }
+
+      const stats = statsMap[joueurId];
+      stats.matchs_joues += 1;
+      stats.points_pour += ownScore;
+      stats.points_contre += otherScore;
+      stats.plus_moins = stats.points_pour - stats.points_contre;
+
+      if (didWin) {
+        stats.victoires += 1;
+        stats.total_points += 3;
+      }
+
+      if (didLose) {
+        stats.defaites += 1;
+      }
+    });
+  }
+
+  function buildStageStatsByGroup(savedStage, groups) {
+    const groupStats = {};
+    const overallStats = {};
+
+    groups.forEach(group => {
+      groupStats[group.group_code] = {};
+      group.players.forEach(player => {
+        const joueurId = String(player?.joueur_id || '').trim();
+        if (!joueurId) return;
+        groupStats[group.group_code][joueurId] = createEmptyStageStats(player);
+        if (!overallStats[joueurId]) {
+          overallStats[joueurId] = createEmptyStageStats(player);
         }
-
-        return {
-          group_code: GROUP_CODES[index] || bucket.group_code,
-          players: orderPlayersInsideNewGroup(nextPlayers, stageStats.overall, { fixedMiddlePlayer })
-        };
       });
+    });
 
+    if (!savedStage || !Array.isArray(savedStage.matches)) {
       return {
-        groups: nextGroups,
-        extraBenchPlayers: []
+        byGroup: groupStats,
+        overall: overallStats
       };
     }
 
-    function buildStageStructure(stageNo, activePlayers) {
-      const numericStageNo = Number(stageNo || 1);
-      if (numericStageNo <= 1) {
-        return partitionPlayers(getInitialOrderedPlayers(activePlayers));
+    savedStage.matches.forEach(match => {
+      const groupCode = String(match.group_code || '').trim();
+      if (!groupCode || !groupStats[groupCode]) return;
+
+      const team1 = [match.team1_player1, match.team1_player2].filter(Boolean);
+      const team2 = [match.team2_player1, match.team2_player2].filter(Boolean);
+      const score1 = Number(match.team1_score || 0);
+      const score2 = Number(match.team2_score || 0);
+
+      if (team1.length !== 2 || team2.length !== 2) {
+        return;
       }
 
-      const previousStage = getSavedStage(numericStageNo - 1);
-      if (!previousStage || !Array.isArray(previousStage.matches) || !previousStage.matches.length) {
-        return partitionPlayers(getInitialOrderedPlayers(activePlayers));
-      }
+      const team1Won = score1 > score2;
+      const team2Won = score2 > score1;
 
-      return buildNextStageGroupsFromPreviousStage(previousStage, activePlayers);
+      applyStageMatchStats(groupStats[groupCode], team1, score1, score2, team1Won, team2Won);
+      applyStageMatchStats(groupStats[groupCode], team2, score2, score1, team2Won, team1Won);
+      applyStageMatchStats(overallStats, team1, score1, score2, team1Won, team2Won);
+      applyStageMatchStats(overallStats, team2, score2, score1, team2Won, team1Won);
+    });
+
+    return {
+      byGroup: groupStats,
+      overall: overallStats
+    };
+  }
+
+  function comparePlayersForMovement(a, b, statsMap) {
+    const rankingMap = getRankingMap();
+    const aId = String(a?.joueur_id || '').trim();
+    const bId = String(b?.joueur_id || '').trim();
+    const aStats = statsMap[aId] || createEmptyStageStats(a);
+    const bStats = statsMap[bId] || createEmptyStageStats(b);
+
+    if (bStats.plus_moins !== aStats.plus_moins) return bStats.plus_moins - aStats.plus_moins;
+    if (bStats.points_pour !== aStats.points_pour) return bStats.points_pour - aStats.points_pour;
+    if (bStats.victoires !== aStats.victoires) return bStats.victoires - aStats.victoires;
+    if (bStats.total_points !== aStats.total_points) return bStats.total_points - aStats.total_points;
+
+    const aRank = rankingMap[aId];
+    const bRank = rankingMap[bId];
+    if (aRank && bRank && aRank.rang !== bRank.rang) return aRank.rang - bRank.rang;
+    if (aRank && !bRank) return -1;
+    if (!aRank && bRank) return 1;
+
+    return comparePlayerNames(a, b);
+  }
+
+  function orderPlayersInsideNewGroup(players, overallStageStats, options = {}) {
+    const sorted = [...players].sort((a, b) => comparePlayersForMovement(a, b, overallStageStats));
+    const fixedMiddlePlayer = options.fixedMiddlePlayer || null;
+    const fixedMiddleId = String(fixedMiddlePlayer?.joueur_id || '').trim();
+
+    if (fixedMiddleId && sorted.length === 5) {
+      const middlePlayer = sorted.find(player => String(player?.joueur_id || '').trim() === fixedMiddleId) || fixedMiddlePlayer;
+      const others = sorted.filter(player => String(player?.joueur_id || '').trim() !== fixedMiddleId);
+      return [others[0], others[1], middlePlayer, others[2], others[3]].filter(Boolean);
     }
 
-    function getCurrentSchedule(stageNo, activePlayers) {
-      const structure = buildStageStructure(stageNo, activePlayers);
+    return sorted;
+  }
+
+  function buildNextStageGroupsFromPreviousStage(previousStage, activePlayers) {
+    const previousGroups = extractGroupsFromSavedStage(previousStage);
+    if (!previousGroups.length) {
+      return partitionPlayers(getOrderedPlayers(activePlayers));
+    }
+
+    const flattenedPreviousPlayers = previousGroups.flatMap(group => group.players);
+    if (!samePlayerSet(flattenedPreviousPlayers, activePlayers)) {
+      return partitionPlayers(getOrderedPlayers(activePlayers));
+    }
+
+    const stageStats = buildStageStatsByGroup(previousStage, previousGroups);
+    const buckets = previousGroups.map(group => {
+      const ranked = [...group.players].sort((a, b) => comparePlayersForMovement(a, b, stageStats.byGroup[group.group_code] || {}));
+      const isFive = group.players.length === 5;
+
       return {
-        ...structure,
-        schedule: buildStageSchedule(structure.groups)
+        group_code: group.group_code,
+        top: ranked.slice(0, 2),
+        middle: isFive ? ranked.slice(2, 3) : [],
+        bottom: isFive ? ranked.slice(3, 5) : ranked.slice(2, 4)
       };
+    });
+
+    const nextGroups = buckets.map((bucket, index) => {
+      const fromAbove = index > 0 ? buckets[index - 1].bottom : [];
+      const fromBelow = index < buckets.length - 1 ? buckets[index + 1].top : [];
+      const fixedMiddlePlayer = bucket.middle[0] || null;
+
+      let nextPlayers = [];
+      if (index === 0) {
+        nextPlayers = [...bucket.top, ...bucket.middle, ...fromBelow];
+      } else if (index === buckets.length - 1) {
+        nextPlayers = [...fromAbove, ...bucket.middle, ...bucket.bottom];
+      } else {
+        nextPlayers = [...fromAbove, ...bucket.middle, ...fromBelow];
+      }
+
+      return {
+        group_code: GROUP_CODES[index] || bucket.group_code,
+        players: orderPlayersInsideNewGroup(nextPlayers, stageStats.overall, {
+          fixedMiddlePlayer
+        })
+      };
+    });
+
+    return {
+      groups: nextGroups,
+      extraBenchPlayers: []
+    };
+  }
+
+  function buildStageStructure(stageNo, activePlayers) {
+    const numericStageNo = Number(stageNo || 1);
+
+    if (numericStageNo <= 1) {
+      const frozenStructure = readFrozenRoundOneStructure(activePlayers);
+      if (frozenStructure) {
+        return frozenStructure;
+      }
+
+      const initialStructure = partitionPlayers(getInitialOrderedPlayers(activePlayers));
+      writeFrozenRoundOneStructure(activePlayers, initialStructure);
+      return initialStructure;
     }
 
-    function buildRoundPlanForPosition(stageNo, matchNo, activePlayers) {
+    const previousStage = getSavedStage(numericStageNo - 1);
+    if (!previousStage || !Array.isArray(previousStage.matches) || !previousStage.matches.length) {
+      return partitionPlayers(getInitialOrderedPlayers(activePlayers));
+    }
+
+    return buildNextStageGroupsFromPreviousStage(previousStage, activePlayers);
+  }
+
+  function getCurrentSchedule(stageNo, activePlayers) {
+    const structure = buildStageStructure(stageNo, activePlayers);
+    return {
+      ...structure,
+      schedule: buildStageSchedule(structure.groups)
+    };
+  }
+
+  function getNextPlayablePosition(activePlayers) {
+    let stageNo = 1;
+
+    while (stageNo <= MAX_ROUNDS) {
       const stageContext = getCurrentSchedule(stageNo, activePlayers);
-      const slot = stageContext.schedule.find(item => Number(item.match_no || 0) === Number(matchNo || 0)) || null;
-      const savedMatches = getSavedMatchesForStageAndMatch(stageNo, matchNo);
-      const benchEntries = [];
-      const visibleCodes = new Set((slot?.tasks || []).map(task => task.group_code));
+      const savedStage = getSavedStage(stageNo);
+      const savedMatchNos = new Set(
+        (savedStage?.matches || []).map(match => Number(match.match_no || 0))
+      );
 
-      if (savedMatches.length) {
-        savedMatches.forEach(match => {
-          if (match.waiting_player) {
-            benchEntries.push({ type: 'waiting', group_code: match.group_code, player: match.waiting_player });
-          }
-        });
-
-        stageContext.groups.forEach(group => {
-          if (visibleCodes.has(group.group_code)) return;
-          benchEntries.push({ type: 'group_rest', group_code: group.group_code, players: group.players });
-        });
-
-        stageContext.extraBenchPlayers.forEach(player => {
-          benchEntries.push({ type: 'bench_only', player });
-        });
-
+      const nextSlot = stageContext.schedule.find(slot => !savedMatchNos.has(Number(slot.match_no || 0)));
+      if (nextSlot) {
         return {
-          source: 'saved',
           stage_no: stageNo,
-          match_no: matchNo,
-          total_groups: stageContext.groups.length,
-          total_slots: stageContext.schedule.length,
-          matches: savedMatches.map(match => ({ ...match })),
-          benchEntries
+          match_no: Number(nextSlot.match_no || 1)
         };
       }
 
-      if (!slot) {
-        return {
-          source: 'generated',
-          stage_no: stageNo,
-          match_no: matchNo,
-          total_groups: stageContext.groups.length,
-          total_slots: stageContext.schedule.length,
-          matches: [],
-          benchEntries: []
-        };
+      if (!stageContext.schedule.length) {
+        break;
       }
 
-      const matches = slot.tasks
-        .map(task => buildGeneratedMatchFromTask(task, stageContext.groups))
-        .filter(Boolean);
+      stageNo += 1;
+    }
 
-      matches.forEach(match => {
+    return {
+      stage_no: 1,
+      match_no: 1
+    };
+  }
+
+  function getPreviousPosition(stageNo, matchNo, activePlayers) {
+    if (stageNo <= 1 && matchNo <= 1) {
+      return {
+        stage_no: 1,
+        match_no: 1
+      };
+    }
+
+    const currentContext = getCurrentSchedule(stageNo, activePlayers);
+    const currentIndex = currentContext.schedule.findIndex(slot => Number(slot.match_no || 0) === Number(matchNo || 0));
+
+    if (currentIndex > 0) {
+      return {
+        stage_no: stageNo,
+        match_no: Number(currentContext.schedule[currentIndex - 1].match_no || 1)
+      };
+    }
+
+    const previousStageNo = Math.max(1, stageNo - 1);
+    const previousContext = getCurrentSchedule(previousStageNo, activePlayers);
+
+    if (!previousContext.schedule.length) {
+      return {
+        stage_no: previousStageNo,
+        match_no: 1
+      };
+    }
+
+    return {
+      stage_no: previousStageNo,
+      match_no: Number(previousContext.schedule[previousContext.schedule.length - 1].match_no || 1)
+    };
+  }
+
+  function getNextPosition(stageNo, matchNo, activePlayers) {
+    const currentContext = getCurrentSchedule(stageNo, activePlayers);
+    const currentIndex = currentContext.schedule.findIndex(slot => Number(slot.match_no || 0) === Number(matchNo || 0));
+
+    if (currentIndex >= 0 && currentIndex < currentContext.schedule.length - 1) {
+      return {
+        stage_no: stageNo,
+        match_no: Number(currentContext.schedule[currentIndex + 1].match_no || 1)
+      };
+    }
+
+    if (Number(stageNo || 0) >= MAX_ROUNDS) {
+      const lastMatchNo = currentContext.schedule.length
+        ? Number(currentContext.schedule[currentContext.schedule.length - 1].match_no || 1)
+        : 1;
+
+      return {
+        stage_no: MAX_ROUNDS,
+        match_no: lastMatchNo
+      };
+    }
+
+    return {
+      stage_no: stageNo + 1,
+      match_no: 1
+    };
+  }
+
+function resetCourts() {
+  courtCards.forEach(card => {
+    card.querySelector('[data-role="group-badge"]').textContent = 'Aucun groupe';
+    card.querySelector('[data-role="group-meta"]').textContent = 'En attente de joueurs';
+    card.querySelector('[data-role="waiting-player"]').innerHTML = '<div class="slot-empty">—</div>';
+
+    card.querySelectorAll('[data-slot]').forEach(slot => {
+      slot.innerHTML = '<div class="slot-empty">—</div>';
+    });
+
+    card.querySelectorAll('.slot, .waiting-box').forEach(box => {
+      box.classList.remove('swap-enabled', 'swap-selected');
+      delete box.dataset.playerId;
+      delete box.dataset.courtNo;
+      delete box.dataset.field;
+    });
+
+    card.querySelectorAll('[data-score]').forEach(input => {
+      input.value = '';
+    });
+  });
+}
+
+  function formatPlayer(player) {
+    if (!player) return '—';
+    return player.nom || player.joueur_id || '—';
+  }
+
+function isSameSwapRef(a, b) {
+  return !!a && !!b &&
+    String(a.player_id || '').trim() === String(b.player_id || '').trim() &&
+    String(a.court_no || '').trim() === String(b.court_no || '').trim() &&
+    String(a.field || '').trim() === String(b.field || '').trim();
+}
+
+function findMatchByCourtNo(courtNo) {
+  return (currentRoundPlan?.matches || []).find(match =>
+    Number(match.court_no || 0) === Number(courtNo || 0)
+  ) || null;
+}
+
+function decorateSwapContainer(container, player, ref) {
+  if (!container) return;
+
+  container.classList.remove('swap-enabled', 'swap-selected');
+  delete container.dataset.playerId;
+  delete container.dataset.courtNo;
+  delete container.dataset.field;
+
+  const joueurId = String(player?.joueur_id || '').trim();
+  if (!joueurId) return;
+
+  container.classList.add('swap-enabled');
+  container.dataset.playerId = joueurId;
+  container.dataset.courtNo = String(ref.court_no || '').trim();
+  container.dataset.field = String(ref.field || '').trim();
+
+  if (selectedSwapRef && isSameSwapRef(selectedSwapRef, {
+    player_id: joueurId,
+    court_no: ref.court_no,
+    field: ref.field
+  })) {
+    container.classList.add('swap-selected');
+  }
+}
+
+function refreshWaitingBenchEntriesFromMatches() {
+  if (!currentRoundPlan || !Array.isArray(currentRoundPlan.benchEntries)) return;
+
+  const waitingByGroup = {};
+  (currentRoundPlan.matches || []).forEach(match => {
+    const groupCode = String(match.group_code || '').trim();
+    if (!groupCode) return;
+    waitingByGroup[groupCode] = match.waiting_player || null;
+  });
+
+  currentRoundPlan.benchEntries = currentRoundPlan.benchEntries.map(entry => {
+    if (entry.type !== 'waiting') return entry;
+
+    const updatedPlayer = waitingByGroup[String(entry.group_code || '').trim()];
+    if (!updatedPlayer) return entry;
+
+    return {
+      ...entry,
+      player: updatedPlayer
+    };
+  });
+}
+
+function swapPlayersInCurrentRound(refA, refB) {
+  const matchA = findMatchByCourtNo(refA.court_no);
+  const matchB = findMatchByCourtNo(refB.court_no);
+
+  if (!matchA || !matchB) return false;
+  if (!matchA[refA.field] || !matchB[refB.field]) return false;
+
+  const temp = matchA[refA.field];
+  matchA[refA.field] = matchB[refB.field];
+  matchB[refB.field] = temp;
+
+  refreshWaitingBenchEntriesFromMatches();
+  syncFrozenRoundOneStructureFromCurrentRoundPlan();
+  return true;
+}
+
+function handleSwapClickFromContainer(container) {
+  if (!container || !currentRoundPlan) return;
+
+  const ref = {
+    player_id: String(container.dataset.playerId || '').trim(),
+    court_no: String(container.dataset.courtNo || '').trim(),
+    field: String(container.dataset.field || '').trim()
+  };
+
+  if (!ref.player_id || !ref.court_no || !ref.field) return;
+
+  if (!selectedSwapRef) {
+    selectedSwapRef = ref;
+    renderCourts(currentRoundPlan);
+    renderBench(currentRoundPlan);
+    return;
+  }
+
+  if (isSameSwapRef(selectedSwapRef, ref)) {
+    selectedSwapRef = null;
+    renderCourts(currentRoundPlan);
+    renderBench(currentRoundPlan);
+    return;
+  }
+
+  if (swapPlayersInCurrentRound(selectedSwapRef, ref)) {
+    selectedSwapRef = null;
+    renderCourts(currentRoundPlan);
+    renderBench(currentRoundPlan);
+  }
+}
+
+
+  
+  function buildGeneratedMatchFromTask(task, groups, courtNo) {
+    const group = groups.find(entry => entry.group_code === task.group_code);
+    if (!group) return null;
+
+    const rotation = getRotationForGroup(group.players, task.appearance_no);
+    if (!rotation) return null;
+
+    return {
+      group_code: group.group_code,
+      court_no: courtNo,
+      group_size: group.players.length,
+      team1_player1: rotation.team1[0] || null,
+      team1_player2: rotation.team1[1] || null,
+      team2_player1: rotation.team2[0] || null,
+      team2_player2: rotation.team2[1] || null,
+      waiting_player: rotation.waiting || null,
+      team1_score: '',
+      team2_score: '',
+      winner_team: ''
+    };
+  }
+
+  function buildRoundPlanForPosition(stageNo, matchNo, activePlayers) {
+    const stageContext = getCurrentSchedule(stageNo, activePlayers);
+    const slot = stageContext.schedule.find(entry => Number(entry.match_no || 0) === Number(matchNo || 0)) || null;
+    const savedMatches = getSavedMatchesForStageAndMatch(stageNo, matchNo);
+    const slotTasks = slot ? slot.tasks : [];
+    const visibleCodes = new Set(slotTasks.map(task => task.group_code));
+    const benchEntries = [];
+
+    if (savedMatches.length) {
+      savedMatches.forEach(match => {
         if (match.waiting_player) {
-          benchEntries.push({ type: 'waiting', group_code: match.group_code, player: match.waiting_player });
+          benchEntries.push({
+            type: 'waiting',
+            group_code: match.group_code,
+            player: match.waiting_player
+          });
         }
       });
 
       stageContext.groups.forEach(group => {
         if (visibleCodes.has(group.group_code)) return;
-        benchEntries.push({ type: 'group_rest', group_code: group.group_code, players: group.players });
+        benchEntries.push({
+          type: 'group_rest',
+          group_code: group.group_code,
+          players: group.players
+        });
       });
 
       stageContext.extraBenchPlayers.forEach(player => {
-        benchEntries.push({ type: 'bench_only', player });
+        benchEntries.push({
+          type: 'bench_only',
+          player
+        });
       });
 
+      return {
+        source: 'saved',
+        stage_no: stageNo,
+        match_no: matchNo,
+        total_groups: stageContext.groups.length,
+        total_slots: stageContext.schedule.length,
+        matches: savedMatches.map((match, index) => {
+          const group = stageContext.groups.find(entry => entry.group_code === match.group_code);
+          return {
+            ...match,
+            court_no: Number(match.court_no || index + 1),
+            group_size: group?.players?.length || 4
+          };
+        }),
+        benchEntries
+      };
+    }
+
+    if (!slot) {
       return {
         source: 'generated',
         stage_no: stageNo,
         match_no: matchNo,
         total_groups: stageContext.groups.length,
         total_slots: stageContext.schedule.length,
-        matches,
-        benchEntries
+        matches: [],
+        benchEntries: []
       };
     }
 
-    function buildRoundPlan(activePlayers, matchNo) {
-      return buildRoundPlanForPosition(currentStageNo, matchNo, activePlayers);
-    }
+    const matches = slotTasks.map((task, index) => buildGeneratedMatchFromTask(task, stageContext.groups, index + 1)).filter(Boolean);
 
-    function getNextPlayablePosition(activePlayers) {
-      let stageNo = 1;
-      while (stageNo <= MAX_ROUNDS) {
-        const context = getCurrentSchedule(stageNo, activePlayers);
-        const savedStage = getSavedStage(stageNo);
-        const savedMatchNos = new Set((savedStage?.matches || []).map(match => Number(match.match_no || 0)));
-        const nextSlot = context.schedule.find(slot => !savedMatchNos.has(Number(slot.match_no || 0)));
-        if (nextSlot) {
-          return { stage_no: stageNo, match_no: Number(nextSlot.match_no || 1) };
-        }
-        if (!context.schedule.length) break;
-        stageNo += 1;
-      }
-      return { stage_no: 1, match_no: 1 };
-    }
-
-    function getNextPosition(stageNo, matchNo, activePlayers) {
-      const context = getCurrentSchedule(stageNo, activePlayers);
-      const maxMatch = Number(context.schedule.length || 1);
-      if (matchNo < maxMatch) return { stage_no: stageNo, match_no: matchNo + 1 };
-      if (stageNo < MAX_ROUNDS) return { stage_no: stageNo + 1, match_no: 1 };
-      return { stage_no: stageNo, match_no: matchNo };
-    }
-
-    function getPreviousPosition(stageNo, matchNo) {
-      if (matchNo > 1) return { stage_no: stageNo, match_no: matchNo - 1 };
-      if (stageNo > 1) {
-        const previousStage = getSavedStage(stageNo - 1);
-        const maxMatch = Math.max(1, ...(previousStage?.matches || []).map(match => Number(match.match_no || 1)));
-        return { stage_no: stageNo - 1, match_no: maxMatch };
-      }
-      return { stage_no: stageNo, match_no: matchNo };
-    }
-
-    function renderRemoveList(players) {
-      const filter = safeText(removeSearchEl.value).trim().toLowerCase();
-      const items = [...players].filter(player => {
-        if (!filter) return true;
-        const text = `${safeText(player.nom)} ${safeText(player.joueur_id)}`.toLowerCase();
-        return text.includes(filter);
-      }).sort(compareNames);
-
-      if (!items.length) {
-        removeListEl.innerHTML = `
-          <div class="mini-player">
-            <div class="mini-text">
-              <div class="mini-player-name">Aucun joueur trouvé</div>
-              <div class="mini-player-code">Ajuste la recherche ou choisis une session.</div>
-            </div>
-          </div>
-        `;
-        return;
-      }
-
-      removeListEl.innerHTML = items.map(player => {
-        const playerId = safeText(player.joueur_id).trim();
-        const checked = removedPlayerIds.has(playerId) ? 'checked' : '';
-        return renderMiniPlayer(player, `<input type="checkbox" value="${escapeHtml(playerId)}" ${checked}>`);
-      }).join('');
-    }
-
-    function renderBench(roundPlan) {
-      const entries = (roundPlan?.benchEntries || []).filter(entry => entry.type !== 'group_rest');
-      if (!entries.length) {
-        benchListEl.innerHTML = `
-          <div class="mini-player">
-            <div class="mini-text">
-              <div class="mini-player-name">Aucun joueur en pause</div>
-              <div class="mini-player-code">Tout le monde est déjà visible dans les groupes.</div>
-            </div>
-          </div>
-        `;
-        return;
-      }
-
-      benchListEl.innerHTML = entries.map(entry => {
-        if (entry.type === 'waiting' && entry.player) {
-          return `
-            <div class="mini-player">
-              <img class="mini-photo" src="${getPlayerPhoto(entry.player)}" alt="${escapeHtml(safeText(entry.player.nom || entry.player.joueur_id || 'Joueur'))}">
-              <div class="mini-text">
-                <div class="mini-player-name">${escapeHtml(safeText(entry.player.nom || entry.player.joueur_id || '—'))}</div>
-                <div class="mini-player-code">En attente • Groupe ${escapeHtml(safeText(entry.group_code || ''))}</div>
-              </div>
-            </div>
-          `;
-        }
-
-        if (entry.type === 'bench_only' && entry.player) {
-          return `
-            <div class="mini-player">
-              <img class="mini-photo" src="${getPlayerPhoto(entry.player)}" alt="${escapeHtml(safeText(entry.player.nom || entry.player.joueur_id || 'Joueur'))}">
-              <div class="mini-text">
-                <div class="mini-player-name">${escapeHtml(safeText(entry.player.nom || entry.player.joueur_id || '—'))}</div>
-                <div class="mini-player-code">Hors groupe pour ce round</div>
-              </div>
-            </div>
-          `;
-        }
-
-        return '';
-      }).join('');
-    }
-
-    function isSameSwapRef(a, b) {
-      return !!a && !!b && a.player_id === b.player_id && a.court_no === b.court_no && a.field === b.field;
-    }
-
-    function refreshWaitingBenchEntriesFromMatches() {
-      if (!currentRoundPlan) return;
-      const waitingEntries = currentRoundPlan.matches
-        .filter(match => match.waiting_player)
-        .map(match => ({
+    matches.forEach(match => {
+      if (match.waiting_player) {
+        benchEntries.push({
           type: 'waiting',
           group_code: match.group_code,
           player: match.waiting_player
-        }));
-
-      const others = (currentRoundPlan.benchEntries || []).filter(entry => entry.type !== 'waiting');
-      currentRoundPlan.benchEntries = [...waitingEntries, ...others];
-    }
-
-    function findMatchByGroupCode(groupCode) {
-      return (currentRoundPlan?.matches || []).find(match => safeText(match.group_code).trim() === safeText(groupCode).trim()) || null;
-    }
-
-    function getRestGroupEntry(groupCode) {
-      return (currentRoundPlan?.benchEntries || []).find(entry => entry.type === 'group_rest' && safeText(entry.group_code).trim() === safeText(groupCode).trim()) || null;
-    }
-
-    function resolveSwapTarget(ref) {
-      if (!ref || !currentRoundPlan) return null;
-      const groupCode = safeText(ref.court_no).trim();
-      const field = safeText(ref.field).trim();
-      if (!groupCode || !field) return null;
-
-      const liveMatch = findMatchByGroupCode(groupCode);
-      if (liveMatch && liveMatch[field]) {
-        return { owner: liveMatch, key: field };
+        });
       }
+    });
 
-      const restGroup = getRestGroupEntry(groupCode);
-      if (restGroup) {
-        const match = field.match(/^player_(\d+)$/);
-        if (!match) return null;
-        const index = Number(match[1]);
-        if (!restGroup.players[index]) return null;
-        return { owner: restGroup.players, key: index };
-      }
-
-      return null;
-    }
-
-    function swapPlayersInCurrentRound(refA, refB) {
-      const targetA = resolveSwapTarget(refA);
-      const targetB = resolveSwapTarget(refB);
-      if (!targetA || !targetB) return false;
-      const temp = targetA.owner[targetA.key];
-      targetA.owner[targetA.key] = targetB.owner[targetB.key];
-      targetB.owner[targetB.key] = temp;
-      refreshWaitingBenchEntriesFromMatches();
-      return true;
-    }
-
-    function handleSwapClickFromContainer(container) {
-      if (!container || !currentRoundPlan) return;
-      const ref = {
-        player_id: safeText(container.dataset.playerId).trim(),
-        court_no: safeText(container.dataset.courtNo).trim(),
-        field: safeText(container.dataset.field).trim()
-      };
-
-      if (!ref.player_id || !ref.court_no || !ref.field) return;
-
-      if (!selectedSwapRef) {
-        selectedSwapRef = ref;
-        renderCourts(currentRoundPlan);
-        renderBench(currentRoundPlan);
-        return;
-      }
-
-      if (isSameSwapRef(selectedSwapRef, ref)) {
-        selectedSwapRef = null;
-        renderCourts(currentRoundPlan);
-        renderBench(currentRoundPlan);
-        return;
-      }
-
-      if (swapPlayersInCurrentRound(selectedSwapRef, ref)) {
-        selectedSwapRef = null;
-        renderCourts(currentRoundPlan);
-        renderBench(currentRoundPlan);
-      }
-    }
-
-    function decorateSwapContainer(container, player, ref) {
-      if (!container) return;
-      container.classList.remove('swap-enabled', 'swap-selected');
-      delete container.dataset.playerId;
-      delete container.dataset.courtNo;
-      delete container.dataset.field;
-
-      const playerId = safeText(player?.joueur_id).trim();
-      if (!playerId) return;
-
-      container.classList.add('swap-enabled');
-      container.dataset.playerId = playerId;
-      container.dataset.courtNo = safeText(ref.court_no).trim();
-      container.dataset.field = safeText(ref.field).trim();
-
-      if (selectedSwapRef && isSameSwapRef(selectedSwapRef, {
-        player_id: playerId,
-        court_no: container.dataset.courtNo,
-        field: container.dataset.field
-      })) {
-        container.classList.add('swap-selected');
-      }
-    }
-
-    function getGroupIndex(groupCode) {
-      const idx = GROUP_CODES.indexOf(safeText(groupCode).trim());
-      return idx === -1 ? 999 : idx;
-    }
-
-    function buildActiveGroupCard(match) {
-      return `
-        <article class="group-card" data-group-card="${escapeHtml(safeText(match.group_code))}">
-          <div class="group-top">
-            <div>
-              <h3 class="group-title">Groupe ${escapeHtml(safeText(match.group_code || '—'))}</h3>
-              <div class="group-badge">Actif</div>
-              <div class="group-meta">Round ${escapeHtml(safeText(currentStageNo))} • match ${escapeHtml(safeText(currentMatchNo))}</div>
-            </div>
-          </div>
-
-          <div class="group-players">
-            <div class="slot team1-slot"><div class="slot-label">Équipe 1 • Joueur 1</div><div class="slot-value" data-slot="team1_player1">—</div></div>
-            <div class="slot team1-slot"><div class="slot-label">Équipe 1 • Joueur 2</div><div class="slot-value" data-slot="team1_player2">—</div></div>
-            <div class="slot team2-slot"><div class="slot-label">Équipe 2 • Joueur 1</div><div class="slot-value" data-slot="team2_player1">—</div></div>
-            <div class="slot team2-slot"><div class="slot-label">Équipe 2 • Joueur 2</div><div class="slot-value" data-slot="team2_player2">—</div></div>
-          </div>
-
-          <div class="waiting-box waiting-highlight">
-            <div class="waiting-label">Joueur en attente</div>
-            <div class="waiting-value" data-role="waiting-player">—</div>
-          </div>
-
-          <div class="score-row">
-            <div class="score-box">
-              <div class="score-label team1">Équipe 1</div>
-              <input type="number" min="0" placeholder="Score équipe 1" data-score-field="team1_score" data-group-code="${escapeHtml(safeText(match.group_code))}" data-is-rest="0" />
-            </div>
-            <div class="score-box">
-              <div class="score-label team2">Équipe 2</div>
-              <input type="number" min="0" placeholder="Score équipe 2" data-score-field="team2_score" data-group-code="${escapeHtml(safeText(match.group_code))}" data-is-rest="0" />
-            </div>
-          </div>
-
-          <div class="group-save-wrap">
-            <button type="button" class="btn" data-action="save-group-scores">Enregistrer les scores</button>
-          </div>
-        </article>
-      `;
-    }
-
-    function buildRestGroupCard(entry) {
-      return `
-        <article class="group-card is-rest" data-group-card="${escapeHtml(safeText(entry.group_code))}">
-          <div class="group-top">
-            <div>
-              <h3 class="group-title">Groupe ${escapeHtml(safeText(entry.group_code || '—'))}</h3>
-              <div class="group-badge">Au repos</div>
-              <div class="group-meta">Visible et modifiable, mais sans score pour ce match</div>
-            </div>
-          </div>
-
-          <div class="group-players">
-            <div class="slot"><div class="slot-label">Joueur 1</div><div class="slot-value" data-slot="player_0">—</div></div>
-            <div class="slot"><div class="slot-label">Joueur 2</div><div class="slot-value" data-slot="player_1">—</div></div>
-            <div class="slot"><div class="slot-label">Joueur 3</div><div class="slot-value" data-slot="player_2">—</div></div>
-            <div class="slot"><div class="slot-label">Joueur 4</div><div class="slot-value" data-slot="player_3">—</div></div>
-          </div>
-
-          <div class="waiting-box waiting-highlight">
-            <div class="waiting-label">Joueur 5 / attente</div>
-            <div class="waiting-value" data-role="waiting-player">—</div>
-          </div>
-        </article>
-      `;
-    }
-
-    function resetCourts() {
-      groupsGridEl.innerHTML = `
-        <article class="group-card empty-card">
-          <div class="group-top">
-            <div>
-              <h3 class="group-title">Aucun groupe</h3>
-              <div class="group-badge">En attente</div>
-              <div class="group-meta">Choisis une session pour afficher les groupes.</div>
-            </div>
-          </div>
-        </article>
-      `;
-      applySessionLockUI();
-    }
-
-    function renderCourts(roundPlan) {
-      if (!roundPlan) {
-        resetCourts();
-        return;
-      }
-
-      const liveItems = (roundPlan.matches || []).map(match => ({ type: 'live', code: match.group_code, data: match }));
-      const restItems = (roundPlan.benchEntries || [])
-        .filter(entry => entry.type === 'group_rest')
-        .map(entry => ({ type: 'rest', code: entry.group_code, data: entry }));
-
-      const items = [...liveItems, ...restItems].sort((a, b) => getGroupIndex(a.code) - getGroupIndex(b.code));
-      if (!items.length) {
-        resetCourts();
-        return;
-      }
-
-      groupsGridEl.innerHTML = items.map(item => item.type === 'live' ? buildActiveGroupCard(item.data) : buildRestGroupCard(item.data)).join('');
-
-      items.forEach(item => {
-        const groupCode = safeText(item.code).trim();
-        const card = groupsGridEl.querySelector(`[data-group-card="${CSS.escape(groupCode)}"]`);
-        if (!card) return;
-
-        if (item.type === 'live') {
-          const match = item.data;
-          const fields = [
-            ['team1_player1', match.team1_player1],
-            ['team1_player2', match.team1_player2],
-            ['team2_player1', match.team2_player1],
-            ['team2_player2', match.team2_player2]
-          ];
-
-          fields.forEach(([field, player]) => {
-            const valueEl = card.querySelector(`[data-slot="${field}"]`);
-            if (!valueEl) return;
-            valueEl.innerHTML = renderPlayerCard(player);
-            decorateSwapContainer(valueEl.closest('.slot'), player, { court_no: match.group_code, field });
-          });
-
-          const waitingEl = card.querySelector('[data-role="waiting-player"]');
-          waitingEl.innerHTML = renderWaitingPlayerCard(match.waiting_player);
-          decorateSwapContainer(waitingEl.closest('.waiting-box'), match.waiting_player, {
-            court_no: match.group_code,
-            field: 'waiting_player'
-          });
-
-          card.querySelectorAll('[data-score-field]').forEach(input => {
-            input.value = match[input.dataset.scoreField] ?? '';
-            input.addEventListener('input', event => {
-              match[input.dataset.scoreField] = event.target.value;
-              match.winner_team = '';
-            });
-          });
-        }
-
-        if (item.type === 'rest') {
-          const players = Array.isArray(item.data.players) ? item.data.players : [];
-          for (let i = 0; i < 4; i += 1) {
-            const valueEl = card.querySelector(`[data-slot="player_${i}"]`);
-            if (!valueEl) continue;
-            valueEl.innerHTML = renderPlayerCard(players[i] || null);
-            decorateSwapContainer(valueEl.closest('.slot'), players[i] || null, {
-              court_no: item.data.group_code,
-              field: `player_${i}`
-            });
-          }
-
-          const waitingEl = card.querySelector('[data-role="waiting-player"]');
-          waitingEl.innerHTML = renderWaitingPlayerCard(players[4] || null);
-          decorateSwapContainer(waitingEl.closest('.waiting-box'), players[4] || null, {
-            court_no: item.data.group_code,
-            field: 'player_4'
-          });
-        }
+    stageContext.groups.forEach(group => {
+      if (visibleCodes.has(group.group_code)) return;
+      benchEntries.push({
+        type: 'group_rest',
+        group_code: group.group_code,
+        players: group.players
       });
+    });
 
-      applySessionLockUI();
+    stageContext.extraBenchPlayers.forEach(player => {
+      benchEntries.push({
+        type: 'bench_only',
+        player
+      });
+    });
+
+    return {
+      source: 'generated',
+      stage_no: stageNo,
+      match_no: matchNo,
+      total_groups: stageContext.groups.length,
+      total_slots: stageContext.schedule.length,
+      matches,
+      benchEntries
+    };
+  }
+
+  function renderCourts(roundPlan) {
+    resetCourts();
+
+roundPlan.matches.forEach(match => {
+  const card = document.querySelector(`.court-card[data-court="${match.court_no}"]`);
+  if (!card) return;
+
+  const score1Input = card.querySelector('[data-score="team1"]');
+  const score2Input = card.querySelector('[data-score="team2"]');
+
+  card.querySelector('[data-role="group-badge"]').textContent = `Groupe ${match.group_code}`;
+  card.querySelector('[data-role="group-meta"]').textContent =
+    roundPlan.source === 'saved'
+      ? `Round ${currentStageNo} • match ${currentMatchNo} • sauvegardé`
+      : `Round ${currentStageNo} • match ${currentMatchNo} • ${match.group_size} joueurs`;
+
+  const waitingValue = card.querySelector('[data-role="waiting-player"]');
+  const team1p1 = card.querySelector('[data-slot="team1_player1"]');
+  const team1p2 = card.querySelector('[data-slot="team1_player2"]');
+  const team2p1 = card.querySelector('[data-slot="team2_player1"]');
+  const team2p2 = card.querySelector('[data-slot="team2_player2"]');
+
+  waitingValue.innerHTML = renderWaitingPlayerCard(match.waiting_player);
+  team1p1.innerHTML = renderPlayerCard(match.team1_player1);
+  team1p2.innerHTML = renderPlayerCard(match.team1_player2);
+  team2p1.innerHTML = renderPlayerCard(match.team2_player1);
+  team2p2.innerHTML = renderPlayerCard(match.team2_player2);
+
+  decorateSwapContainer(team1p1.closest('.slot'), match.team1_player1, {
+    court_no: match.court_no,
+    field: 'team1_player1'
+  });
+
+  decorateSwapContainer(team1p2.closest('.slot'), match.team1_player2, {
+    court_no: match.court_no,
+    field: 'team1_player2'
+  });
+
+  decorateSwapContainer(team2p1.closest('.slot'), match.team2_player1, {
+    court_no: match.court_no,
+    field: 'team2_player1'
+  });
+
+  decorateSwapContainer(team2p2.closest('.slot'), match.team2_player2, {
+    court_no: match.court_no,
+    field: 'team2_player2'
+  });
+
+  decorateSwapContainer(waitingValue.closest('.waiting-box'), match.waiting_player, {
+    court_no: match.court_no,
+    field: 'waiting_player'
+  });
+
+  score1Input.value = match.team1_score === '' || match.team1_score === null || match.team1_score === undefined
+    ? ''
+    : String(match.team1_score);
+
+  score2Input.value = match.team2_score === '' || match.team2_score === null || match.team2_score === undefined
+    ? ''
+    : String(match.team2_score);
+});
+  }
+
+  function renderBench(roundPlan) {
+    if (!roundPlan.benchEntries.length) {
+      benchListEl.innerHTML = `
+        <div class="mini-player">
+          <div>
+            <div class="mini-player-name">Aucun joueur en pause</div>
+            <div class="mini-player-code">Tous les joueurs actifs sont placés pour ce tour</div>
+          </div>
+        </div>
+      `;
+      return;
     }
 
-    function buildSaveScoresPayload() {
-      const season = getSelectedSeason();
-      const saisonId = safeText(season?.saison_id).trim();
-      const noSession = safeText(matchSessionEl.value || matchSessionNoEl.value).trim();
-      if (!saisonId) throw new Error('Saison manquante.');
-      if (!noSession) throw new Error('Session manquante.');
-      if (!currentRoundPlan || !Array.isArray(currentRoundPlan.matches) || !currentRoundPlan.matches.length) {
-        throw new Error('Aucun match actif à sauvegarder pour cet écran.');
+    benchListEl.innerHTML = roundPlan.benchEntries.map(entry => {
+      if (entry.type === 'waiting') {
+        return `
+          <div class="mini-player">
+            <div>
+              <div class="mini-player-name">${escapeHtml(entry.player.nom || entry.player.joueur_id)}</div>
+              <div class="mini-player-code">Groupe ${escapeHtml(entry.group_code)} • joueur en attente</div>
+            </div>
+          </div>
+        `;
+      }
+
+      if (entry.type === 'bench_only') {
+        return `
+          <div class="mini-player">
+            <div>
+              <div class="mini-player-name">${escapeHtml(entry.player.nom || entry.player.joueur_id)}</div>
+              <div class="mini-player-code">En pause • pas intégré dans un groupe pour ce tour</div>
+            </div>
+          </div>
+        `;
+      }
+
+      const playerNames = entry.players.map(player => escapeHtml(player.nom || player.joueur_id)).join(', ');
+      return `
+        <div class="mini-player">
+          <div>
+            <div class="mini-player-name">Groupe ${escapeHtml(entry.group_code)} hors terrain ce tour</div>
+            <div class="mini-player-code">${playerNames}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function getScoreValue(input) {
+    if (!input) return '';
+    const value = String(input.value || '').trim();
+    if (!value) return '';
+    return value;
+  }
+
+  function buildSaveScoresPayload() {
+    const season = getSelectedSeason();
+    const saisonId = season ? String(season.saison_id || '').trim() : '';
+    const dateSession = String(matchDateEl.value || '').trim();
+    const noSession = String(matchSessionNoEl.value || '').trim();
+
+    if (!saisonId || !dateSession || !noSession) {
+      throw new Error('Choisis une saison et une session avant de sauvegarder les scores.');
+    }
+
+    if (!currentRoundPlan || !Array.isArray(currentRoundPlan.matches) || !currentRoundPlan.matches.length) {
+      throw new Error('Aucun match visible à sauvegarder.');
+    }
+
+    const matches = currentRoundPlan.matches.map(match => {
+      const card = document.querySelector(`.court-card[data-court="${match.court_no}"]`);
+      if (!card) {
+        throw new Error(`Terrain ${match.court_no} introuvable.`);
+      }
+
+      const team1Score = getScoreValue(card.querySelector('[data-score="team1"]'));
+      const team2Score = getScoreValue(card.querySelector('[data-score="team2"]'));
+
+      let winnerTeam = '';
+      if (team1Score !== '' && team2Score !== '') {
+        const score1 = Number(team1Score);
+        const score2 = Number(team2Score);
+
+        if (score1 > score2) {
+          winnerTeam = '1';
+        } else if (score2 > score1) {
+          winnerTeam = '2';
+        }
       }
 
       return {
-        saison_id: saisonId,
-        no_session: noSession,
-        round_no: currentStageNo,
-        match_no: currentMatchNo,
-        matches: currentRoundPlan.matches.map(match => ({
-          group_code: match.group_code,
-          court_no: GROUP_CODES.indexOf(match.group_code) + 1,
-          team1_player1_id: safeText(match.team1_player1?.joueur_id).trim(),
-          team1_player2_id: safeText(match.team1_player2?.joueur_id).trim(),
-          team2_player1_id: safeText(match.team2_player1?.joueur_id).trim(),
-          team2_player2_id: safeText(match.team2_player2?.joueur_id).trim(),
-          waiting_player_id: safeText(match.waiting_player?.joueur_id).trim(),
-          team1_score: safeText(match.team1_score).trim(),
-          team2_score: safeText(match.team2_score).trim(),
-          winner_team: ''
-        }))
+        group_code: match.group_code,
+        court_no: match.court_no,
+        team1_player1_id: match.team1_player1?.joueur_id || '',
+        team1_player2_id: match.team1_player2?.joueur_id || '',
+        team2_player1_id: match.team2_player1?.joueur_id || '',
+        team2_player2_id: match.team2_player2?.joueur_id || '',
+        waiting_player_id: match.waiting_player?.joueur_id || '',
+        team1_score: team1Score,
+        team2_score: team2Score,
+        winner_team: winnerTeam
       };
+    });
+
+    return {
+      saison_id: saisonId,
+      date_session: dateSession,
+      no_session: noSession,
+      round_no: currentStageNo,
+      match_no: currentMatchNo,
+      matches
+    };
+  }
+
+  function renderRemoveList(players) {
+    if (!players.length) {
+      removeListEl.innerHTML = `
+        <div class="mini-player">
+          <div>
+            <div class="mini-player-name">Aucun joueur présent trouvé</div>
+            <div class="mini-player-code">Vérifie les présences de cette session</div>
+          </div>
+        </div>
+      `;
+      return;
     }
 
-    async function loadSeasons() {
-      try {
-        const response = await fetch(`${API_URL}?action=getSeasons`);
-        const result = await response.json();
-        if (!result.ok) throw new Error(result.error || 'Erreur API inconnue');
+    const search = String(removeSearchEl.value || '').trim().toLowerCase();
 
-        seasonsCache = Array.isArray(result.data) ? result.data : [];
-        matchSeasonEl.innerHTML = '<option value="">Choisir une saison</option>';
+    const filteredPlayers = players.filter(player => {
+      if (!search) return true;
+      const text = `${player.nom || ''} ${player.joueur_id || ''}`.toLowerCase();
+      return text.includes(search);
+    });
 
-        seasonsCache.forEach(season => {
-          const option = document.createElement('option');
-          option.value = season.saison_id;
-          option.textContent = season.nom_saison || season.saison_id;
-          matchSeasonEl.appendChild(option);
-        });
+    if (!filteredPlayers.length) {
+      removeListEl.innerHTML = `
+        <div class="mini-player">
+          <div>
+            <div class="mini-player-name">Aucun résultat</div>
+            <div class="mini-player-code">Aucun joueur ne correspond à la recherche</div>
+          </div>
+        </div>
+      `;
+      return;
+    }
 
-        if (seasonsCache.length > 0) {
-          matchSeasonEl.value = seasonsCache[0].saison_id;
-          populateSessions();
-        } else {
-          attendanceCache = [];
-          rankingCache = [];
-          sessionMatchesCache = [];
-          removedPlayerIds = new Set();
-          currentRoundPlan = null;
-          currentStageNo = 1;
-          currentMatchNo = 1;
-          renderRound();
+    removeListEl.innerHTML = filteredPlayers.map(player => {
+      const joueurId = String(player.joueur_id || '').trim();
+      const checked = removedPlayerIds.has(joueurId) ? 'checked' : '';
+      return `
+        <label class="mini-player">
+          <input type="checkbox" value="${escapeHtml(joueurId)}" ${checked} />
+          <div>
+            <div class="mini-player-name">${escapeHtml(player.nom || joueurId)}</div>
+            <div class="mini-player-code">${escapeHtml(joueurId)} • présent</div>
+          </div>
+        </label>
+      `;
+    }).join('');
+  }
+
+  function renderRound() {
+    const season = getSelectedSeason();
+    const seasonName = season ? (season.nom_saison || season.saison_id) : '—';
+    const activePlayers = getActivePlayers();
+
+    const attendancePending =
+      !!matchSessionEl.value &&
+      attendanceCache.length === 0 &&
+      sessionMatchesCache.length === 0;
+
+    sumSeasonEl.textContent = seasonName;
+    sumDateEl.textContent = matchDateEl.value || '—';
+    sumPresentCountEl.textContent = String(attendanceCache.length);
+
+    if (!matchSessionEl.value) {
+      currentRoundPlan = null;
+      roundTitleEl.textContent = 'Choisir une session';
+      sumRoundEl.textContent = '—';
+      sumMatchEl.textContent = '—';
+      sumActiveCountEl.textContent = '0';
+      sumGroupCountEl.textContent = '—';
+      saveScoresBtn.textContent = 'Enregistrer les scores';
+      setMatchControlsDisabled(true);
+      resetCourts();
+
+      removeListEl.innerHTML = `
+        <div class="mini-player">
+          <div>
+            <div class="mini-player-name">Aucune session sélectionnée</div>
+            <div class="mini-player-code">Choisis une session pour commencer.</div>
+          </div>
+        </div>
+      `;
+
+      benchListEl.innerHTML = `
+        <div class="mini-player">
+          <div>
+            <div class="mini-player-name">En attente</div>
+            <div class="mini-player-code">La présence et les matchs apparaîtront après le choix d'une session.</div>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    if (attendancePending) {
+      currentRoundPlan = null;
+      roundTitleEl.textContent = `Présence requise • Session ${matchSessionNoEl.value || '—'}`;
+      sumRoundEl.textContent = '—';
+      sumMatchEl.textContent = '—';
+      sumActiveCountEl.textContent = '0';
+      sumGroupCountEl.textContent = '—';
+      saveScoresBtn.textContent = 'Enregistrer les scores';
+      setMatchControlsDisabled(true);
+      resetCourts();
+
+      removeListEl.innerHTML = `
+        <div class="mini-player">
+          <div style="width:100%">
+            <div class="mini-player-name">Présence non prise</div>
+            <div class="mini-player-code">Commence par prendre la présence pour la session ${escapeHtml(matchSessionNoEl.value || '')} du ${escapeHtml(matchDateEl.value || '')}.</div>
+            <div style="margin-top:12px;">
+              <a class="btn" href="presences.html">Aller à la présence</a>
+            </div>
+          </div>
+        </div>
+      `;
+
+      benchListEl.innerHTML = `
+        <div class="mini-player">
+          <div>
+            <div class="mini-player-name">Étape 1 obligatoire</div>
+            <div class="mini-player-code">Dès que la présence sera prise, cette page pourra commencer au round 1.</div>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    roundTitleEl.textContent = `Round ${currentStageNo} • Match ${currentMatchNo}`;
+    sumRoundEl.textContent = String(currentStageNo);
+    sumMatchEl.textContent = `Match ${currentMatchNo}`;
+
+    renderRemoveList(attendanceCache);
+
+    if (activePlayers.length < 4) {
+      currentRoundPlan = null;
+      sumActiveCountEl.textContent = String(activePlayers.length);
+      sumGroupCountEl.textContent = '—';
+      saveScoresBtn.textContent = 'Enregistrer les scores';
+      setMatchControlsDisabled(true);
+      resetCourts();
+      benchListEl.innerHTML = `
+        <div class="mini-player">
+          <div>
+            <div class="mini-player-name">Pas assez de joueurs actifs</div>
+            <div class="mini-player-code">Il faut au moins 4 joueurs pour générer un tour</div>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    setMatchControlsDisabled(false);
+    currentRoundPlan = buildRoundPlanForPosition(currentStageNo, currentMatchNo, activePlayers);
+    syncFrozenRoundOneStructureFromCurrentRoundPlan();
+    renderCourts(currentRoundPlan);
+    renderBench(currentRoundPlan);
+
+    const uniquePlayersOnCourt = new Set();
+    currentRoundPlan.matches.forEach(match => {
+      [
+        match.team1_player1,
+        match.team1_player2,
+        match.team2_player1,
+        match.team2_player2
+      ].forEach(player => {
+        const joueurId = String(player?.joueur_id || '').trim();
+        if (joueurId) uniquePlayersOnCourt.add(joueurId);
+      });
+    });
+
+    sumActiveCountEl.textContent = String(uniquePlayersOnCourt.size);
+    sumGroupCountEl.textContent = `${currentRoundPlan.matches.length} / ${currentRoundPlan.total_groups}`;
+    saveScoresBtn.textContent = currentRoundPlan.source === 'saved'
+      ? 'Mettre à jour ce match'
+      : 'Enregistrer ce match';
+  }
+
+  async function fetchAttendanceForSelectedSession() {
+    const season = getSelectedSeason();
+    const saisonId = season ? String(season.saison_id || '').trim() : '';
+    const dateSession = String(matchDateEl.value || '').trim();
+    const noSession = String(matchSessionNoEl.value || '').trim();
+
+    if (!saisonId || !dateSession || !noSession) {
+      attendanceCache = [];
+      return;
+    }
+
+    const params = new URLSearchParams({
+      action: 'getAttendanceForSession',
+      saison_id: saisonId,
+      date_session: dateSession,
+      no_session: noSession
+    });
+
+    const response = await fetch(`${API_URL}?${params.toString()}`);
+    const result = await response.json();
+
+    if (!result.ok) {
+      throw new Error(result.error || 'Erreur API inconnue');
+    }
+
+    attendanceCache = Array.isArray(result.joueurs) ? result.joueurs : [];
+  }
+
+  async function fetchSessionMatchesForNoSession(noSession) {
+    const season = getSelectedSeason();
+    const saisonId = season ? String(season.saison_id || '').trim() : '';
+    const safeNoSession = String(noSession || '').trim();
+
+    if (!saisonId || !safeNoSession) {
+      return [];
+    }
+
+    const params = new URLSearchParams({
+      action: 'getSessionMatches',
+      saison_id: saisonId,
+      no_session: safeNoSession
+    });
+
+    const response = await fetch(`${API_URL}?${params.toString()}`);
+    const result = await response.json();
+
+    if (!result.ok) {
+      throw new Error(result.error || 'Erreur API inconnue');
+    }
+
+    return Array.isArray(result.rounds) ? result.rounds : [];
+  }
+
+  async function fetchSessionMatches() {
+    const noSession = String(matchSessionNoEl.value || '').trim();
+
+    if (!noSession) {
+      sessionMatchesCache = [];
+      return;
+    }
+
+    sessionMatchesCache = await fetchSessionMatchesForNoSession(noSession);
+  }
+
+  async function buildSessionSeedOrderIds() {
+    const activePlayers = getActivePlayers();
+    const activePlayerMap = buildPlayerMapFromPlayers(activePlayers);
+    const fallbackIds = getOrderedPlayers(activePlayers)
+      .map(player => String(player?.joueur_id || '').trim())
+      .filter(Boolean);
+
+    const previousSession = getPreviousSessionMeta();
+    if (!previousSession) {
+      sessionSeedOrderIdsCache = getAlphabeticalOrderIds(activePlayers);
+      return;
+    }
+
+    const previousRounds = await fetchSessionMatchesForNoSession(previousSession.no_session);
+    const previousRoundTwo = previousRounds.find(round => Number(round?.round_no || 0) === 2) || null;
+
+    if (!previousRoundTwo || !Array.isArray(previousRoundTwo.matches) || !previousRoundTwo.matches.length) {
+      sessionSeedOrderIdsCache = fallbackIds;
+      return;
+    }
+
+    const previousGroups = extractGroupsFromSavedStage(previousRoundTwo);
+    if (!previousGroups.length) {
+      sessionSeedOrderIdsCache = fallbackIds;
+      return;
+    }
+
+    const previousRoundTwoPlayers = previousGroups.flatMap(group => group.players || []).filter(Boolean);
+
+if (!samePlayerSet(previousRoundTwoPlayers, activePlayers)) {
+  sessionSeedOrderIdsCache = fallbackIds;
+  return;
+}
+
+const simulatedNextStructure = buildNextStageGroupsFromPreviousStage(previousRoundTwo, previousRoundTwoPlayers);
+const simulatedNextGroups = Array.isArray(simulatedNextStructure?.groups)
+  ? simulatedNextStructure.groups
+  : [];
+
+    const seededIds = [];
+    const usedIds = new Set();
+
+    simulatedNextGroups.forEach(group => {
+      (group.players || []).forEach(player => {
+        const joueurId = String(player?.joueur_id || '').trim();
+        if (!joueurId || !activePlayerMap[joueurId] || usedIds.has(joueurId)) {
+          return;
         }
-      } catch (error) {
-        console.error('Erreur loadSeasons:', error);
-        clearSessionFields();
-        attendanceCache = [];
-        rankingCache = [];
-        sessionMatchesCache = [];
-        removedPlayerIds = new Set();
-        currentRoundPlan = null;
-        currentStageNo = 1;
-        currentMatchNo = 1;
-        renderRound();
-      }
-    }
 
-    function populateSessions() {
-      clearSessionFields();
-      const season = getSelectedSeason();
-      if (!season) {
-        attendanceCache = [];
-        rankingCache = [];
-        sessionMatchesCache = [];
-        removedPlayerIds = new Set();
-        currentRoundPlan = null;
-        currentStageNo = 1;
-        currentMatchNo = 1;
-        renderRound();
+        seededIds.push(joueurId);
+        usedIds.add(joueurId);
+      });
+    });
+
+    fallbackIds.forEach(joueurId => {
+      if (!joueurId || usedIds.has(joueurId)) {
         return;
       }
+      seededIds.push(joueurId);
+      usedIds.add(joueurId);
+    });
 
-      const sessions = Array.isArray(season.sessions) ? [...season.sessions] : [];
-      sessions.sort((a, b) => compareNumericLike(a.no_session, b.no_session));
+    sessionSeedOrderIdsCache = seededIds;
+  }
 
-      sessions.forEach(session => {
-        const option = document.createElement('option');
-        option.value = safeSessionNo(session.no_session);
-        option.textContent = `Session ${safeSessionNo(session.no_session)} — ${safeText(session.date).trim()}`;
-        option.dataset.date = safeText(session.date).trim();
-        option.dataset.locked = session.barree ? '1' : '0';
-        matchSessionEl.appendChild(option);
-      });
+async function fetchRanking() {
+  const season = getSelectedSeason();
+  const saisonId = season ? String(season.saison_id || '').trim() : '';
 
-      if (sessions.length > 0) {
-        matchSessionEl.value = safeSessionNo(sessions[0].no_session);
-        syncSelectedSession();
-      } else {
-        renderRound();
-      }
+  if (!saisonId) {
+    rankingCache = [];
+    return;
+  }
+
+  const params = new URLSearchParams({
+    action: 'getRanking',
+    saison_id: saisonId
+  });
+
+  const response = await fetch(`${API_URL}?${params.toString()}`);
+  const result = await response.json();
+
+  if (!result.ok) {
+    throw new Error(result.error || 'Erreur API inconnue');
+  }
+
+  rankingCache = Array.isArray(result.rows) ? result.rows : [];
+}
+
+  async function loadSessionContext({ resetRemovals = false, jumpToNextPlayable = false } = {}) {
+    if (resetRemovals) {
+      removedPlayerIds = new Set();
     }
 
-    async function saveSessionLockState(locked) {
-      const season = getSelectedSeason();
-      const saisonId = safeText(season?.saison_id).trim();
-      const noSession = safeText(matchSessionEl.value).trim();
-      if (!saisonId || !noSession) throw new Error('Saison ou session manquante.');
+    if (!matchSeasonEl.value || !matchSessionEl.value) {
+      attendanceCache = [];
+      sessionMatchesCache = [];
+      rankingCache = [];
+      sessionSeedOrderIdsCache = [];
+      currentStageNo = 1;
+      currentMatchNo = 1;
+      renderRound();
+      return;
+    }
+
+    try {
+      await Promise.all([
+        fetchAttendanceForSelectedSession(),
+        fetchSessionMatches(),
+        fetchRanking()
+      ]);
+
+      if (!Array.isArray(sessionMatchesCache) || !sessionMatchesCache.length) {
+        clearFrozenRoundOneStructureForCurrentSession();
+      }
+
+      await buildSessionSeedOrderIds();
+
+      const activePlayers = getActivePlayers();
+      const nextPlayable = getNextPlayablePosition(activePlayers);
+
+      if (jumpToNextPlayable) {
+        currentStageNo = nextPlayable.stage_no;
+        currentMatchNo = nextPlayable.match_no;
+      } else {
+        if (currentStageNo < 1) currentStageNo = 1;
+        if (currentStageNo > MAX_ROUNDS) currentStageNo = MAX_ROUNDS;
+        if (currentMatchNo < 1) currentMatchNo = 1;
+
+        const currentContext = getCurrentSchedule(currentStageNo, activePlayers);
+        const slotExists = currentContext.schedule.some(slot => Number(slot.match_no || 0) === Number(currentMatchNo || 0));
+
+        if (!slotExists) {
+          currentStageNo = nextPlayable.stage_no;
+          currentMatchNo = nextPlayable.match_no;
+        }
+      }
+
+      renderRound();
+    } catch (error) {
+      console.error('Erreur loadSessionContext:', error);
+      attendanceCache = [];
+      sessionMatchesCache = [];
+      rankingCache = [];
+      sessionSeedOrderIdsCache = [];
+      currentRoundPlan = null;
+      resetCourts();
+      removeListEl.innerHTML = `
+        <div class="mini-player">
+          <div>
+            <div class="mini-player-name">Erreur de chargement</div>
+            <div class="mini-player-code">${escapeHtml(error.message || 'Erreur inconnue')}</div>
+          </div>
+        </div>
+      `;
+      benchListEl.innerHTML = removeListEl.innerHTML;
+    }
+  }
+
+function syncSelectedSession() {
+  const option = matchSessionEl.options[matchSessionEl.selectedIndex];
+
+  if (!option || !option.value) {
+    clearSessionLockState();
+    matchDateEl.value = '';
+    matchSessionNoEl.value = '';
+    attendanceCache = [];
+    sessionMatchesCache = [];
+    rankingCache = [];
+    sessionSeedOrderIdsCache = [];
+    removedPlayerIds = new Set();
+    currentStageNo = 1;
+    currentMatchNo = 1;
+    renderRound();
+    applySessionLockUI();
+    return;
+  }
+
+  matchDateEl.value = option.dataset.date || '';
+  matchSessionNoEl.value = option.value || '';
+
+  const lockedFromOption =
+    option.dataset.locked === '1' ||
+    option.dataset.locked === 'true';
+
+  sessionLocked = !!lockedFromOption;
+  lockSessionToggle.checked = !!lockedFromOption;
+
+  currentStageNo = 1;
+  currentMatchNo = 1;
+  clearFrozenRoundOneStructureForCurrentSession();
+  loadSessionContext({ resetRemovals: true });
+  applySessionLockUI();
+}
+
+  function populateSessions() {
+    clearSessionFields();
+    clearSessionLockState();
+    
+    
+    const season = getSelectedSeason();
+    if (!season) {
+      attendanceCache = [];
+      sessionMatchesCache = [];
+      rankingCache = [];
+      sessionSeedOrderIdsCache = [];
+      removedPlayerIds = new Set();
+      currentRoundPlan = null;
+      selectedSwapRef = null;
+      currentStageNo = 1;
+      currentMatchNo = 1;
+      renderRound();
+      return;
+    }
+
+    const sessions = Array.isArray(season.sessions)
+      ? [...season.sessions].sort(compareSessionNo)
+      : [];
+
+    sessions.forEach(session => {
+      const noSession = String(session.no_session || '').trim();
+      const dateSession = String(session.date || '').trim();
+
+      if (!noSession || !dateSession) return;
+
+      const option = document.createElement('option');
+      option.value = noSession;
+      option.textContent = `Session ${noSession} — ${dateSession}`;
+      option.dataset.date = dateSession;
+      option.dataset.locked = session.barree ? '1' : '0';
+      matchSessionEl.appendChild(option);
+    });
+
+    if (sessions.length > 0) {
+      matchSessionEl.value = String(sessions[0].no_session || '');
+      syncSelectedSession();
+    } else {
+      attendanceCache = [];
+      sessionMatchesCache = [];
+      rankingCache = [];
+      sessionSeedOrderIdsCache = [];
+      removedPlayerIds = new Set();
+      currentRoundPlan = null;
+      selectedSwapRef = null;
+      currentStageNo = 1;
+      currentMatchNo = 1;
+      renderRound();
+    }
+  }
+
+  async function loadSeasons() {
+    try {
+      const response = await fetch(`${API_URL}?action=getSeasons`);
+      const result = await response.json();
+
+      if (!result.ok) {
+        throw new Error(result.error || 'Erreur API inconnue');
+      }
+
+      seasonsCache = Array.isArray(result.data) ? result.data : [];
+      matchSeasonEl.innerHTML = '<option value="">Choisir une saison</option>';
+
+      seasonsCache.forEach(season => {
+        const option = document.createElement('option');
+        option.value = season.saison_id;
+        option.textContent = season.nom_saison || season.saison_id;
+        matchSeasonEl.appendChild(option);
+      });
+
+      if (seasonsCache.length > 0) {
+        matchSeasonEl.value = seasonsCache[0].saison_id;
+        populateSessions();
+      } else {
+        attendanceCache = [];
+        sessionMatchesCache = [];
+        rankingCache = [];
+        removedPlayerIds = new Set();
+        currentStageNo = 1;
+        currentMatchNo = 1;
+        renderRound();
+      }
+    } catch (error) {
+      console.error('Erreur loadSeasons:', error);
+      clearSessionFields();
+      attendanceCache = [];
+      sessionMatchesCache = [];
+      rankingCache = [];
+      sessionSeedOrderIdsCache = [];
+      removedPlayerIds = new Set();
+      currentRoundPlan = null;
+      selectedSwapRef = null;
+      currentStageNo = 1;
+      currentMatchNo = 1;
+      renderRound();
+    }
+  }
+
+  applyRemovalBtn.addEventListener('click', () => {
+    removedPlayerIds = new Set(getRemovedIdsFromUI());
+    loadSessionContext({ resetRemovals: false, jumpToNextPlayable: true });
+  });
+
+  removeSearchEl.addEventListener('input', () => {
+    renderRemoveList(attendanceCache);
+  });
+
+  prevRoundBtn.addEventListener('click', () => {
+    const activePlayers = getActivePlayers();
+    const previous = getPreviousPosition(currentStageNo, currentMatchNo, activePlayers);
+    currentStageNo = previous.stage_no;
+    currentMatchNo = previous.match_no;
+    renderRound();
+  });
+
+  nextRoundBtn.addEventListener('click', () => {
+    const activePlayers = getActivePlayers();
+    const next = getNextPosition(currentStageNo, currentMatchNo, activePlayers);
+    currentStageNo = next.stage_no;
+    currentMatchNo = next.match_no;
+    renderRound();
+  });
+
+  copyPrevRoundBtn.addEventListener('click', () => {
+    const activePlayers = getActivePlayers();
+    const nextPlayable = getNextPlayablePosition(activePlayers);
+    currentStageNo = nextPlayable.stage_no;
+    currentMatchNo = nextPlayable.match_no;
+    renderRound();
+    alert(`Le prochain match à jouer est préparé : round ${currentStageNo}, match ${currentMatchNo}.`);
+  });
+
+lockSessionToggle.addEventListener('change', async () => {
+  const wantedState = !!lockSessionToggle.checked;
+  const previousState = sessionLocked;
+
+  try {
+    lockSessionToggle.disabled = true;
+    await saveSessionLockState(wantedState);
+  } catch (error) {
+    console.error(error);
+    sessionLocked = previousState;
+    lockSessionToggle.checked = previousState;
+    applySessionLockUI();
+    alert('Erreur lors du verrouillage de la session : ' + (error.message || error));
+  } finally {
+    applySessionLockUI();
+  }
+});
+  
+document.querySelector('.courts-grid').addEventListener('click', event => {
+  const container = event.target.closest('.swap-enabled');
+  if (!container) return;
+  handleSwapClickFromContainer(container);
+});
+  
+  saveScoresBtn.addEventListener('click', async () => {
+    if (sessionLocked) {
+  alert('Cette session est barrée. Décoche-la pour pouvoir modifier les scores.');
+  return;
+}
+    try {
+      const payload = buildSaveScoresPayload();
 
       const response = await fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8'
+        },
         body: JSON.stringify({
-          action: 'setSessionLock',
-          saison_id: saisonId,
-          no_session: noSession,
-          barree: !!locked
+          action: 'saveRoundMatches',
+          ...payload
         })
       });
 
       const result = await response.json();
-      if (!result.ok) throw new Error(result.error || 'Erreur API inconnue');
 
-      const sessionMeta = getSelectedSessionMeta();
-      if (sessionMeta) sessionMeta.barree = !!locked;
-      sessionLocked = !!locked;
-      lockSessionToggle.checked = !!locked;
-      applySessionLockUI();
+      if (!result.ok) {
+        throw new Error(result.error || 'Erreur API inconnue');
+      }
+
+      await loadSessionContext({ resetRemovals: false, jumpToNextPlayable: false });
+      alert(`Round ${payload.round_no}, match ${payload.match_no} sauvegardé.`);
+    } catch (error) {
+      console.error(error);
+      alert('Erreur lors de la sauvegarde des scores : ' + (error.message || error));
     }
+  });
 
-    async function loadSessionContext(options = {}) {
-      const season = getSelectedSeason();
-      const saisonId = safeText(season?.saison_id).trim();
-      const noSession = safeText(matchSessionEl.value).trim();
-      const dateSession = safeText(matchDateEl.value).trim();
-      const resetRemovals = options.resetRemovals !== false;
-      const jumpToNextPlayable = options.jumpToNextPlayable === true;
+  matchSeasonEl.addEventListener('change', populateSessions);
+  matchSessionEl.addEventListener('change', syncSelectedSession);
 
-      attendanceCache = [];
-      rankingCache = [];
-      sessionMatchesCache = [];
-      currentRoundPlan = null;
-      selectedSwapRef = null;
-      if (resetRemovals) removedPlayerIds = new Set();
-      currentStageNo = 1;
-      currentMatchNo = 1;
-      renderRound();
+  renderRound();
+  loadSeasons();
+</script>
 
-      if (!saisonId || !noSession || !dateSession) return;
-
-      try {
-        const attendanceParams = new URLSearchParams({
-          action: 'getAttendanceForSession',
-          saison_id: saisonId,
-          date_session: dateSession,
-          no_session: noSession
-        });
-
-        const matchesParams = new URLSearchParams({
-          action: 'getSessionMatches',
-          saison_id: saisonId,
-          no_session: noSession
-        });
-
-        const rankingParams = new URLSearchParams({
-          action: 'getRanking',
-          saison_id: saisonId
-        });
-
-        const [attendanceResponse, matchesResponse, rankingResponse] = await Promise.all([
-          fetch(`${API_URL}?${attendanceParams.toString()}`),
-          fetch(`${API_URL}?${matchesParams.toString()}`),
-          fetch(`${API_URL}?${rankingParams.toString()}`)
-        ]);
-
-        const attendanceResult = await attendanceResponse.json();
-        const matchesResult = await matchesResponse.json();
-        const rankingResult = await rankingResponse.json();
-
-        if (!attendanceResult.ok) throw new Error(attendanceResult.error || 'Erreur de présence.');
-        if (!matchesResult.ok) throw new Error(matchesResult.error || 'Erreur de matchs.');
-        if (!rankingResult.ok) throw new Error(rankingResult.error || 'Erreur de classement.');
-
-        attendanceCache = Array.isArray(attendanceResult.joueurs) ? attendanceResult.joueurs : [];
-        sessionMatchesCache = Array.isArray(matchesResult.rounds) ? matchesResult.rounds : [];
-        rankingCache = Array.isArray(rankingResult.rows) ? rankingResult.rows : [];
-
-        const sessionMeta = getSelectedSessionMeta();
-        sessionLocked = !!sessionMeta?.barree;
-        lockSessionToggle.checked = sessionLocked;
-
-        if (jumpToNextPlayable) {
-          const nextPlayable = getNextPlayablePosition(getActivePlayers());
-          currentStageNo = nextPlayable.stage_no;
-          currentMatchNo = nextPlayable.match_no;
-        }
-
-        renderRound();
-      } catch (error) {
-        console.error('Erreur loadSessionContext:', error);
-        resetCourts();
-        removeListEl.innerHTML = `
-          <div class="mini-player">
-            <div class="mini-text">
-              <div class="mini-player-name">Erreur de chargement</div>
-              <div class="mini-player-code">${escapeHtml(error.message || 'Erreur inconnue')}</div>
-            </div>
-          </div>
-        `;
-      }
-    }
-
-    function syncSelectedSession() {
-      const option = matchSessionEl.options[matchSessionEl.selectedIndex];
-      if (!option || !option.value) {
-        matchDateEl.value = '';
-        matchSessionNoEl.value = '';
-        attendanceCache = [];
-        rankingCache = [];
-        sessionMatchesCache = [];
-        removedPlayerIds = new Set();
-        currentRoundPlan = null;
-        currentStageNo = 1;
-        currentMatchNo = 1;
-        sessionLocked = false;
-        lockSessionToggle.checked = false;
-        renderRound();
-        return;
-      }
-
-      matchDateEl.value = option.dataset.date || '';
-      matchSessionNoEl.value = option.value || '';
-      sessionLocked = option.dataset.locked === '1';
-      lockSessionToggle.checked = sessionLocked;
-      loadSessionContext({ resetRemovals: true, jumpToNextPlayable: true });
-    }
-
-    function renderRound() {
-      const season = getSelectedSeason();
-      const seasonName = season ? (season.nom_saison || season.saison_id) : '—';
-      const activePlayers = getActivePlayers();
-
-      roundTitleEl.textContent = `Round ${currentStageNo} • Match ${currentMatchNo}`;
-      sumSeasonEl.textContent = seasonName;
-      sumDateEl.textContent = matchDateEl.value || '—';
-      sumRoundEl.textContent = String(currentStageNo);
-      sumMatchEl.textContent = String(currentMatchNo);
-      sumPresentCountEl.textContent = String(attendanceCache.length);
-      sumActiveCountEl.textContent = String(activePlayers.length);
-
-      renderRemoveList(attendanceCache);
-
-      if (activePlayers.length < 4) {
-        currentRoundPlan = null;
-        sumGroupCountEl.textContent = '—';
-        resetCourts();
-        benchListEl.innerHTML = `
-          <div class="mini-player">
-            <div class="mini-text">
-              <div class="mini-player-name">Pas assez de joueurs actifs</div>
-              <div class="mini-player-code">Il faut au moins 4 joueurs pour générer les groupes.</div>
-            </div>
-          </div>
-        `;
-        setMatchControlsDisabled(true);
-        return;
-      }
-
-      const roundPlan = buildRoundPlan(activePlayers, currentMatchNo);
-      currentRoundPlan = roundPlan;
-      sumGroupCountEl.textContent = String(roundPlan.total_groups || 0);
-      renderCourts(roundPlan);
-      renderBench(roundPlan);
-      setMatchControlsDisabled(false);
-    }
-
-    applyRemovalBtn.addEventListener('click', () => {
-      removedPlayerIds = new Set(
-        Array.from(removeListEl.querySelectorAll('input[type="checkbox"]:checked'))
-          .map(input => safeText(input.value).trim())
-          .filter(Boolean)
-      );
-      loadSessionContext({ resetRemovals: false, jumpToNextPlayable: true });
-    });
-
-    removeSearchEl.addEventListener('input', () => renderRemoveList(attendanceCache));
-
-    prevRoundBtn.addEventListener('click', () => {
-      const previous = getPreviousPosition(currentStageNo, currentMatchNo);
-      currentStageNo = previous.stage_no;
-      currentMatchNo = previous.match_no;
-      renderRound();
-    });
-
-    nextRoundBtn.addEventListener('click', () => {
-      const activePlayers = getActivePlayers();
-      const next = getNextPosition(currentStageNo, currentMatchNo, activePlayers);
-      currentStageNo = next.stage_no;
-      currentMatchNo = next.match_no;
-      renderRound();
-    });
-
-    copyPrevRoundBtn.addEventListener('click', () => {
-      const activePlayers = getActivePlayers();
-      const nextPlayable = getNextPlayablePosition(activePlayers);
-      currentStageNo = nextPlayable.stage_no;
-      currentMatchNo = nextPlayable.match_no;
-      renderRound();
-      alert(`Le prochain match à jouer est préparé : round ${currentStageNo}, match ${currentMatchNo}.`);
-    });
-
-    lockSessionToggle.addEventListener('change', async () => {
-      const wantedState = !!lockSessionToggle.checked;
-      const previousState = sessionLocked;
-      try {
-        lockSessionToggle.disabled = true;
-        await saveSessionLockState(wantedState);
-      } catch (error) {
-        console.error(error);
-        sessionLocked = previousState;
-        lockSessionToggle.checked = previousState;
-        applySessionLockUI();
-        alert('Erreur lors du verrouillage de la session : ' + (error.message || error));
-      } finally {
-        applySessionLockUI();
-      }
-    });
-
-    groupsGridEl.addEventListener('click', event => {
-      const saveButton = event.target.closest('[data-action="save-group-scores"]');
-      if (saveButton) {
-        saveCurrentScores();
-        return;
-      }
-
-      const container = event.target.closest('.swap-enabled');
-      if (!container) return;
-      handleSwapClickFromContainer(container);
-    });
-
-    async function saveCurrentScores() {
-      if (sessionLocked) {
-        alert('Cette session est barrée. Décoche-la pour pouvoir modifier les scores.');
-        return;
-      }
-
-      try {
-        const payload = buildSaveScoresPayload();
-        const response = await fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({
-            action: 'saveRoundMatches',
-            ...payload
-          })
-        });
-
-        const result = await response.json();
-        if (!result.ok) throw new Error(result.error || 'Erreur API inconnue');
-
-        await loadSessionContext({ resetRemovals: false, jumpToNextPlayable: false });
-        alert(`Round ${payload.round_no}, match ${payload.match_no} sauvegardé.`);
-      } catch (error) {
-        console.error(error);
-        alert('Erreur lors de la sauvegarde des scores : ' + (error.message || error));
-      }
-    }
-
-    saveScoresBtn.addEventListener('click', saveCurrentScores);
-
-    matchSeasonEl.addEventListener('change', populateSessions);
-    matchSessionEl.addEventListener('change', syncSelectedSession);
-
-    resetCourts();
-    loadSeasons();
-  </script>
 </body>
 </html>
