@@ -605,9 +605,10 @@ if (!confirmSave) {
 
 async function loadSeasons() {
   try {
-    const response = await fetch(`${API_URL}?action=getSeasons`);
-    const result = await response.json();
-
+const response = await fetch(`${API_URL}?action=getSeasons`);
+const text = await response.text();
+console.log('status getSeasons =', response.status);
+console.log('body getSeasons =', text);
     if (!result.ok) {
       throw new Error(result.error || 'Erreur API inconnue');
     }
