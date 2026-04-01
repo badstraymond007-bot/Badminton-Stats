@@ -362,6 +362,15 @@
       margin-top: 12px;
     }
 
+    .group-save-wrap {
+      margin-top: 12px;
+    }
+
+    .group-save-wrap .btn {
+      width: 100%;
+      text-align: center;
+    }
+
     .score-box {
       display: flex;
       flex-direction: column;
@@ -1535,6 +1544,10 @@
               <input type="number" min="0" placeholder="Score équipe 2" data-score-field="team2_score" data-group-code="${escapeHtml(safeText(match.group_code))}" data-is-rest="0" />
             </div>
           </div>
+
+          <div class="group-save-wrap">
+            <button type="button" class="btn" data-action="save-group-scores">Enregistrer les scores</button>
+          </div>
         </article>
       `;
     }
@@ -1994,12 +2007,18 @@
     });
 
     groupsGridEl.addEventListener('click', event => {
+      const saveButton = event.target.closest('[data-action="save-group-scores"]');
+      if (saveButton) {
+        saveCurrentScores();
+        return;
+      }
+
       const container = event.target.closest('.swap-enabled');
       if (!container) return;
       handleSwapClickFromContainer(container);
     });
 
-    saveScoresBtn.addEventListener('click', async () => {
+    async function saveCurrentScores() {
       if (sessionLocked) {
         alert('Cette session est barrée. Décoche-la pour pouvoir modifier les scores.');
         return;
@@ -2025,7 +2044,9 @@
         console.error(error);
         alert('Erreur lors de la sauvegarde des scores : ' + (error.message || error));
       }
-    });
+    }
+
+    saveScoresBtn.addEventListener('click', saveCurrentScores);
 
     matchSeasonEl.addEventListener('change', populateSessions);
     matchSessionEl.addEventListener('change', syncSelectedSession);
