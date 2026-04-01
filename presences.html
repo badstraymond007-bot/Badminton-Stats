@@ -469,6 +469,49 @@ function populateSessions() {
   sessionPickerEl.value = '';
   syncSelectedSession();
 }
+
+async function loadExistingAttendance() {
+  const saisonId = String(sessionSeasonEl.value || '').trim();
+  const noSession = String(sessionPickerEl.value || '').trim();
+  const dateSession = String(sessionDateEl.value || '').trim();
+
+  if (!saisonId || !noSession || !dateSession) {
+    document.querySelectorAll('input[name="attendanceSelection"]').forEach(box => {
+      box.checked = false;
+    });
+    updateSelectedCount();
+    return;
+  }
+
+  try {
+    const url =
+      `${API_URL}?action=getAttendanceForSession` +
+      `&saison_id=${encodeURIComponent(saisonId)}` +
+      `&date_session=${encodeURIComponent(dateSession)}` +
+      `&no_session=${encodeURIComponent(noSession)}`;
+
+    const response = await fetch(url);
+    const result = await response.json();
+
+    if (!result.ok) {
+      throw new Error(result.error || 'Erreur API inconnue');
+    }
+
+    const presentIds = new Set(
+      Array.isArray(result.joueurs)
+        ? result.joueurs.map(j => String(j.joueur_id || '').trim())
+        : []
+    );
+
+    document.querySelectorAll('input[name="attendanceSelection"]').forEach(box => {
+      box.checked = presentIds.has(String(box.value || '').trim());
+    });
+
+    updateSelectedCount();
+  } catch (error) {
+    console.error('Erreur loadExistingAttendance:', error);
+  }
+}
     
     async function loadPlayers() {
       try {
