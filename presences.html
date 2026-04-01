@@ -411,10 +411,12 @@ function buildAttendancePayload() {
     document.querySelectorAll('input[name="attendanceSelection"]:checked')
   ).map(box => box.value);
 
+  const selectedOption = sessionPickerEl.options[sessionPickerEl.selectedIndex];
+
   return {
-    date_session: sessionDateEl.value,
-    no_session: sessionNumberEl.value,
-    saison_id: sessionSeasonEl.value,
+    date_session: selectedOption?.dataset.date || '',
+    no_session: sessionPickerEl.value || '',
+    saison_id: sessionSeasonEl.value || '',
     joueurs_presents: selectedPlayers
   };
 }
