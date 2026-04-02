@@ -528,7 +528,7 @@
             <button type="button" class="btn ghost" id="prevRoundBtn">Tour précédent</button>
             <button type="button" class="btn ghost" id="nextRoundBtn">Tour suivant</button>
             <button type="button" class="btn secondary" id="copyPrevRoundBtn">Prochain à jouer</button>
-            <button type="button" class="btn" id="saveScoresBtn">Enregistrer les scores</button>
+            <button type="button" class="btn" id="finalizeSessionBtn">Terminer + barrer</button>
           </div>
         </div>
 
@@ -621,7 +621,7 @@
     const prevRoundBtn = document.getElementById('prevRoundBtn');
     const nextRoundBtn = document.getElementById('nextRoundBtn');
     const copyPrevRoundBtn = document.getElementById('copyPrevRoundBtn');
-    const saveScoresBtn = document.getElementById('saveScoresBtn');
+    const finalizeSessionBtn = document.getElementById('finalizeSessionBtn');
     const lockSessionToggle = document.getElementById('lockSessionToggle');
     const lockSessionNote = document.getElementById('lockSessionNote');
     const groupsGridEl = document.getElementById('groupsGrid');
@@ -655,6 +655,7 @@
     let seasonsCache = [];
     let attendanceCache = [];
     let rankingCache = [];
+    let rankingSeasonId = '';
     let sessionMatchesCache = [];
     let removedPlayerIds = new Set();
     let currentRoundPlan = null;
@@ -799,10 +800,10 @@
       } else if (sessionLocked) {
         lockSessionNote.textContent = 'Session barrée : modification des scores bloquée.';
       } else {
-        lockSessionNote.textContent = 'Session modifiable.';
+        lockSessionNote.textContent = 'Session modifiable. Sauvegarde les groupes au fur et à mesure, puis termine la session quand tout est bon.';
       }
 
-      saveScoresBtn.disabled = blocked;
+      finalizeSessionBtn.disabled = !hasSession || matchControlsBaseDisabled || sessionLocked;
       groupsGridEl.querySelectorAll('[data-score-field]').forEach(input => {
         input.disabled = blocked || input.dataset.isRest === '1';
       });
@@ -1212,50 +1213,30 @@
       const slot = stageContext.schedule.find(item => Number(item.match_no || 0) === Number(matchNo || 0)) || null;
       const savedMatches = getSavedMatchesForStageAndMatch(stageNo, matchNo);
       const benchEntries = [];
-      const visibleCodes = new Set((slot?.tasks || []).map(task => task.group_code));
+      const activeCodes = new Set((slot?.tasks || []).map(task => safeText(task.group_code).trim()).filter(Boolean));
+      const savedByGroup = {};
 
-      if (savedMatches.length) {
-        savedMatches.forEach(match => {
-          if (match.waiting_player) {
-            benchEntries.push({ type: 'waiting', group_code: match.group_code, player: match.waiting_player });
-          }
-        });
+      savedMatches.forEach(match => {
+        const code = safeText(match.group_code).trim();
+        if (!code) return;
+        savedByGroup[code] = { ...match };
+      });
 
-        stageContext.groups.forEach(group => {
-          if (visibleCodes.has(group.group_code)) return;
-          benchEntries.push({ type: 'group_rest', group_code: group.group_code, players: group.players });
-        });
+      let matches = [];
 
-        stageContext.extraBenchPlayers.forEach(player => {
-          benchEntries.push({ type: 'bench_only', player });
-        });
-
-        return {
-          source: 'saved',
-          stage_no: stageNo,
-          match_no: matchNo,
-          total_groups: stageContext.groups.length,
-          total_slots: stageContext.schedule.length,
-          matches: savedMatches.map(match => ({ ...match })),
-          benchEntries
-        };
+      if (slot) {
+        matches = slot.tasks
+          .map(task => {
+            const code = safeText(task.group_code).trim();
+            if (code && savedByGroup[code]) {
+              return { ...savedByGroup[code] };
+            }
+            return buildGeneratedMatchFromTask(task, stageContext.groups);
+          })
+          .filter(Boolean);
+      } else if (savedMatches.length) {
+        matches = savedMatches.map(match => ({ ...match }));
       }
-
-      if (!slot) {
-        return {
-          source: 'generated',
-          stage_no: stageNo,
-          match_no: matchNo,
-          total_groups: stageContext.groups.length,
-          total_slots: stageContext.schedule.length,
-          matches: [],
-          benchEntries: []
-        };
-      }
-
-      const matches = slot.tasks
-        .map(task => buildGeneratedMatchFromTask(task, stageContext.groups))
-        .filter(Boolean);
 
       matches.forEach(match => {
         if (match.waiting_player) {
@@ -1264,7 +1245,7 @@
       });
 
       stageContext.groups.forEach(group => {
-        if (visibleCodes.has(group.group_code)) return;
+        if (activeCodes.has(group.group_code)) return;
         benchEntries.push({ type: 'group_rest', group_code: group.group_code, players: group.players });
       });
 
@@ -1273,7 +1254,7 @@
       });
 
       return {
-        source: 'generated',
+        source: savedMatches.length ? 'saved' : 'generated',
         stage_no: stageNo,
         match_no: matchNo,
         total_groups: stageContext.groups.length,
@@ -1291,9 +1272,22 @@
       let stageNo = 1;
       while (stageNo <= MAX_ROUNDS) {
         const context = getCurrentSchedule(stageNo, activePlayers);
-        const savedStage = getSavedStage(stageNo);
-        const savedMatchNos = new Set((savedStage?.matches || []).map(match => Number(match.match_no || 0)));
-        const nextSlot = context.schedule.find(slot => !savedMatchNos.has(Number(slot.match_no || 0)));
+        const nextSlot = context.schedule.find(slot => {
+          const requiredCodes = (slot.tasks || [])
+            .map(task => safeText(task.group_code).trim())
+            .filter(Boolean);
+          if (!requiredCodes.length) return false;
+
+          const savedMatches = getSavedMatchesForStageAndMatch(stageNo, slot.match_no);
+          const savedCodes = new Set(
+            savedMatches
+              .map(match => safeText(match.group_code).trim())
+              .filter(Boolean)
+          );
+
+          return requiredCodes.some(code => !savedCodes.has(code));
+        });
+
         if (nextSlot) {
           return { stage_no: stageNo, match_no: Number(nextSlot.match_no || 1) };
         }
@@ -1301,14 +1295,6 @@
         stageNo += 1;
       }
       return { stage_no: 1, match_no: 1 };
-    }
-
-    function getNextPosition(stageNo, matchNo, activePlayers) {
-      const context = getCurrentSchedule(stageNo, activePlayers);
-      const maxMatch = Number(context.schedule.length || 1);
-      if (matchNo < maxMatch) return { stage_no: stageNo, match_no: matchNo + 1 };
-      if (stageNo < MAX_ROUNDS) return { stage_no: stageNo + 1, match_no: 1 };
-      return { stage_no: stageNo, match_no: matchNo };
     }
 
     function getPreviousPosition(stageNo, matchNo) {
@@ -1546,7 +1532,7 @@
           </div>
 
           <div class="group-save-wrap">
-            <button type="button" class="btn" data-action="save-group-scores">Enregistrer les scores</button>
+            <button type="button" class="btn" data-action="save-group-scores" data-group-code="${escapeHtml(safeText(match.group_code))}">Sauvegarder ce groupe</button>
           </div>
         </article>
       `;
@@ -1673,14 +1659,22 @@
       applySessionLockUI();
     }
 
-    function buildSaveScoresPayload() {
+    function buildSaveScoresPayload(groupCode) {
       const season = getSelectedSeason();
       const saisonId = safeText(season?.saison_id).trim();
       const noSession = safeText(matchSessionEl.value || matchSessionNoEl.value).trim();
+      const cleanGroupCode = safeText(groupCode).trim();
       if (!saisonId) throw new Error('Saison manquante.');
       if (!noSession) throw new Error('Session manquante.');
+      if (!cleanGroupCode) throw new Error('Groupe manquant.');
       if (!currentRoundPlan || !Array.isArray(currentRoundPlan.matches) || !currentRoundPlan.matches.length) {
         throw new Error('Aucun match actif à sauvegarder pour cet écran.');
+      }
+
+      const match = currentRoundPlan.matches.find(item => safeText(item?.group_code).trim() === cleanGroupCode);
+      if (!match) throw new Error(`Groupe ${cleanGroupCode} introuvable pour cet écran.`);
+      if (safeText(match.team1_score).trim() === '' || safeText(match.team2_score).trim() === '') {
+        throw new Error(`Entre les deux scores du groupe ${cleanGroupCode} avant de sauvegarder.`);
       }
 
       return {
@@ -1688,19 +1682,51 @@
         no_session: noSession,
         round_no: currentStageNo,
         match_no: currentMatchNo,
-        matches: currentRoundPlan.matches.map(match => ({
-          group_code: match.group_code,
-          court_no: GROUP_CODES.indexOf(match.group_code) + 1,
-          team1_player1_id: safeText(match.team1_player1?.joueur_id).trim(),
-          team1_player2_id: safeText(match.team1_player2?.joueur_id).trim(),
-          team2_player1_id: safeText(match.team2_player1?.joueur_id).trim(),
-          team2_player2_id: safeText(match.team2_player2?.joueur_id).trim(),
-          waiting_player_id: safeText(match.waiting_player?.joueur_id).trim(),
-          team1_score: safeText(match.team1_score).trim(),
-          team2_score: safeText(match.team2_score).trim(),
-          winner_team: ''
-        }))
+        group_code: cleanGroupCode,
+        court_no: GROUP_CODES.indexOf(match.group_code) + 1,
+        team1_player1_id: safeText(match.team1_player1?.joueur_id).trim(),
+        team1_player2_id: safeText(match.team1_player2?.joueur_id).trim(),
+        team2_player1_id: safeText(match.team2_player1?.joueur_id).trim(),
+        team2_player2_id: safeText(match.team2_player2?.joueur_id).trim(),
+        waiting_player_id: safeText(match.waiting_player?.joueur_id).trim(),
+        team1_score: safeText(match.team1_score).trim(),
+        team2_score: safeText(match.team2_score).trim(),
+        winner_team: ''
       };
+    }
+
+    function upsertSavedMatchInCache(savedMatch) {
+      if (!savedMatch) return;
+
+      const roundNo = safeText(savedMatch.round_no).trim();
+      const matchNo = safeText(savedMatch.match_no).trim();
+      const groupCode = safeText(savedMatch.group_code).trim();
+      if (!roundNo || !matchNo || !groupCode) return;
+
+      let stage = sessionMatchesCache.find(entry => safeText(entry?.round_no).trim() === roundNo);
+      if (!stage) {
+        stage = {
+          round_no: roundNo,
+          match_no: matchNo,
+          matches: []
+        };
+        sessionMatchesCache.push(stage);
+        sessionMatchesCache.sort((a, b) => compareNumericLike(a.round_no, b.round_no));
+      }
+
+      if (!Array.isArray(stage.matches)) stage.matches = [];
+      const existingIndex = stage.matches.findIndex(match =>
+        safeText(match?.match_no).trim() === matchNo &&
+        safeText(match?.group_code).trim() === groupCode
+      );
+
+      if (existingIndex >= 0) {
+        stage.matches[existingIndex] = { ...stage.matches[existingIndex], ...savedMatch };
+      } else {
+        stage.matches.push(savedMatch);
+      }
+
+      stage.matches.sort((a, b) => compareNumericLike(a.group_code, b.group_code));
     }
 
     async function loadSeasons() {
@@ -1725,6 +1751,7 @@
         } else {
           attendanceCache = [];
           rankingCache = [];
+          rankingSeasonId = '';
           sessionMatchesCache = [];
           removedPlayerIds = new Set();
           currentRoundPlan = null;
@@ -1737,6 +1764,7 @@
         clearSessionFields();
         attendanceCache = [];
         rankingCache = [];
+        rankingSeasonId = '';
         sessionMatchesCache = [];
         removedPlayerIds = new Set();
         currentRoundPlan = null;
@@ -1752,6 +1780,7 @@
       if (!season) {
         attendanceCache = [];
         rankingCache = [];
+        rankingSeasonId = '';
         sessionMatchesCache = [];
         removedPlayerIds = new Set();
         currentRoundPlan = null;
@@ -1817,16 +1846,18 @@
       const jumpToNextPlayable = options.jumpToNextPlayable === true;
 
       attendanceCache = [];
-      rankingCache = [];
       sessionMatchesCache = [];
       currentRoundPlan = null;
       selectedSwapRef = null;
       if (resetRemovals) removedPlayerIds = new Set();
       currentStageNo = 1;
       currentMatchNo = 1;
-      renderRound();
+      setMatchControlsDisabled(true);
 
-      if (!saisonId || !noSession || !dateSession) return;
+      if (!saisonId || !noSession || !dateSession) {
+        renderRound();
+        return;
+      }
 
       try {
         const attendanceParams = new URLSearchParams({
@@ -1842,20 +1873,25 @@
           no_session: noSession
         });
 
-        const rankingParams = new URLSearchParams({
-          action: 'getRanking',
-          saison_id: saisonId
-        });
+        const rankingPromise = rankingSeasonId === saisonId && Array.isArray(rankingCache) && rankingCache.length
+          ? Promise.resolve({ ok: true, rows: rankingCache })
+          : (async () => {
+              const rankingParams = new URLSearchParams({
+                action: 'getRanking',
+                saison_id: saisonId
+              });
+              const rankingResponse = await fetch(`${API_URL}?${rankingParams.toString()}`);
+              return rankingResponse.json();
+            })();
 
-        const [attendanceResponse, matchesResponse, rankingResponse] = await Promise.all([
+        const [attendanceResponse, matchesResponse, rankingResult] = await Promise.all([
           fetch(`${API_URL}?${attendanceParams.toString()}`),
           fetch(`${API_URL}?${matchesParams.toString()}`),
-          fetch(`${API_URL}?${rankingParams.toString()}`)
+          rankingPromise
         ]);
 
         const attendanceResult = await attendanceResponse.json();
         const matchesResult = await matchesResponse.json();
-        const rankingResult = await rankingResponse.json();
 
         if (!attendanceResult.ok) throw new Error(attendanceResult.error || 'Erreur de présence.');
         if (!matchesResult.ok) throw new Error(matchesResult.error || 'Erreur de matchs.');
@@ -1864,6 +1900,7 @@
         attendanceCache = Array.isArray(attendanceResult.joueurs) ? attendanceResult.joueurs : [];
         sessionMatchesCache = Array.isArray(matchesResult.rounds) ? matchesResult.rounds : [];
         rankingCache = Array.isArray(rankingResult.rows) ? rankingResult.rows : [];
+        rankingSeasonId = saisonId;
 
         const sessionMeta = getSelectedSessionMeta();
         sessionLocked = !!sessionMeta?.barree;
@@ -1897,6 +1934,7 @@
         matchSessionNoEl.value = '';
         attendanceCache = [];
         rankingCache = [];
+        rankingSeasonId = '';
         sessionMatchesCache = [];
         removedPlayerIds = new Set();
         currentRoundPlan = null;
@@ -2009,7 +2047,7 @@
     groupsGridEl.addEventListener('click', event => {
       const saveButton = event.target.closest('[data-action="save-group-scores"]');
       if (saveButton) {
-        saveCurrentScores();
+        saveCurrentScores(saveButton.dataset.groupCode || saveButton.closest('[data-group-card]')?.dataset.groupCard || '');
         return;
       }
 
@@ -2018,19 +2056,19 @@
       handleSwapClickFromContainer(container);
     });
 
-    async function saveCurrentScores() {
+    async function saveCurrentScores(groupCode) {
       if (sessionLocked) {
         alert('Cette session est barrée. Décoche-la pour pouvoir modifier les scores.');
         return;
       }
 
       try {
-        const payload = buildSaveScoresPayload();
+        const payload = buildSaveScoresPayload(groupCode);
         const response = await fetch(API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({
-            action: 'saveRoundMatches',
+            action: 'saveSingleMatch',
             ...payload
           })
         });
@@ -2038,15 +2076,86 @@
         const result = await response.json();
         if (!result.ok) throw new Error(result.error || 'Erreur API inconnue');
 
-        await loadSessionContext({ resetRemovals: false, jumpToNextPlayable: false });
-        alert(`Round ${payload.round_no}, match ${payload.match_no} sauvegardé.`);
+        const liveMatch = currentRoundPlan.matches.find(match => safeText(match?.group_code).trim() === safeText(groupCode).trim());
+        if (liveMatch) {
+          liveMatch.match_id = safeText(result.match_id || result.saved_match?.match_id).trim() || liveMatch.match_id || '';
+          liveMatch.winner_team = safeText(result.winner_team || result.saved_match?.winner_team).trim() || liveMatch.winner_team || '';
+
+          upsertSavedMatchInCache({
+            match_id: liveMatch.match_id || '',
+            round_no: safeText(payload.round_no).trim(),
+            match_no: safeText(payload.match_no).trim(),
+            group_code: safeText(liveMatch.group_code).trim(),
+            court_no: safeText(payload.court_no).trim(),
+            team1_player1: liveMatch.team1_player1 || null,
+            team1_player2: liveMatch.team1_player2 || null,
+            team2_player1: liveMatch.team2_player1 || null,
+            team2_player2: liveMatch.team2_player2 || null,
+            waiting_player: liveMatch.waiting_player || null,
+            team1_score: safeText(payload.team1_score).trim(),
+            team2_score: safeText(payload.team2_score).trim(),
+            winner_team: liveMatch.winner_team || ''
+          });
+        }
+
+        alert(`Groupe ${payload.group_code} sauvegardé.`);
       } catch (error) {
         console.error(error);
         alert('Erreur lors de la sauvegarde des scores : ' + (error.message || error));
       }
     }
 
-    saveScoresBtn.addEventListener('click', saveCurrentScores);
+    async function finalizeCurrentSession() {
+      if (sessionLocked) {
+        alert('Cette session est déjà barrée.');
+        return;
+      }
+
+      const season = getSelectedSeason();
+      const saisonId = safeText(season?.saison_id).trim();
+      const noSession = safeText(matchSessionEl.value).trim();
+      if (!saisonId || !noSession) {
+        alert('Choisis une saison et une session avant de terminer.');
+        return;
+      }
+
+      const confirmation = window.confirm('Terminer la session, recalculer les classements et barrer la session ?');
+      if (!confirmation) return;
+
+      try {
+        finalizeSessionBtn.disabled = true;
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'finalizeSession',
+            saison_id: saisonId,
+            no_session: noSession,
+            barree: true
+          })
+        });
+
+        const result = await response.json();
+        if (!result.ok) throw new Error(result.error || 'Erreur API inconnue');
+
+        const sessionMeta = getSelectedSessionMeta();
+        if (sessionMeta) sessionMeta.barree = true;
+        sessionLocked = true;
+        lockSessionToggle.checked = true;
+        rankingCache = [];
+        rankingSeasonId = '';
+        applySessionLockUI();
+
+        alert(`Session ${noSession} terminée et barrée.`);
+      } catch (error) {
+        console.error(error);
+        alert('Erreur lors de la finalisation de la session : ' + (error.message || error));
+      } finally {
+        applySessionLockUI();
+      }
+    }
+
+    finalizeSessionBtn.addEventListener('click', finalizeCurrentSession);
 
     matchSeasonEl.addEventListener('change', populateSessions);
     matchSessionEl.addEventListener('change', syncSelectedSession);
