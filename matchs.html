@@ -1200,8 +1200,8 @@ function buildNextStageGroupsFromPreviousStage(previousStage, activePlayers) {
 
   const stageStats = buildStageStatsByGroup(previousStage, previousGroups);
 
-  {% comment %} 1) On calcule d'abord le "vrai prochain état" complet
-     comme si tous les joueurs du round précédent étaient encore là. {% endcomment %}
+  /* 1) Calculer d'abord le prochain état complet
+     comme si tous les joueurs du round précédent étaient encore là. */
   const buckets = previousGroups.map(group => {
     const ranked = [...group.players].sort((a, b) =>
       comparePlayersForMovement(a, b, stageStats.byGroup[group.group_code] || {})
@@ -1238,12 +1238,12 @@ function buildNextStageGroupsFromPreviousStage(previousStage, activePlayers) {
     };
   });
 
-  {% comment %} 2) On garde seulement les joueurs actifs de la nouvelle session. {% endcomment %}
+  /* 2) Garder seulement les joueurs actifs de la nouvelle session. */
   const activeMap = buildPlayerMap(activePlayers);
   const activeOrdered = getInitialOrderedPlayers(activePlayers);
 
-  {% comment %} 3) On détermine les tailles cibles avec le nombre réel de présents.
-     Le classement général ne sert qu'à remplir les trous. {% endcomment %}
+  /* 3) Déterminer les tailles cibles avec le nombre réel de présents.
+     Le classement général sert seulement à remplir les trous. */
   const targetStructure = partitionPlayers(activeOrdered);
   const targetGroups = Array.isArray(targetStructure.groups) ? targetStructure.groups : [];
 
@@ -1265,8 +1265,8 @@ function buildNextStageGroupsFromPreviousStage(previousStage, activePlayers) {
     };
   });
 
-  {% comment %} 4) Les joueurs actifs qui ne sont pas déjà replacés
-     sont injectés selon le classement général, et rien d'autre. {% endcomment %}
+  /* 4) Les joueurs actifs non encore replacés
+     sont injectés selon le classement général, et rien d'autre. */
   const carriedIds = new Set(
     carryGroups.flatMap(group =>
       (group.players || [])
