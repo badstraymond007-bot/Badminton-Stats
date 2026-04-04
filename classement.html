@@ -498,36 +498,18 @@
       return text.includes(search);
     });
 
-const sorted = [...filtered].sort((a, b) => {
-  const diffA = Number(a.plus_moins || 0);
-  const diffB = Number(b.plus_moins || 0);
-  if (diffB !== diffA) return diffB - diffA;
+const rowsToDisplay = [...filtered];
 
-  const pfA = Number(a.points_pour || 0);
-  const pfB = Number(b.points_pour || 0);
-  if (pfB !== pfA) return pfB - pfA;
-
-  const pcA = Number(a.points_contre || 0);
-  const pcB = Number(b.points_contre || 0);
-  if (pcA !== pcB) return pcA - pcB;
-
-  return String(a.nom || a.joueur_id || '').localeCompare(
-    String(b.nom || b.joueur_id || ''),
-    'fr',
-    { sensitivity: 'base' }
-  );
-});
-
-    if (!sorted.length) {
+    if (!rowsToDisplay.length) {
       rankingTableBodyEl.innerHTML = `
         <tr>
           <td colspan="9">Aucun résultat à afficher.</td>
         </tr>
       `;
     } else {
-      rankingTableBodyEl.innerHTML = sorted.map((row, index) => `
+      rankingTableBodyEl.innerHTML = rowsToDisplay.map((row, index) => `
         <tr>
-          <td class="rank-cell">${index + 1}</td>
+          <td class="rank-cell">${escapeHtml(row.rang ?? row.rank ?? (index + 1))}</td>
           <td class="player-cell">${escapeHtml(row.nom || row.joueur_id)}</td>
           <td>${escapeHtml(row.matchs_joues)}</td>
           <td>${escapeHtml(row.victoires)}</td>
@@ -544,7 +526,7 @@ const sorted = [...filtered].sort((a, b) => {
     summaryModeEl.textContent = currentMode === 'session'
       ? `Session ${rankingSessionEl.value || '—'}`
       : 'Cumulatif';
-    summaryCountEl.textContent = String(sorted.length);
+    summaryCountEl.textContent = String(rowsToDisplay.length);
   }
 
   rankingSeasonEl.addEventListener('change', () => {
