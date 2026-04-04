@@ -1199,15 +1199,122 @@ function buildNextStageGroupsFromPreviousStage(previousStage, activePlayers) {
   }
 
   const stageStats = buildStageStatsByGroup(previousStage, previousGroups);
+  const activeMap = buildPlayerMap(activePlayers);
+  const activeOrdered = getInitialOrderedPlayers(activePlayers);
+  const targetStructure = partitionPlayers(activeOrdered);
+  const targetGroups = Array.isArray(targetStructure.groups) ? targetStructure.groups : [];
 
-  /* 1) Calculer d'abord le prochain état complet
-     comme si tous les joueurs du round précédent étaient encore là. */
-  const buckets = previousGroups.map(group => {
+  if (!targetGroups.length) {
+    return {
+      groups: [],
+      extraBenchPlayers: activeOrdered
+    };
+  }
+
+  const rankedByGroup = previousGroups.map(group => {
     const ranked = [...group.players].sort((a, b) =>
       comparePlayersForMovement(a, b, stageStats.byGroup[group.group_code] || {})
     );
 
-    const isFive = group.players.length === 5;
+    return {
+      group_code: group.group_code,
+      ranked
+    };
+  });
+
+  /* Bridge spécial 3 groupes de 5  ->  4 groupes de 4
+     C'est exactement le passage testé ici :
+     session précédente seed = 3x5
+     nouvelle session présente = 4x4
+     Le classement général sert seulement à insérer les nouveaux / combler les trous. */
+  const isBridge3x5to4x4 =
+    previousGroups.length === 3 &&
+    previousGroups.every(group => Array.isArray(group.players) && group.players.length === 5) &&
+    targetGroups.length === 4 &&
+    targetGroups.every(group => Array.isArray(group.players) && group.players.length === 4);
+
+  if (isBridge3x5to4x4) {
+    const gA = rankedByGroup[0]?.ranked || [];
+    const gB = rankedByGroup[1]?.ranked || [];
+    const gC = rankedByGroup[2]?.ranked || [];
+
+    /* Ordre de corridor voulu pour ce pont :
+       - haut du groupe B monte en tête du nouveau A
+       - coeur du groupe A complète le nouveau A
+       - milieu / bas de B et bas de A forment le nouveau B
+       - bas de B et haut de C forment le nouveau C
+       - bas de C descend vers le nouveau D
+       - les nouveaux joueurs / trous sont injectés par le classement général seulement */
+    const bridgeSeed = [
+      gB[0], gA[2], gA[1],
+      gB[1], gB[2], gA[3], gA[4],
+      gB[3], gC[1], gC[0], gB[4],
+      gC[4], gC[2], gC[3]
+    ].filter(Boolean);
+
+    const carriedOrdered = [];
+    const carriedIds = new Set();
+
+    bridgeSeed.forEach(player => {
+      const id = safeText(player?.joueur_id).trim();
+      if (!id || !activeMap[id] || carriedIds.has(id)) return;
+      carriedIds.add(id);
+      carriedOrdered.push(activeMap[id]);
+    });
+
+    const rankingFill = activeOrdered.filter(player =>
+      !carriedIds.has(safeText(player?.joueur_id).trim())
+    );
+
+    const nextGroups = [
+      {
+        group_code: 'A',
+        players: carriedOrdered.slice(0, 3)
+      },
+      {
+        group_code: 'B',
+        players: carriedOrdered.slice(3, 7)
+      },
+      {
+        group_code: 'C',
+        players: carriedOrdered.slice(7, 11)
+      },
+      {
+        group_code: 'D',
+        players: []
+      }
+    ];
+
+    /* Le meilleur "nouveau / trou" entre d'abord dans A */
+    while (nextGroups[0].players.length < 4 && rankingFill.length) {
+      nextGroups[0].players.push(rankingFill.shift());
+    }
+
+    /* Le prochain "nouveau / trou" ouvre D */
+    if (rankingFill.length) {
+      nextGroups[3].players.push(rankingFill.shift());
+    }
+
+    /* Puis on complète D avec le bas de l'ancien C */
+    nextGroups[3].players.push(...carriedOrdered.slice(11, 14));
+
+    /* Sécurité : si jamais un groupe est incomplet à cause d'absents, on remplit avec le classement général */
+    nextGroups.forEach(group => {
+      while (group.players.length < 4 && rankingFill.length) {
+        group.players.push(rankingFill.shift());
+      }
+    });
+
+    return {
+      groups: nextGroups,
+      extraBenchPlayers: rankingFill
+    };
+  }
+
+  /* Fallback générique pour les autres formes de transition */
+  const buckets = rankedByGroup.map(group => {
+    const ranked = group.ranked;
+    const isFive = ranked.length === 5;
 
     return {
       group_code: group.group_code,
@@ -1238,22 +1345,6 @@ function buildNextStageGroupsFromPreviousStage(previousStage, activePlayers) {
     };
   });
 
-  /* 2) Garder seulement les joueurs actifs de la nouvelle session. */
-  const activeMap = buildPlayerMap(activePlayers);
-  const activeOrdered = getInitialOrderedPlayers(activePlayers);
-
-  /* 3) Déterminer les tailles cibles avec le nombre réel de présents.
-     Le classement général sert seulement à remplir les trous. */
-  const targetStructure = partitionPlayers(activeOrdered);
-  const targetGroups = Array.isArray(targetStructure.groups) ? targetStructure.groups : [];
-
-  if (!targetGroups.length) {
-    return {
-      groups: [],
-      extraBenchPlayers: activeOrdered
-    };
-  }
-
   const carryGroups = targetGroups.map((targetGroup, index) => {
     const seeded = seededGroups[index] || { group_code: targetGroup.group_code, players: [] };
 
@@ -1265,8 +1356,6 @@ function buildNextStageGroupsFromPreviousStage(previousStage, activePlayers) {
     };
   });
 
-  /* 4) Les joueurs actifs non encore replacés
-     sont injectés selon le classement général, et rien d'autre. */
   const carriedIds = new Set(
     carryGroups.flatMap(group =>
       (group.players || [])
