@@ -1192,202 +1192,53 @@ function comparePlayersForMovement(a, b, statsMap) {
       }
       return sorted;
     }
-function buildNextStageGroupsFromPreviousStage(previousStage, activePlayers) {
-  const previousGroups = extractGroupsFromSavedStage(previousStage);
-  if (!previousGroups.length) {
-    return partitionPlayers(getInitialOrderedPlayers(activePlayers));
-  }
 
-  const stageStats = buildStageStatsByGroup(previousStage, previousGroups);
-  const activeMap = buildPlayerMap(activePlayers);
-  const activeOrdered = getInitialOrderedPlayers(activePlayers);
-  const targetStructure = partitionPlayers(activeOrdered);
-  const targetGroups = Array.isArray(targetStructure.groups) ? targetStructure.groups : [];
+    function buildNextStageGroupsFromPreviousStage(previousStage, activePlayers) {
+      const previousGroups = extractGroupsFromSavedStage(previousStage);
+      if (!previousGroups.length) return partitionPlayers(getInitialOrderedPlayers(activePlayers));
 
-  if (!targetGroups.length) {
-    return {
-      groups: [],
-      extraBenchPlayers: activeOrdered
-    };
-  }
-
-  const rankedByGroup = previousGroups.map(group => {
-    const ranked = [...group.players].sort((a, b) =>
-      comparePlayersForMovement(a, b, stageStats.byGroup[group.group_code] || {})
-    );
-
-    return {
-      group_code: group.group_code,
-      ranked
-    };
-  });
-
-  /* Bridge spécial 3 groupes de 5  ->  4 groupes de 4
-     C'est exactement le passage testé ici :
-     session précédente seed = 3x5
-     nouvelle session présente = 4x4
-     Le classement général sert seulement à insérer les nouveaux / combler les trous. */
-  const isBridge3x5to4x4 =
-    previousGroups.length === 3 &&
-    previousGroups.every(group => Array.isArray(group.players) && group.players.length === 5) &&
-    targetGroups.length === 4 &&
-    targetGroups.every(group => Array.isArray(group.players) && group.players.length === 4);
-
-  if (isBridge3x5to4x4) {
-    const gA = rankedByGroup[0]?.ranked || [];
-    const gB = rankedByGroup[1]?.ranked || [];
-    const gC = rankedByGroup[2]?.ranked || [];
-
-    /* Ordre de corridor voulu pour ce pont :
-       - haut du groupe B monte en tête du nouveau A
-       - coeur du groupe A complète le nouveau A
-       - milieu / bas de B et bas de A forment le nouveau B
-       - bas de B et haut de C forment le nouveau C
-       - bas de C descend vers le nouveau D
-       - les nouveaux joueurs / trous sont injectés par le classement général seulement */
-    const bridgeSeed = [
-      gB[0], gA[2], gA[1],
-      gB[1], gB[2], gA[3], gA[4],
-      gB[3], gC[1], gC[0], gB[4],
-      gC[4], gC[2], gC[3]
-    ].filter(Boolean);
-
-    const carriedOrdered = [];
-    const carriedIds = new Set();
-
-    bridgeSeed.forEach(player => {
-      const id = safeText(player?.joueur_id).trim();
-      if (!id || !activeMap[id] || carriedIds.has(id)) return;
-      carriedIds.add(id);
-      carriedOrdered.push(activeMap[id]);
-    });
-
-    const rankingFill = activeOrdered.filter(player =>
-      !carriedIds.has(safeText(player?.joueur_id).trim())
-    );
-
-    const nextGroups = [
-      {
-        group_code: 'A',
-        players: carriedOrdered.slice(0, 3)
-      },
-      {
-        group_code: 'B',
-        players: carriedOrdered.slice(3, 7)
-      },
-      {
-        group_code: 'C',
-        players: carriedOrdered.slice(7, 11)
-      },
-      {
-        group_code: 'D',
-        players: []
+      const previousPlayers = previousGroups.flatMap(group => group.players);
+      if (!samePlayerSet(previousPlayers, activePlayers)) {
+        return partitionPlayers(getInitialOrderedPlayers(activePlayers));
       }
-    ];
 
-    /* Le meilleur "nouveau / trou" entre d'abord dans A */
-    while (nextGroups[0].players.length < 4 && rankingFill.length) {
-      nextGroups[0].players.push(rankingFill.shift());
+      const stageStats = buildStageStatsByGroup(previousStage, previousGroups);
+      const buckets = previousGroups.map(group => {
+        const ranked = [...group.players].sort((a, b) => comparePlayersForMovement(a, b, stageStats.byGroup[group.group_code] || {}));
+        const isFive = group.players.length === 5;
+        return {
+          group_code: group.group_code,
+          top: ranked.slice(0, 2),
+          middle: isFive ? ranked.slice(2, 3) : [],
+          bottom: isFive ? ranked.slice(3, 5) : ranked.slice(2, 4)
+        };
+      });
+
+      const nextGroups = buckets.map((bucket, index) => {
+        const fromAbove = index > 0 ? buckets[index - 1].bottom : [];
+        const fromBelow = index < buckets.length - 1 ? buckets[index + 1].top : [];
+        const fixedMiddlePlayer = bucket.middle[0] || null;
+        let nextPlayers = [];
+
+        if (index === 0) {
+          nextPlayers = [...bucket.top, ...bucket.middle, ...fromBelow];
+        } else if (index === buckets.length - 1) {
+          nextPlayers = [...fromAbove, ...bucket.middle, ...bucket.bottom];
+        } else {
+          nextPlayers = [...fromAbove, ...bucket.middle, ...fromBelow];
+        }
+
+        return {
+          group_code: GROUP_CODES[index] || bucket.group_code,
+          players: orderPlayersInsideNewGroup(nextPlayers, stageStats.overall, { fixedMiddlePlayer })
+        };
+      });
+
+      return {
+        groups: nextGroups,
+        extraBenchPlayers: []
+      };
     }
-
-    /* Le prochain "nouveau / trou" ouvre D */
-    if (rankingFill.length) {
-      nextGroups[3].players.push(rankingFill.shift());
-    }
-
-    /* Puis on complète D avec le bas de l'ancien C */
-    nextGroups[3].players.push(...carriedOrdered.slice(11, 14));
-
-    /* Sécurité : si jamais un groupe est incomplet à cause d'absents, on remplit avec le classement général */
-    nextGroups.forEach(group => {
-      while (group.players.length < 4 && rankingFill.length) {
-        group.players.push(rankingFill.shift());
-      }
-    });
-
-    return {
-      groups: nextGroups,
-      extraBenchPlayers: rankingFill
-    };
-  }
-
-  /* Fallback générique pour les autres formes de transition */
-  const buckets = rankedByGroup.map(group => {
-    const ranked = group.ranked;
-    const isFive = ranked.length === 5;
-
-    return {
-      group_code: group.group_code,
-      top: ranked.slice(0, 2),
-      middle: isFive ? ranked.slice(2, 3) : [],
-      bottom: isFive ? ranked.slice(3, 5) : ranked.slice(2, 4)
-    };
-  });
-
-  const seededGroups = buckets.map((bucket, index) => {
-    const fromAbove = index > 0 ? buckets[index - 1].bottom : [];
-    const fromBelow = index < buckets.length - 1 ? buckets[index + 1].top : [];
-    const fixedMiddlePlayer = bucket.middle[0] || null;
-
-    let nextPlayers = [];
-
-    if (index === 0) {
-      nextPlayers = [...bucket.top, ...bucket.middle, ...fromBelow];
-    } else if (index === buckets.length - 1) {
-      nextPlayers = [...fromAbove, ...bucket.middle, ...bucket.bottom];
-    } else {
-      nextPlayers = [...fromAbove, ...bucket.middle, ...fromBelow];
-    }
-
-    return {
-      group_code: GROUP_CODES[index] || bucket.group_code,
-      players: orderPlayersInsideNewGroup(nextPlayers, stageStats.overall, { fixedMiddlePlayer })
-    };
-  });
-
-  const carryGroups = targetGroups.map((targetGroup, index) => {
-    const seeded = seededGroups[index] || { group_code: targetGroup.group_code, players: [] };
-
-    return {
-      group_code: GROUP_CODES[index] || seeded.group_code || targetGroup.group_code,
-      players: (Array.isArray(seeded.players) ? seeded.players : []).filter(player =>
-        activeMap[safeText(player?.joueur_id).trim()]
-      )
-    };
-  });
-
-  const carriedIds = new Set(
-    carryGroups.flatMap(group =>
-      (group.players || [])
-        .map(player => safeText(player?.joueur_id).trim())
-        .filter(Boolean)
-    )
-  );
-
-  const rankingFill = activeOrdered.filter(player =>
-    !carriedIds.has(safeText(player?.joueur_id).trim())
-  );
-
-  carryGroups.forEach((group, index) => {
-    const wantedSize = Array.isArray(targetGroups[index]?.players)
-      ? targetGroups[index].players.length
-      : 0;
-
-    while (group.players.length < wantedSize && rankingFill.length) {
-      group.players.push(rankingFill.shift());
-    }
-
-    if (group.players.length > wantedSize) {
-      const overflow = group.players.splice(wantedSize);
-      rankingFill.unshift(...overflow);
-    }
-  });
-
-  return {
-    groups: carryGroups,
-    extraBenchPlayers: rankingFill
-  };
-}
 
 function buildStageStructure(stageNo, activePlayers) {
   const numericStageNo = Number(stageNo || 1);
@@ -1501,37 +1352,6 @@ function buildStageStructure(stageNo, activePlayers) {
       return { stage_no: 1, match_no: 1 };
     }
 
-function getNextPosition(stageNo, matchNo, activePlayers) {
-  const currentContext = getCurrentSchedule(stageNo, activePlayers);
-  const currentMaxMatch = Math.max(
-    0,
-    ...(currentContext.schedule || []).map(slot => Number(slot.match_no || 0))
-  );
-
-  if (Number(matchNo || 0) < currentMaxMatch) {
-    return {
-      stage_no: stageNo,
-      match_no: Number(matchNo || 0) + 1
-    };
-  }
-
-  const nextStageNo = Number(stageNo || 0) + 1;
-  if (nextStageNo <= MAX_ROUNDS) {
-    const nextContext = getCurrentSchedule(nextStageNo, activePlayers);
-    if ((nextContext.schedule || []).length) {
-      return {
-        stage_no: nextStageNo,
-        match_no: 1
-      };
-    }
-  }
-
-  return {
-    stage_no: stageNo,
-    match_no: matchNo
-  };
-}
-    
     function getPreviousPosition(stageNo, matchNo) {
       if (matchNo > 1) return { stage_no: stageNo, match_no: matchNo - 1 };
       if (stageNo > 1) {
@@ -1732,130 +1552,72 @@ function getNextPosition(stageNo, matchNo, activePlayers) {
       return idx === -1 ? 999 : idx;
     }
 
-function buildActiveGroupCard(match) {
-  const displayRoundNo = safeText(match.round_no || currentStageNo);
-  const displayMatchNo = safeText(match.match_no || currentMatchNo);
+    function buildActiveGroupCard(match) {
+      return `
+        <article class="group-card" data-group-card="${escapeHtml(safeText(match.group_code))}">
+          <div class="group-top">
+            <div>
+              <h3 class="group-title">Groupe ${escapeHtml(safeText(match.group_code || '—'))}</h3>
+              <div class="group-badge">Actif</div>
+              <div class="group-meta">Round ${escapeHtml(safeText(currentStageNo))} • match ${escapeHtml(safeText(currentMatchNo))}</div>
+            </div>
+          </div>
 
-  return `
-    <article class="group-card" data-group-card="${escapeHtml(safeText(match.group_code))}">
-      <div class="group-top">
-        <div>
-          <h3 class="group-title">Groupe ${escapeHtml(safeText(match.group_code || '—'))}</h3>
-          <div class="group-badge">Actif</div>
-          <div class="group-meta">Round ${escapeHtml(displayRoundNo)} • match ${escapeHtml(displayMatchNo)}</div>
-        </div>
-      </div>
+          <div class="group-players">
+            <div class="slot team1-slot"><div class="slot-label">Équipe 1 • Joueur 1</div><div class="slot-value" data-slot="team1_player1">—</div></div>
+            <div class="slot team1-slot"><div class="slot-label">Équipe 1 • Joueur 2</div><div class="slot-value" data-slot="team1_player2">—</div></div>
+            <div class="slot team2-slot"><div class="slot-label">Équipe 2 • Joueur 1</div><div class="slot-value" data-slot="team2_player1">—</div></div>
+            <div class="slot team2-slot"><div class="slot-label">Équipe 2 • Joueur 2</div><div class="slot-value" data-slot="team2_player2">—</div></div>
+          </div>
 
-      <div class="group-players">
-        <div class="slot team1-slot"><div class="slot-label">Équipe 1 • Joueur 1</div><div class="slot-value" data-slot="team1_player1">—</div></div>
-        <div class="slot team1-slot"><div class="slot-label">Équipe 1 • Joueur 2</div><div class="slot-value" data-slot="team1_player2">—</div></div>
-        <div class="slot team2-slot"><div class="slot-label">Équipe 2 • Joueur 1</div><div class="slot-value" data-slot="team2_player1">—</div></div>
-        <div class="slot team2-slot"><div class="slot-label">Équipe 2 • Joueur 2</div><div class="slot-value" data-slot="team2_player2">—</div></div>
-      </div>
+          <div class="waiting-box waiting-highlight">
+            <div class="waiting-label">Joueur en attente</div>
+            <div class="waiting-value" data-role="waiting-player">—</div>
+          </div>
 
-      <div class="waiting-box waiting-highlight">
-        <div class="waiting-label">Joueur en attente</div>
-        <div class="waiting-value" data-role="waiting-player">—</div>
-      </div>
+          <div class="score-row">
+            <div class="score-box">
+              <div class="score-label team1">Équipe 1</div>
+              <input type="number" min="0" placeholder="Score équipe 1" data-score-field="team1_score" data-group-code="${escapeHtml(safeText(match.group_code))}" data-is-rest="0" />
+            </div>
+            <div class="score-box">
+              <div class="score-label team2">Équipe 2</div>
+              <input type="number" min="0" placeholder="Score équipe 2" data-score-field="team2_score" data-group-code="${escapeHtml(safeText(match.group_code))}" data-is-rest="0" />
+            </div>
+          </div>
 
-      <div class="score-row">
-        <div class="score-box">
-          <div class="score-label team1">Équipe 1</div>
-          <input type="number" min="0" placeholder="Score équipe 1" data-score-field="team1_score" data-group-code="${escapeHtml(safeText(match.group_code))}" data-is-rest="0" />
-        </div>
-        <div class="score-box">
-          <div class="score-label team2">Équipe 2</div>
-          <input type="number" min="0" placeholder="Score équipe 2" data-score-field="team2_score" data-group-code="${escapeHtml(safeText(match.group_code))}" data-is-rest="0" />
-        </div>
-      </div>
+          <div class="group-save-wrap">
+            <button type="button" class="btn" data-action="save-group-scores" data-group-code="${escapeHtml(safeText(match.group_code))}">Sauvegarder ce groupe</button>
+          </div>
+        </article>
+      `;
+    }
 
-      <div class="group-save-wrap">
-        <button type="button" class="btn" data-action="save-group-scores" data-group-code="${escapeHtml(safeText(match.group_code))}">Sauvegarder ce groupe</button>
-      </div>
-    </article>
-  `;
-}
+    function buildRestGroupCard(entry) {
+      return `
+        <article class="group-card is-rest" data-group-card="${escapeHtml(safeText(entry.group_code))}">
+          <div class="group-top">
+            <div>
+              <h3 class="group-title">Groupe ${escapeHtml(safeText(entry.group_code || '—'))}</h3>
+              <div class="group-badge">Au repos</div>
+              <div class="group-meta">Visible et modifiable, mais sans score pour ce match</div>
+            </div>
+          </div>
 
-function buildRestGroupCard(entry) {
-  return `
-    <article class="group-card" data-group-card="${escapeHtml(safeText(entry.group_code))}">
-      <div class="group-top">
-        <div>
-          <h3 class="group-title">Groupe ${escapeHtml(safeText(entry.group_code || '—'))}</h3>
-          <div class="group-badge">En attente</div>
-          <div class="group-meta">Bloc visible prêt à embarquer dès qu’un terrain se libère</div>
-        </div>
-      </div>
+          <div class="group-players">
+            <div class="slot"><div class="slot-label">Joueur 1</div><div class="slot-value" data-slot="player_0">—</div></div>
+            <div class="slot"><div class="slot-label">Joueur 2</div><div class="slot-value" data-slot="player_1">—</div></div>
+            <div class="slot"><div class="slot-label">Joueur 3</div><div class="slot-value" data-slot="player_2">—</div></div>
+            <div class="slot"><div class="slot-label">Joueur 4</div><div class="slot-value" data-slot="player_3">—</div></div>
+          </div>
 
-      <div class="group-players">
-        <div class="slot team1-slot">
-          <div class="slot-label">Équipe 1 • Joueur 1</div>
-          <div class="slot-value" data-slot="player_0">—</div>
-        </div>
-
-        <div class="slot team1-slot">
-          <div class="slot-label">Équipe 1 • Joueur 2</div>
-          <div class="slot-value" data-slot="player_1">—</div>
-        </div>
-
-        <div class="slot team2-slot">
-          <div class="slot-label">Équipe 2 • Joueur 1</div>
-          <div class="slot-value" data-slot="player_2">—</div>
-        </div>
-
-        <div class="slot team2-slot">
-          <div class="slot-label">Équipe 2 • Joueur 2</div>
-          <div class="slot-value" data-slot="player_3">—</div>
-        </div>
-      </div>
-
-      <div class="waiting-box waiting-highlight">
-        <div class="waiting-label">Joueur 5 / attente</div>
-        <div class="waiting-value" data-role="waiting-player">—</div>
-      </div>
-
-      <div class="score-row">
-        <div class="score-box">
-          <div class="score-label team1">Équipe 1</div>
-          <input
-            type="number"
-            min="0"
-            placeholder="Score équipe 1"
-            data-score-field="team1_score"
-            data-group-code="${escapeHtml(safeText(entry.group_code))}"
-            data-is-rest="1"
-            disabled
-          />
-        </div>
-
-        <div class="score-box">
-          <div class="score-label team2">Équipe 2</div>
-          <input
-            type="number"
-            min="0"
-            placeholder="Score équipe 2"
-            data-score-field="team2_score"
-            data-group-code="${escapeHtml(safeText(entry.group_code))}"
-            data-is-rest="1"
-            disabled
-          />
-        </div>
-      </div>
-
-      <div class="group-save-wrap">
-        <button
-          type="button"
-          class="btn"
-          data-action="save-group-scores"
-          data-group-code="${escapeHtml(safeText(entry.group_code))}"
-          disabled
-        >
-          Sauvegarder ce groupe
-        </button>
-      </div>
-    </article>
-  `;
-}
+          <div class="waiting-box waiting-highlight">
+            <div class="waiting-label">Joueur 5 / attente</div>
+            <div class="waiting-value" data-role="waiting-player">—</div>
+          </div>
+        </article>
+      `;
+    }
 
     function resetCourts() {
       groupsGridEl.innerHTML = `
@@ -1952,142 +1714,42 @@ function buildRestGroupCard(entry) {
       applySessionLockUI();
     }
 
-function buildSaveScoresPayload(groupCode) {
-  const season = getSelectedSeason();
-  const saisonId = safeText(season?.saison_id).trim();
-  const noSession = safeText(matchSessionEl.value || matchSessionNoEl.value).trim();
-  const cleanGroupCode = safeText(groupCode).trim();
+    function buildSaveScoresPayload(groupCode) {
+      const season = getSelectedSeason();
+      const saisonId = safeText(season?.saison_id).trim();
+      const noSession = safeText(matchSessionEl.value || matchSessionNoEl.value).trim();
+      const cleanGroupCode = safeText(groupCode).trim();
+      if (!saisonId) throw new Error('Saison manquante.');
+      if (!noSession) throw new Error('Session manquante.');
+      if (!cleanGroupCode) throw new Error('Groupe manquant.');
+      if (!currentRoundPlan || !Array.isArray(currentRoundPlan.matches) || !currentRoundPlan.matches.length) {
+        throw new Error('Aucun match actif à sauvegarder pour cet écran.');
+      }
 
-  if (!saisonId) throw new Error('Saison manquante.');
-  if (!noSession) throw new Error('Session manquante.');
-  if (!cleanGroupCode) throw new Error('Groupe manquant.');
-  if (!currentRoundPlan || !Array.isArray(currentRoundPlan.matches) || !currentRoundPlan.matches.length) {
-    throw new Error('Aucun match actif à sauvegarder pour cet écran.');
-  }
-
-  const match = currentRoundPlan.matches.find(item => safeText(item?.group_code).trim() === cleanGroupCode);
-  if (!match) throw new Error(`Groupe ${cleanGroupCode} introuvable pour cet écran.`);
-  if (safeText(match.team1_score).trim() === '' || safeText(match.team2_score).trim() === '') {
-    throw new Error(`Entre les deux scores du groupe ${cleanGroupCode} avant de sauvegarder.`);
-  }
-
-  const realRoundNo = safeText(match.round_no || currentStageNo).trim();
-  const realMatchNo = safeText(match.match_no || currentMatchNo).trim();
-
-  return {
-    saison_id: saisonId,
-    no_session: noSession,
-    round_no: realRoundNo,
-    match_no: realMatchNo,
-    group_code: cleanGroupCode,
-    court_no: GROUP_CODES.indexOf(cleanGroupCode) + 1,
-    team1_player1_id: safeText(match.team1_player1?.joueur_id).trim(),
-    team1_player2_id: safeText(match.team1_player2?.joueur_id).trim(),
-    team2_player1_id: safeText(match.team2_player1?.joueur_id).trim(),
-    team2_player2_id: safeText(match.team2_player2?.joueur_id).trim(),
-    waiting_player_id: safeText(match.waiting_player?.joueur_id).trim(),
-    team1_score: safeText(match.team1_score).trim(),
-    team2_score: safeText(match.team2_score).trim(),
-    winner_team: ''
-  };
-}
-
-function extractUniquePlayersFromMatch(match) {
-  const players = [
-    match?.team1_player1,
-    match?.team1_player2,
-    match?.team2_player1,
-    match?.team2_player2,
-    match?.waiting_player
-  ].filter(Boolean);
-
-  const unique = [];
-  const seen = new Set();
-
-  players.forEach(player => {
-    const id = safeText(player?.joueur_id).trim();
-    if (!id || seen.has(id)) return;
-    seen.add(id);
-    unique.push(player);
-  });
-
-  return unique;
-}
-
-function findNextPromotableMatchForScreen(excludedGroupCodes = []) {
-  const activePlayers = getActivePlayers();
-  const stageContext = getCurrentSchedule(currentStageNo, activePlayers);
-  const excluded = new Set(
-    (excludedGroupCodes || []).map(code => safeText(code).trim()).filter(Boolean)
-  );
-
-  for (const slot of (stageContext.schedule || [])) {
-    const slotMatchNo = Number(slot?.match_no || 0);
-    if (slotMatchNo <= Number(currentMatchNo || 0)) continue;
-
-    const savedMatches = getSavedMatchesForStageAndMatch(currentStageNo, slotMatchNo);
-    const savedCodes = new Set(
-      savedMatches.map(match => safeText(match?.group_code).trim()).filter(Boolean)
-    );
-
-    for (const task of (slot.tasks || [])) {
-      const code = safeText(task?.group_code).trim();
-      if (!code) continue;
-      if (excluded.has(code)) continue;
-      if (savedCodes.has(code)) continue;
-
-      const generated = buildGeneratedMatchFromTask(task, stageContext.groups);
-      if (!generated) continue;
+      const match = currentRoundPlan.matches.find(item => safeText(item?.group_code).trim() === cleanGroupCode);
+      if (!match) throw new Error(`Groupe ${cleanGroupCode} introuvable pour cet écran.`);
+      if (safeText(match.team1_score).trim() === '' || safeText(match.team2_score).trim() === '') {
+        throw new Error(`Entre les deux scores du groupe ${cleanGroupCode} avant de sauvegarder.`);
+      }
 
       return {
-        ...generated,
-        group_code: code,
+        saison_id: saisonId,
+        no_session: noSession,
         round_no: currentStageNo,
-        match_no: slotMatchNo
+        match_no: currentMatchNo,
+        group_code: cleanGroupCode,
+        court_no: GROUP_CODES.indexOf(match.group_code) + 1,
+        team1_player1_id: safeText(match.team1_player1?.joueur_id).trim(),
+        team1_player2_id: safeText(match.team1_player2?.joueur_id).trim(),
+        team2_player1_id: safeText(match.team2_player1?.joueur_id).trim(),
+        team2_player2_id: safeText(match.team2_player2?.joueur_id).trim(),
+        waiting_player_id: safeText(match.waiting_player?.joueur_id).trim(),
+        team1_score: safeText(match.team1_score).trim(),
+        team2_score: safeText(match.team2_score).trim(),
+        winner_team: ''
       };
     }
-  }
 
-  return null;
-}
-
-function promoteNextGroupIntoFreedSlot(savedGroupCode) {
-  if (!currentRoundPlan || !Array.isArray(currentRoundPlan.matches)) return false;
-
-  const cleanSavedCode = safeText(savedGroupCode).trim();
-  const freedIndex = currentRoundPlan.matches.findIndex(
-    match => safeText(match?.group_code).trim() === cleanSavedCode
-  );
-
-  if (freedIndex === -1) return false;
-
-  const freedMatch = currentRoundPlan.matches[freedIndex];
-  const excludedGroupCodes = currentRoundPlan.matches
-    .map(match => safeText(match?.group_code).trim())
-    .filter(Boolean)
-    .filter(code => code !== cleanSavedCode);
-
-  const nextMatch = findNextPromotableMatchForScreen(excludedGroupCodes);
-  if (!nextMatch) return false;
-
-  currentRoundPlan.matches[freedIndex] = nextMatch;
-
-  currentRoundPlan.benchEntries = (currentRoundPlan.benchEntries || []).filter(entry => {
-    return !(
-      entry.type === 'group_rest' &&
-      safeText(entry.group_code).trim() === safeText(nextMatch.group_code).trim()
-    );
-  });
-
-  currentRoundPlan.benchEntries.push({
-    type: 'group_rest',
-    group_code: cleanSavedCode,
-    players: extractUniquePlayersFromMatch(freedMatch)
-  });
-
-  return true;
-}
-    
     function upsertSavedMatchInCache(savedMatch) {
       if (!savedMatch) return;
 
@@ -2533,29 +2195,6 @@ async function loadSessionContext(options = {}) {
             winner_team: liveMatch.winner_team || ''
           });
         }
-
-const promoted = promoteNextGroupIntoFreedSlot(payload.group_code);
-
-if (promoted) {
-  renderCourts(currentRoundPlan);
-  renderBench(currentRoundPlan);
-} else {
-  const nextPlayable = getNextPlayablePosition(getActivePlayers());
-  const moved =
-    Number(nextPlayable.stage_no || 0) !== Number(currentStageNo || 0) ||
-    Number(nextPlayable.match_no || 0) !== Number(currentMatchNo || 0);
-
-  currentStageNo = Number(nextPlayable.stage_no || currentStageNo);
-  currentMatchNo = Number(nextPlayable.match_no || currentMatchNo);
-  renderRound();
-
-  if (moved) {
-    alert(`Groupe ${payload.group_code} sauvegardé. Passage à round ${currentStageNo}, match ${currentMatchNo}.`);
-    return;
-  }
-}
-
-alert(`Groupe ${payload.group_code} sauvegardé.`);
 
         alert(`Groupe ${payload.group_code} sauvegardé.`);
       } catch (error) {
