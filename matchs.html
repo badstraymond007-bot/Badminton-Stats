@@ -1573,8 +1573,7 @@ function buildStageStructure(stageNo, activePlayers) {
 
     function getSwapOptionLabel(ref) {
       const player = getPlayerFromSwapRef(ref);
-      const playerName = safeText(player?.nom || player?.joueur_id || 'Joueur');
-      return `Groupe ${safeText(ref.court_no).trim()} • ${getSwapFieldLabel(ref.field)} • ${playerName}`;
+      return safeText(player?.nom || player?.joueur_id || 'Joueur');
     }
 
     function clearSwapPickerUI() {
