@@ -1800,10 +1800,20 @@ function buildStageStructure(stageNo, activePlayers) {
           matchSeasonEl.appendChild(option);
         });
 
-        if (seasonsCache.length > 0) {
-          matchSeasonEl.value = seasonsCache[0].saison_id;
-          populateSessions();
-        } else {
+if (seasonsCache.length > 0) {
+  clearSessionFields();
+  attendanceCache = [];
+  rankingCache = [];
+  rankingSeasonId = '';
+  sessionMatchesCache = [];
+  removedPlayerIds = new Set();
+  currentRoundPlan = null;
+  currentStageNo = 1;
+  currentMatchNo = 1;
+  sessionLocked = false;
+  lockSessionToggle.checked = false;
+  renderRound();
+} else {
           attendanceCache = [];
           rankingCache = [];
           rankingSeasonId = '';
@@ -1857,12 +1867,22 @@ function buildStageStructure(stageNo, activePlayers) {
         matchSessionEl.appendChild(option);
       });
 
-      if (sessions.length > 0) {
-        matchSessionEl.value = safeSessionNo(sessions[0].no_session);
-        syncSelectedSession();
-      } else {
-        renderRound();
-      }
+if (sessions.length > 0) {
+  matchSessionEl.value = '';
+  matchDateEl.value = '';
+  matchSessionNoEl.value = '';
+  attendanceCache = [];
+  sessionMatchesCache = [];
+  removedPlayerIds = new Set();
+  currentRoundPlan = null;
+  currentStageNo = 1;
+  currentMatchNo = 1;
+  sessionLocked = false;
+  lockSessionToggle.checked = false;
+  renderRound();
+} else {
+  renderRound();
+}
     }
 
     async function saveSessionLockState(locked) {
@@ -2028,7 +2048,7 @@ async function loadSessionContext(options = {}) {
       matchSessionNoEl.value = option.value || '';
       sessionLocked = option.dataset.locked === '1';
       lockSessionToggle.checked = sessionLocked;
-      loadSessionContext({ resetRemovals: true, jumpToNextPlayable: true });
+      loadSessionContext({ resetRemovals: true, jumpToNextPlayable: false });
     }
 
     function renderRound() {
