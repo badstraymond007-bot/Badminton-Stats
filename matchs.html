@@ -1501,6 +1501,37 @@ function buildStageStructure(stageNo, activePlayers) {
       return { stage_no: 1, match_no: 1 };
     }
 
+function getNextPosition(stageNo, matchNo, activePlayers) {
+  const currentContext = getCurrentSchedule(stageNo, activePlayers);
+  const currentMaxMatch = Math.max(
+    0,
+    ...(currentContext.schedule || []).map(slot => Number(slot.match_no || 0))
+  );
+
+  if (Number(matchNo || 0) < currentMaxMatch) {
+    return {
+      stage_no: stageNo,
+      match_no: Number(matchNo || 0) + 1
+    };
+  }
+
+  const nextStageNo = Number(stageNo || 0) + 1;
+  if (nextStageNo <= MAX_ROUNDS) {
+    const nextContext = getCurrentSchedule(nextStageNo, activePlayers);
+    if ((nextContext.schedule || []).length) {
+      return {
+        stage_no: nextStageNo,
+        match_no: 1
+      };
+    }
+  }
+
+  return {
+    stage_no: stageNo,
+    match_no: matchNo
+  };
+}
+    
     function getPreviousPosition(stageNo, matchNo) {
       if (matchNo > 1) return { stage_no: stageNo, match_no: matchNo - 1 };
       if (stageNo > 1) {
@@ -2503,12 +2534,28 @@ async function loadSessionContext(options = {}) {
           });
         }
 
-               const promoted = promoteNextGroupIntoFreedSlot(payload.group_code);
+const promoted = promoteNextGroupIntoFreedSlot(payload.group_code);
 
-        if (promoted) {
-          renderCourts(currentRoundPlan);
-          renderBench(currentRoundPlan);
-        }
+if (promoted) {
+  renderCourts(currentRoundPlan);
+  renderBench(currentRoundPlan);
+} else {
+  const nextPlayable = getNextPlayablePosition(getActivePlayers());
+  const moved =
+    Number(nextPlayable.stage_no || 0) !== Number(currentStageNo || 0) ||
+    Number(nextPlayable.match_no || 0) !== Number(currentMatchNo || 0);
+
+  currentStageNo = Number(nextPlayable.stage_no || currentStageNo);
+  currentMatchNo = Number(nextPlayable.match_no || currentMatchNo);
+  renderRound();
+
+  if (moved) {
+    alert(`Groupe ${payload.group_code} sauvegardé. Passage à round ${currentStageNo}, match ${currentMatchNo}.`);
+    return;
+  }
+}
+
+alert(`Groupe ${payload.group_code} sauvegardé.`);
 
         alert(`Groupe ${payload.group_code} sauvegardé.`);
       } catch (error) {
