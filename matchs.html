@@ -1192,53 +1192,113 @@ function comparePlayersForMovement(a, b, statsMap) {
       }
       return sorted;
     }
+function buildNextStageGroupsFromPreviousStage(previousStage, activePlayers) {
+  const previousGroups = extractGroupsFromSavedStage(previousStage);
+  if (!previousGroups.length) {
+    return partitionPlayers(getInitialOrderedPlayers(activePlayers));
+  }
 
-    function buildNextStageGroupsFromPreviousStage(previousStage, activePlayers) {
-      const previousGroups = extractGroupsFromSavedStage(previousStage);
-      if (!previousGroups.length) return partitionPlayers(getInitialOrderedPlayers(activePlayers));
+  const stageStats = buildStageStatsByGroup(previousStage, previousGroups);
 
-      const previousPlayers = previousGroups.flatMap(group => group.players);
-      if (!samePlayerSet(previousPlayers, activePlayers)) {
-        return partitionPlayers(getInitialOrderedPlayers(activePlayers));
-      }
+  {% comment %} 1) On calcule d'abord le "vrai prochain état" complet
+     comme si tous les joueurs du round précédent étaient encore là. {% endcomment %}
+  const buckets = previousGroups.map(group => {
+    const ranked = [...group.players].sort((a, b) =>
+      comparePlayersForMovement(a, b, stageStats.byGroup[group.group_code] || {})
+    );
 
-      const stageStats = buildStageStatsByGroup(previousStage, previousGroups);
-      const buckets = previousGroups.map(group => {
-        const ranked = [...group.players].sort((a, b) => comparePlayersForMovement(a, b, stageStats.byGroup[group.group_code] || {}));
-        const isFive = group.players.length === 5;
-        return {
-          group_code: group.group_code,
-          top: ranked.slice(0, 2),
-          middle: isFive ? ranked.slice(2, 3) : [],
-          bottom: isFive ? ranked.slice(3, 5) : ranked.slice(2, 4)
-        };
-      });
+    const isFive = group.players.length === 5;
 
-      const nextGroups = buckets.map((bucket, index) => {
-        const fromAbove = index > 0 ? buckets[index - 1].bottom : [];
-        const fromBelow = index < buckets.length - 1 ? buckets[index + 1].top : [];
-        const fixedMiddlePlayer = bucket.middle[0] || null;
-        let nextPlayers = [];
+    return {
+      group_code: group.group_code,
+      top: ranked.slice(0, 2),
+      middle: isFive ? ranked.slice(2, 3) : [],
+      bottom: isFive ? ranked.slice(3, 5) : ranked.slice(2, 4)
+    };
+  });
 
-        if (index === 0) {
-          nextPlayers = [...bucket.top, ...bucket.middle, ...fromBelow];
-        } else if (index === buckets.length - 1) {
-          nextPlayers = [...fromAbove, ...bucket.middle, ...bucket.bottom];
-        } else {
-          nextPlayers = [...fromAbove, ...bucket.middle, ...fromBelow];
-        }
+  const seededGroups = buckets.map((bucket, index) => {
+    const fromAbove = index > 0 ? buckets[index - 1].bottom : [];
+    const fromBelow = index < buckets.length - 1 ? buckets[index + 1].top : [];
+    const fixedMiddlePlayer = bucket.middle[0] || null;
 
-        return {
-          group_code: GROUP_CODES[index] || bucket.group_code,
-          players: orderPlayersInsideNewGroup(nextPlayers, stageStats.overall, { fixedMiddlePlayer })
-        };
-      });
+    let nextPlayers = [];
 
-      return {
-        groups: nextGroups,
-        extraBenchPlayers: []
-      };
+    if (index === 0) {
+      nextPlayers = [...bucket.top, ...bucket.middle, ...fromBelow];
+    } else if (index === buckets.length - 1) {
+      nextPlayers = [...fromAbove, ...bucket.middle, ...bucket.bottom];
+    } else {
+      nextPlayers = [...fromAbove, ...bucket.middle, ...fromBelow];
     }
+
+    return {
+      group_code: GROUP_CODES[index] || bucket.group_code,
+      players: orderPlayersInsideNewGroup(nextPlayers, stageStats.overall, { fixedMiddlePlayer })
+    };
+  });
+
+  {% comment %} 2) On garde seulement les joueurs actifs de la nouvelle session. {% endcomment %}
+  const activeMap = buildPlayerMap(activePlayers);
+  const activeOrdered = getInitialOrderedPlayers(activePlayers);
+
+  {% comment %} 3) On détermine les tailles cibles avec le nombre réel de présents.
+     Le classement général ne sert qu'à remplir les trous. {% endcomment %}
+  const targetStructure = partitionPlayers(activeOrdered);
+  const targetGroups = Array.isArray(targetStructure.groups) ? targetStructure.groups : [];
+
+  if (!targetGroups.length) {
+    return {
+      groups: [],
+      extraBenchPlayers: activeOrdered
+    };
+  }
+
+  const carryGroups = targetGroups.map((targetGroup, index) => {
+    const seeded = seededGroups[index] || { group_code: targetGroup.group_code, players: [] };
+
+    return {
+      group_code: GROUP_CODES[index] || seeded.group_code || targetGroup.group_code,
+      players: (Array.isArray(seeded.players) ? seeded.players : []).filter(player =>
+        activeMap[safeText(player?.joueur_id).trim()]
+      )
+    };
+  });
+
+  {% comment %} 4) Les joueurs actifs qui ne sont pas déjà replacés
+     sont injectés selon le classement général, et rien d'autre. {% endcomment %}
+  const carriedIds = new Set(
+    carryGroups.flatMap(group =>
+      (group.players || [])
+        .map(player => safeText(player?.joueur_id).trim())
+        .filter(Boolean)
+    )
+  );
+
+  const rankingFill = activeOrdered.filter(player =>
+    !carriedIds.has(safeText(player?.joueur_id).trim())
+  );
+
+  carryGroups.forEach((group, index) => {
+    const wantedSize = Array.isArray(targetGroups[index]?.players)
+      ? targetGroups[index].players.length
+      : 0;
+
+    while (group.players.length < wantedSize && rankingFill.length) {
+      group.players.push(rankingFill.shift());
+    }
+
+    if (group.players.length > wantedSize) {
+      const overflow = group.players.splice(wantedSize);
+      rankingFill.unshift(...overflow);
+    }
+  });
+
+  return {
+    groups: carryGroups,
+    extraBenchPlayers: rankingFill
+  };
+}
 
 function buildStageStructure(stageNo, activePlayers) {
   const numericStageNo = Number(stageNo || 1);
