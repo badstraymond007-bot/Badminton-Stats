@@ -899,16 +899,15 @@ function buildStageOneStructure(activePlayers) {
         const aRank = rankingMap[safeText(a?.joueur_id).trim()];
         const bRank = rankingMap[safeText(b?.joueur_id).trim()];
 
-        if (aRank && bRank) {
-          if (aRank.rang !== bRank.rang) return aRank.rang - bRank.rang;
-          if (aRank.total_points !== bRank.total_points) return bRank.total_points - aRank.total_points;
-          if (aRank.plus_moins !== bRank.plus_moins) return bRank.plus_moins - aRank.plus_moins;
-          if (aRank.points_pour !== bRank.points_pour) return bRank.points_pour - aRank.points_pour;
-        } else if (aRank && !bRank) {
-          return -1;
-        } else if (!aRank && bRank) {
-          return 1;
-        }
+if (aRank && bRank) {
+  if (aRank.rang !== bRank.rang) return aRank.rang - bRank.rang;
+  if (aRank.plus_moins !== bRank.plus_moins) return bRank.plus_moins - aRank.plus_moins;
+  if (aRank.points_pour !== bRank.points_pour) return bRank.points_pour - aRank.points_pour;
+} else if (aRank && !bRank) {
+  return -1;
+} else if (!aRank && bRank) {
+  return 1;
+}
 
         return compareNames(a, b);
       });
@@ -1059,25 +1058,28 @@ function buildStageOneStructure(activePlayers) {
       };
     }
 
-    function applyStageMatchStats(statsMap, teamPlayers, ownScore, otherScore, didWin, didLose) {
-      teamPlayers.forEach(player => {
-        const joueurId = safeText(player?.joueur_id).trim();
-        if (!joueurId) return;
-        if (!statsMap[joueurId]) statsMap[joueurId] = createEmptyStageStats(player);
-        const stats = statsMap[joueurId];
-        stats.matchs_joues += 1;
-        stats.points_pour += ownScore;
-        stats.points_contre += otherScore;
-        stats.plus_moins = stats.points_pour - stats.points_contre;
-        if (didWin) {
-          stats.victoires += 1;
-          stats.total_points += 3;
-        }
-        if (didLose) {
-          stats.defaites += 1;
-        }
-      });
+function applyStageMatchStats(statsMap, teamPlayers, ownScore, otherScore, didWin, didLose) {
+  teamPlayers.forEach(player => {
+    const joueurId = safeText(player?.joueur_id).trim();
+    if (!joueurId) return;
+    if (!statsMap[joueurId]) statsMap[joueurId] = createEmptyStageStats(player);
+
+    const stats = statsMap[joueurId];
+    stats.matchs_joues += 1;
+    stats.points_pour += ownScore;
+    stats.points_contre += otherScore;
+    stats.plus_moins = stats.points_pour - stats.points_contre;
+    stats.total_points = stats.plus_moins;
+
+    if (didWin) {
+      stats.victoires += 1;
     }
+
+    if (didLose) {
+      stats.defaites += 1;
+    }
+  });
+}
 
     function extractGroupsFromSavedStage(savedStage) {
       if (!savedStage || !Array.isArray(savedStage.matches) || !savedStage.matches.length) return [];
@@ -1161,25 +1163,24 @@ function buildStageOneStructure(activePlayers) {
       return { byGroup, overall };
     }
 
-    function comparePlayersForMovement(a, b, statsMap) {
-      const rankingMap = getRankingMap();
-      const aId = safeText(a?.joueur_id).trim();
-      const bId = safeText(b?.joueur_id).trim();
-      const aStats = statsMap[aId] || createEmptyStageStats(a);
-      const bStats = statsMap[bId] || createEmptyStageStats(b);
+function comparePlayersForMovement(a, b, statsMap) {
+  const rankingMap = getRankingMap();
+  const aId = safeText(a?.joueur_id).trim();
+  const bId = safeText(b?.joueur_id).trim();
+  const aStats = statsMap[aId] || createEmptyStageStats(a);
+  const bStats = statsMap[bId] || createEmptyStageStats(b);
 
-      if (bStats.plus_moins !== aStats.plus_moins) return bStats.plus_moins - aStats.plus_moins;
-      if (bStats.points_pour !== aStats.points_pour) return bStats.points_pour - aStats.points_pour;
-      if (bStats.victoires !== aStats.victoires) return bStats.victoires - aStats.victoires;
-      if (bStats.total_points !== aStats.total_points) return bStats.total_points - aStats.total_points;
+  if (bStats.plus_moins !== aStats.plus_moins) return bStats.plus_moins - aStats.plus_moins;
+  if (bStats.points_pour !== aStats.points_pour) return bStats.points_pour - aStats.points_pour;
 
-      const aRank = rankingMap[aId];
-      const bRank = rankingMap[bId];
-      if (aRank && bRank && aRank.rang !== bRank.rang) return aRank.rang - bRank.rang;
-      if (aRank && !bRank) return -1;
-      if (!aRank && bRank) return 1;
-      return compareNames(a, b);
-    }
+  const aRank = rankingMap[aId];
+  const bRank = rankingMap[bId];
+  if (aRank && bRank && aRank.rang !== bRank.rang) return aRank.rang - bRank.rang;
+  if (aRank && !bRank) return -1;
+  if (!aRank && bRank) return 1;
+
+  return compareNames(a, b);
+}
 
     function orderPlayersInsideNewGroup(players, overallStats, options = {}) {
       const sorted = [...players].sort((a, b) => comparePlayersForMovement(a, b, overallStats));
