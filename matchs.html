@@ -446,6 +446,7 @@
 
     .swap-enabled {
       cursor: pointer;
+      position: relative;
       transition: box-shadow 0.15s ease;
     }
 
@@ -453,8 +454,31 @@
       box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.18);
     }
 
-    .swap-selected {
+    .swap-open {
       box-shadow: 0 0 0 3px #f59e0b;
+    }
+
+    .swap-picker-wrap {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--line);
+    }
+
+    .swap-picker-label {
+      display: block;
+      font-size: 12px;
+      font-weight: bold;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .swap-picker {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--soft-line);
+      border-radius: 10px;
+      font: inherit;
+      background: #fff;
     }
 
     .group-card.empty-card {
@@ -664,7 +688,7 @@
     let currentMatchNo = 1;
     let sessionLocked = false;
     let matchControlsBaseDisabled = true;
-    let selectedSwapRef = null;
+    let openSwapMenuRef = null;
 
     function escapeHtml(value) {
       return String(value ?? '')
@@ -1436,6 +1460,19 @@ function buildStageStructure(stageNo, activePlayers) {
       return !!a && !!b && a.player_id === b.player_id && a.court_no === b.court_no && a.field === b.field;
     }
 
+    function buildSwapRefKey(ref) {
+      return [
+        safeText(ref?.player_id).trim(),
+        safeText(ref?.court_no).trim(),
+        safeText(ref?.field).trim()
+      ].join('||');
+    }
+
+    function parseSwapRefKey(value) {
+      const [player_id = '', court_no = '', field = ''] = safeText(value).split('||');
+      return { player_id, court_no, field };
+    }
+
     function refreshWaitingBenchEntriesFromMatches() {
       if (!currentRoundPlan) return;
       const waitingEntries = currentRoundPlan.matches
@@ -1481,6 +1518,137 @@ function buildStageStructure(stageNo, activePlayers) {
       return null;
     }
 
+    function getPlayerFromSwapRef(ref) {
+      const target = resolveSwapTarget(ref);
+      return target ? target.owner[target.key] || null : null;
+    }
+
+    function collectSwappableRefs() {
+      if (!currentRoundPlan) return [];
+      const refs = [];
+
+      (currentRoundPlan.matches || []).forEach(match => {
+        ['team1_player1', 'team1_player2', 'team2_player1', 'team2_player2', 'waiting_player'].forEach(field => {
+          const player = match[field];
+          if (!player) return;
+          refs.push({
+            player_id: safeText(player?.joueur_id).trim(),
+            court_no: safeText(match.group_code).trim(),
+            field
+          });
+        });
+      });
+
+      (currentRoundPlan.benchEntries || [])
+        .filter(entry => entry.type === 'group_rest')
+        .forEach(entry => {
+          (entry.players || []).forEach((player, index) => {
+            if (!player) return;
+            refs.push({
+              player_id: safeText(player?.joueur_id).trim(),
+              court_no: safeText(entry.group_code).trim(),
+              field: `player_${index}`
+            });
+          });
+        });
+
+      return refs.filter(ref => ref.player_id && ref.court_no && ref.field);
+    }
+
+    function getSwapFieldLabel(field) {
+      const labels = {
+        team1_player1: 'Équipe 1 • Joueur 1',
+        team1_player2: 'Équipe 1 • Joueur 2',
+        team2_player1: 'Équipe 2 • Joueur 1',
+        team2_player2: 'Équipe 2 • Joueur 2',
+        waiting_player: 'Joueur en attente',
+        player_0: 'Joueur 1',
+        player_1: 'Joueur 2',
+        player_2: 'Joueur 3',
+        player_3: 'Joueur 4',
+        player_4: 'Joueur 5 / attente'
+      };
+      return labels[safeText(field).trim()] || 'Position';
+    }
+
+    function getSwapOptionLabel(ref) {
+      const player = getPlayerFromSwapRef(ref);
+      const playerName = safeText(player?.nom || player?.joueur_id || 'Joueur');
+      return `Groupe ${safeText(ref.court_no).trim()} • ${getSwapFieldLabel(ref.field)} • ${playerName}`;
+    }
+
+    function clearSwapPickerUI() {
+      groupsGridEl.querySelectorAll('.swap-picker-wrap').forEach(node => node.remove());
+      groupsGridEl.querySelectorAll('.swap-open').forEach(node => node.classList.remove('swap-open'));
+    }
+
+    function setOpenSwapMenu(ref) {
+      openSwapMenuRef = ref && ref.player_id && ref.court_no && ref.field ? ref : null;
+      clearSwapPickerUI();
+
+      if (!openSwapMenuRef) return;
+
+      const selector = `.swap-enabled[data-player-id="${CSS.escape(openSwapMenuRef.player_id)}"][data-court-no="${CSS.escape(openSwapMenuRef.court_no)}"][data-field="${CSS.escape(openSwapMenuRef.field)}"]`;
+      const container = groupsGridEl.querySelector(selector);
+      if (!container) {
+        openSwapMenuRef = null;
+        return;
+      }
+
+      const options = collectSwappableRefs().filter(refOption => !isSameSwapRef(refOption, openSwapMenuRef));
+      if (!options.length) {
+        openSwapMenuRef = null;
+        return;
+      }
+
+      container.classList.add('swap-open');
+
+      const wrap = document.createElement('div');
+      wrap.className = 'swap-picker-wrap';
+
+      const label = document.createElement('label');
+      label.className = 'swap-picker-label';
+      label.textContent = 'Remplacer par :';
+
+      const select = document.createElement('select');
+      select.className = 'swap-picker';
+      select.setAttribute('data-swap-picker', '1');
+
+      const defaultOption = document.createElement('option');
+      defaultOption.value = '';
+      defaultOption.textContent = 'Choisir un joueur…';
+      select.appendChild(defaultOption);
+
+      options
+        .sort((a, b) => getSwapOptionLabel(a).localeCompare(getSwapOptionLabel(b), 'fr', { sensitivity: 'base' }))
+        .forEach(refOption => {
+          const option = document.createElement('option');
+          option.value = buildSwapRefKey(refOption);
+          option.textContent = getSwapOptionLabel(refOption);
+          select.appendChild(option);
+        });
+
+      select.addEventListener('click', event => event.stopPropagation());
+      select.addEventListener('change', event => {
+        const targetRef = parseSwapRefKey(event.target.value);
+        if (!targetRef.player_id) {
+          setOpenSwapMenu(null);
+          return;
+        }
+
+        if (swapPlayersInCurrentRound(openSwapMenuRef, targetRef)) {
+          openSwapMenuRef = null;
+          renderCourts(currentRoundPlan);
+          renderBench(currentRoundPlan);
+        }
+      });
+
+      wrap.appendChild(label);
+      wrap.appendChild(select);
+      container.appendChild(wrap);
+      select.focus();
+    }
+
     function swapPlayersInCurrentRound(refA, refB) {
       const targetA = resolveSwapTarget(refA);
       const targetB = resolveSwapTarget(refB);
@@ -1502,30 +1670,17 @@ function buildStageStructure(stageNo, activePlayers) {
 
       if (!ref.player_id || !ref.court_no || !ref.field) return;
 
-      if (!selectedSwapRef) {
-        selectedSwapRef = ref;
-        renderCourts(currentRoundPlan);
-        renderBench(currentRoundPlan);
+      if (openSwapMenuRef && isSameSwapRef(openSwapMenuRef, ref)) {
+        setOpenSwapMenu(null);
         return;
       }
 
-      if (isSameSwapRef(selectedSwapRef, ref)) {
-        selectedSwapRef = null;
-        renderCourts(currentRoundPlan);
-        renderBench(currentRoundPlan);
-        return;
-      }
-
-      if (swapPlayersInCurrentRound(selectedSwapRef, ref)) {
-        selectedSwapRef = null;
-        renderCourts(currentRoundPlan);
-        renderBench(currentRoundPlan);
-      }
+      setOpenSwapMenu(ref);
     }
 
     function decorateSwapContainer(container, player, ref) {
       if (!container) return;
-      container.classList.remove('swap-enabled', 'swap-selected');
+      container.classList.remove('swap-enabled', 'swap-open');
       delete container.dataset.playerId;
       delete container.dataset.courtNo;
       delete container.dataset.field;
@@ -1538,12 +1693,12 @@ function buildStageStructure(stageNo, activePlayers) {
       container.dataset.courtNo = safeText(ref.court_no).trim();
       container.dataset.field = safeText(ref.field).trim();
 
-      if (selectedSwapRef && isSameSwapRef(selectedSwapRef, {
+      if (openSwapMenuRef && isSameSwapRef(openSwapMenuRef, {
         player_id: playerId,
         court_no: container.dataset.courtNo,
         field: container.dataset.field
       })) {
-        container.classList.add('swap-selected');
+        container.classList.add('swap-open');
       }
     }
 
@@ -1924,7 +2079,7 @@ async function loadSessionContext(options = {}) {
   sessionMatchesCache = [];
   previousSessionRoundsCache = [];
   currentRoundPlan = null;
-  selectedSwapRef = null;
+  openSwapMenuRef = null;
   if (resetRemovals) removedPlayerIds = new Set();
   currentStageNo = 1;
   currentMatchNo = 1;
@@ -2052,6 +2207,7 @@ async function loadSessionContext(options = {}) {
     }
 
     function renderRound() {
+      setOpenSwapMenu(null);
       const season = getSelectedSeason();
       const seasonName = season ? (season.nom_saison || season.saison_id) : '—';
       const activePlayers = getActivePlayers();
@@ -2149,9 +2305,20 @@ async function loadSessionContext(options = {}) {
         return;
       }
 
+      if (event.target.closest('[data-swap-picker]')) return;
+
       const container = event.target.closest('.swap-enabled');
-      if (!container) return;
+      if (!container) {
+        setOpenSwapMenu(null);
+        return;
+      }
+
       handleSwapClickFromContainer(container);
+    });
+
+    document.addEventListener('click', event => {
+      if (event.target.closest('.swap-enabled')) return;
+      setOpenSwapMenu(null);
     });
 
     async function saveCurrentScores(groupCode) {
