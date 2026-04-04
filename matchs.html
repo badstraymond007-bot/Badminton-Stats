@@ -1552,46 +1552,49 @@ function buildStageStructure(stageNo, activePlayers) {
       return idx === -1 ? 999 : idx;
     }
 
-    function buildActiveGroupCard(match) {
-      return `
-        <article class="group-card" data-group-card="${escapeHtml(safeText(match.group_code))}">
-          <div class="group-top">
-            <div>
-              <h3 class="group-title">Groupe ${escapeHtml(safeText(match.group_code || '—'))}</h3>
-              <div class="group-badge">Actif</div>
-              <div class="group-meta">Round ${escapeHtml(safeText(currentStageNo))} • match ${escapeHtml(safeText(currentMatchNo))}</div>
-            </div>
-          </div>
+function buildActiveGroupCard(match) {
+  const displayRoundNo = safeText(match.round_no || currentStageNo);
+  const displayMatchNo = safeText(match.match_no || currentMatchNo);
 
-          <div class="group-players">
-            <div class="slot team1-slot"><div class="slot-label">Équipe 1 • Joueur 1</div><div class="slot-value" data-slot="team1_player1">—</div></div>
-            <div class="slot team1-slot"><div class="slot-label">Équipe 1 • Joueur 2</div><div class="slot-value" data-slot="team1_player2">—</div></div>
-            <div class="slot team2-slot"><div class="slot-label">Équipe 2 • Joueur 1</div><div class="slot-value" data-slot="team2_player1">—</div></div>
-            <div class="slot team2-slot"><div class="slot-label">Équipe 2 • Joueur 2</div><div class="slot-value" data-slot="team2_player2">—</div></div>
-          </div>
+  return `
+    <article class="group-card" data-group-card="${escapeHtml(safeText(match.group_code))}">
+      <div class="group-top">
+        <div>
+          <h3 class="group-title">Groupe ${escapeHtml(safeText(match.group_code || '—'))}</h3>
+          <div class="group-badge">Actif</div>
+          <div class="group-meta">Round ${escapeHtml(displayRoundNo)} • match ${escapeHtml(displayMatchNo)}</div>
+        </div>
+      </div>
 
-          <div class="waiting-box waiting-highlight">
-            <div class="waiting-label">Joueur en attente</div>
-            <div class="waiting-value" data-role="waiting-player">—</div>
-          </div>
+      <div class="group-players">
+        <div class="slot team1-slot"><div class="slot-label">Équipe 1 • Joueur 1</div><div class="slot-value" data-slot="team1_player1">—</div></div>
+        <div class="slot team1-slot"><div class="slot-label">Équipe 1 • Joueur 2</div><div class="slot-value" data-slot="team1_player2">—</div></div>
+        <div class="slot team2-slot"><div class="slot-label">Équipe 2 • Joueur 1</div><div class="slot-value" data-slot="team2_player1">—</div></div>
+        <div class="slot team2-slot"><div class="slot-label">Équipe 2 • Joueur 2</div><div class="slot-value" data-slot="team2_player2">—</div></div>
+      </div>
 
-          <div class="score-row">
-            <div class="score-box">
-              <div class="score-label team1">Équipe 1</div>
-              <input type="number" min="0" placeholder="Score équipe 1" data-score-field="team1_score" data-group-code="${escapeHtml(safeText(match.group_code))}" data-is-rest="0" />
-            </div>
-            <div class="score-box">
-              <div class="score-label team2">Équipe 2</div>
-              <input type="number" min="0" placeholder="Score équipe 2" data-score-field="team2_score" data-group-code="${escapeHtml(safeText(match.group_code))}" data-is-rest="0" />
-            </div>
-          </div>
+      <div class="waiting-box waiting-highlight">
+        <div class="waiting-label">Joueur en attente</div>
+        <div class="waiting-value" data-role="waiting-player">—</div>
+      </div>
 
-          <div class="group-save-wrap">
-            <button type="button" class="btn" data-action="save-group-scores" data-group-code="${escapeHtml(safeText(match.group_code))}">Sauvegarder ce groupe</button>
-          </div>
-        </article>
-      `;
-    }
+      <div class="score-row">
+        <div class="score-box">
+          <div class="score-label team1">Équipe 1</div>
+          <input type="number" min="0" placeholder="Score équipe 1" data-score-field="team1_score" data-group-code="${escapeHtml(safeText(match.group_code))}" data-is-rest="0" />
+        </div>
+        <div class="score-box">
+          <div class="score-label team2">Équipe 2</div>
+          <input type="number" min="0" placeholder="Score équipe 2" data-score-field="team2_score" data-group-code="${escapeHtml(safeText(match.group_code))}" data-is-rest="0" />
+        </div>
+      </div>
+
+      <div class="group-save-wrap">
+        <button type="button" class="btn" data-action="save-group-scores" data-group-code="${escapeHtml(safeText(match.group_code))}">Sauvegarder ce groupe</button>
+      </div>
+    </article>
+  `;
+}
 
 function buildRestGroupCard(entry) {
   return `
@@ -1769,42 +1772,142 @@ function buildRestGroupCard(entry) {
       applySessionLockUI();
     }
 
-    function buildSaveScoresPayload(groupCode) {
-      const season = getSelectedSeason();
-      const saisonId = safeText(season?.saison_id).trim();
-      const noSession = safeText(matchSessionEl.value || matchSessionNoEl.value).trim();
-      const cleanGroupCode = safeText(groupCode).trim();
-      if (!saisonId) throw new Error('Saison manquante.');
-      if (!noSession) throw new Error('Session manquante.');
-      if (!cleanGroupCode) throw new Error('Groupe manquant.');
-      if (!currentRoundPlan || !Array.isArray(currentRoundPlan.matches) || !currentRoundPlan.matches.length) {
-        throw new Error('Aucun match actif à sauvegarder pour cet écran.');
-      }
+function buildSaveScoresPayload(groupCode) {
+  const season = getSelectedSeason();
+  const saisonId = safeText(season?.saison_id).trim();
+  const noSession = safeText(matchSessionEl.value || matchSessionNoEl.value).trim();
+  const cleanGroupCode = safeText(groupCode).trim();
 
-      const match = currentRoundPlan.matches.find(item => safeText(item?.group_code).trim() === cleanGroupCode);
-      if (!match) throw new Error(`Groupe ${cleanGroupCode} introuvable pour cet écran.`);
-      if (safeText(match.team1_score).trim() === '' || safeText(match.team2_score).trim() === '') {
-        throw new Error(`Entre les deux scores du groupe ${cleanGroupCode} avant de sauvegarder.`);
-      }
+  if (!saisonId) throw new Error('Saison manquante.');
+  if (!noSession) throw new Error('Session manquante.');
+  if (!cleanGroupCode) throw new Error('Groupe manquant.');
+  if (!currentRoundPlan || !Array.isArray(currentRoundPlan.matches) || !currentRoundPlan.matches.length) {
+    throw new Error('Aucun match actif à sauvegarder pour cet écran.');
+  }
+
+  const match = currentRoundPlan.matches.find(item => safeText(item?.group_code).trim() === cleanGroupCode);
+  if (!match) throw new Error(`Groupe ${cleanGroupCode} introuvable pour cet écran.`);
+  if (safeText(match.team1_score).trim() === '' || safeText(match.team2_score).trim() === '') {
+    throw new Error(`Entre les deux scores du groupe ${cleanGroupCode} avant de sauvegarder.`);
+  }
+
+  const realRoundNo = safeText(match.round_no || currentStageNo).trim();
+  const realMatchNo = safeText(match.match_no || currentMatchNo).trim();
+
+  return {
+    saison_id: saisonId,
+    no_session: noSession,
+    round_no: realRoundNo,
+    match_no: realMatchNo,
+    group_code: cleanGroupCode,
+    court_no: GROUP_CODES.indexOf(cleanGroupCode) + 1,
+    team1_player1_id: safeText(match.team1_player1?.joueur_id).trim(),
+    team1_player2_id: safeText(match.team1_player2?.joueur_id).trim(),
+    team2_player1_id: safeText(match.team2_player1?.joueur_id).trim(),
+    team2_player2_id: safeText(match.team2_player2?.joueur_id).trim(),
+    waiting_player_id: safeText(match.waiting_player?.joueur_id).trim(),
+    team1_score: safeText(match.team1_score).trim(),
+    team2_score: safeText(match.team2_score).trim(),
+    winner_team: ''
+  };
+}
+
+function extractUniquePlayersFromMatch(match) {
+  const players = [
+    match?.team1_player1,
+    match?.team1_player2,
+    match?.team2_player1,
+    match?.team2_player2,
+    match?.waiting_player
+  ].filter(Boolean);
+
+  const unique = [];
+  const seen = new Set();
+
+  players.forEach(player => {
+    const id = safeText(player?.joueur_id).trim();
+    if (!id || seen.has(id)) return;
+    seen.add(id);
+    unique.push(player);
+  });
+
+  return unique;
+}
+
+function findNextPromotableMatchForScreen(excludedGroupCodes = []) {
+  const activePlayers = getActivePlayers();
+  const stageContext = getCurrentSchedule(currentStageNo, activePlayers);
+  const excluded = new Set(
+    (excludedGroupCodes || []).map(code => safeText(code).trim()).filter(Boolean)
+  );
+
+  for (const slot of (stageContext.schedule || [])) {
+    const slotMatchNo = Number(slot?.match_no || 0);
+    if (slotMatchNo <= Number(currentMatchNo || 0)) continue;
+
+    const savedMatches = getSavedMatchesForStageAndMatch(currentStageNo, slotMatchNo);
+    const savedCodes = new Set(
+      savedMatches.map(match => safeText(match?.group_code).trim()).filter(Boolean)
+    );
+
+    for (const task of (slot.tasks || [])) {
+      const code = safeText(task?.group_code).trim();
+      if (!code) continue;
+      if (excluded.has(code)) continue;
+      if (savedCodes.has(code)) continue;
+
+      const generated = buildGeneratedMatchFromTask(task, stageContext.groups);
+      if (!generated) continue;
 
       return {
-        saison_id: saisonId,
-        no_session: noSession,
+        ...generated,
+        group_code: code,
         round_no: currentStageNo,
-        match_no: currentMatchNo,
-        group_code: cleanGroupCode,
-        court_no: GROUP_CODES.indexOf(match.group_code) + 1,
-        team1_player1_id: safeText(match.team1_player1?.joueur_id).trim(),
-        team1_player2_id: safeText(match.team1_player2?.joueur_id).trim(),
-        team2_player1_id: safeText(match.team2_player1?.joueur_id).trim(),
-        team2_player2_id: safeText(match.team2_player2?.joueur_id).trim(),
-        waiting_player_id: safeText(match.waiting_player?.joueur_id).trim(),
-        team1_score: safeText(match.team1_score).trim(),
-        team2_score: safeText(match.team2_score).trim(),
-        winner_team: ''
+        match_no: slotMatchNo
       };
     }
+  }
 
+  return null;
+}
+
+function promoteNextGroupIntoFreedSlot(savedGroupCode) {
+  if (!currentRoundPlan || !Array.isArray(currentRoundPlan.matches)) return false;
+
+  const cleanSavedCode = safeText(savedGroupCode).trim();
+  const freedIndex = currentRoundPlan.matches.findIndex(
+    match => safeText(match?.group_code).trim() === cleanSavedCode
+  );
+
+  if (freedIndex === -1) return false;
+
+  const freedMatch = currentRoundPlan.matches[freedIndex];
+  const excludedGroupCodes = currentRoundPlan.matches
+    .map(match => safeText(match?.group_code).trim())
+    .filter(Boolean)
+    .filter(code => code !== cleanSavedCode);
+
+  const nextMatch = findNextPromotableMatchForScreen(excludedGroupCodes);
+  if (!nextMatch) return false;
+
+  currentRoundPlan.matches[freedIndex] = nextMatch;
+
+  currentRoundPlan.benchEntries = (currentRoundPlan.benchEntries || []).filter(entry => {
+    return !(
+      entry.type === 'group_rest' &&
+      safeText(entry.group_code).trim() === safeText(nextMatch.group_code).trim()
+    );
+  });
+
+  currentRoundPlan.benchEntries.push({
+    type: 'group_rest',
+    group_code: cleanSavedCode,
+    players: extractUniquePlayersFromMatch(freedMatch)
+  });
+
+  return true;
+}
+    
     function upsertSavedMatchInCache(savedMatch) {
       if (!savedMatch) return;
 
@@ -2249,6 +2352,13 @@ async function loadSessionContext(options = {}) {
             team2_score: safeText(payload.team2_score).trim(),
             winner_team: liveMatch.winner_team || ''
           });
+        }
+
+               const promoted = promoteNextGroupIntoFreedSlot(payload.group_code);
+
+        if (promoted) {
+          renderCourts(currentRoundPlan);
+          renderBench(currentRoundPlan);
         }
 
         alert(`Groupe ${payload.group_code} sauvegardé.`);
