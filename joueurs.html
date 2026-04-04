@@ -966,6 +966,11 @@ async function savePlayer() {
     status.className = 'status error';
   }
 }
+
+function getPlayerIdFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  return safeText(params.get('joueur_id')).trim();
+}
     
     async function loadPlayers() {
       try {
@@ -982,6 +987,16 @@ async function savePlayer() {
 
         filteredPlayers = allPlayers.slice();
         renderPlayersList(filteredPlayers);
+        const playerIdFromUrl = getPlayerIdFromUrl();
+if (playerIdFromUrl) {
+  const playerExists = allPlayers.some(
+    p => safeText(p.joueur_id).trim() === playerIdFromUrl
+  );
+
+  if (playerExists) {
+    openPlayer(playerIdFromUrl);
+  }
+}
       } catch (error) {
         console.error(error);
         document.getElementById('playersList').innerHTML =
