@@ -142,6 +142,18 @@
       color: var(--text);
     }
 
+.player-link {
+  color: inherit;
+  text-decoration: none;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.player-link:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+    
     .tab-btn.active {
       background: var(--accent);
       color: #fff;
@@ -510,7 +522,14 @@ const rowsToDisplay = [...filtered];
       rankingTableBodyEl.innerHTML = rowsToDisplay.map((row, index) => `
         <tr>
           <td class="rank-cell">${escapeHtml(row.rang ?? row.rank ?? (index + 1))}</td>
-          <td class="player-cell">${escapeHtml(row.nom || row.joueur_id)}</td>
+          <td class="player-cell">
+  <a
+    href="joueurs.html?joueur_id=${encodeURIComponent(row.joueur_id || '')}"
+    class="player-link"
+  >
+    ${escapeHtml(row.nom || row.joueur_id)}
+  </a>
+</td>
           <td>${escapeHtml(row.matchs_joues)}</td>
           <td>${escapeHtml(row.victoires)}</td>
           <td>${escapeHtml(row.defaites)}</td>
