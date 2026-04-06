@@ -610,42 +610,62 @@ hero {
       : DEFAULT_AVATAR;
     }
 
-    function findPlayerById(playerId) {
-      return allPlayers.find(player => safeText(player.joueur_id).trim() === safeText(playerId).trim()) || null;
+function findPlayerById(playerId) {
+  return allPlayers.find(player => safeText(player.joueur_id).trim() === safeText(playerId).trim()) || null;
+}
+
+function prioritizeSelectedPlayer(players) {
+  const selectedId = safeText(selectedPlayerId).trim();
+  if (!selectedId) return players.slice();
+
+  const selected = [];
+  const others = [];
+
+  players.forEach(player => {
+    if (safeText(player.joueur_id).trim() === selectedId) {
+      selected.push(player);
+    } else {
+      others.push(player);
     }
+  });
 
-    function renderPlayersList(players) {
-      const list = document.getElementById('playersList');
+  return [...selected, ...others];
+}
 
-      if (!players.length) {
-        list.innerHTML = '<div class="empty-box">Aucun joueur trouvé.</div>';
-        return;
-      }
+function renderPlayersList(players) {
+  const list = document.getElementById('playersList');
 
-      list.innerHTML = players.map(player => {
-        const isActive = safeText(player.joueur_id) === selectedPlayerId;
-        return `
-          <button
-            type="button"
-            class="player-item${isActive ? ' active' : ''}"
-            data-player-id="${safeText(player.joueur_id)}"
-            style="text-align:left;background:none;"
-          >
-            <img class="avatar-sm" src="${getPlayerPhoto(player)}" alt="${safeText(player.nom)}">
-            <div class="player-meta">
-              <div class="player-name">${safeText(player.nom) || '(Sans nom)'}</div>
-              <div class="player-id">${safeText(player.joueur_id)}</div>
-            </div>
-          </button>
-        `;
-      }).join('');
+  if (!players.length) {
+    list.innerHTML = '<div class="empty-box">Aucun joueur trouvé.</div>';
+    return;
+  }
 
-      list.querySelectorAll('[data-player-id]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          openPlayer(btn.getAttribute('data-player-id'));
-        });
-      });
-    }
+  const orderedPlayers = prioritizeSelectedPlayer(players);
+
+  list.innerHTML = orderedPlayers.map(player => {
+    const isActive = safeText(player.joueur_id) === selectedPlayerId;
+    return `
+      <button
+        type="button"
+        class="player-item${isActive ? ' active' : ''}"
+        data-player-id="${safeText(player.joueur_id)}"
+        style="text-align:left;background:none;"
+      >
+        <img class="avatar-sm" src="${getPlayerPhoto(player)}" alt="${safeText(player.nom)}">
+        <div class="player-meta">
+          <div class="player-name">${safeText(player.nom) || '(Sans nom)'}</div>
+          <div class="player-id">${safeText(player.joueur_id)}</div>
+        </div>
+      </button>
+    `;
+  }).join('');
+
+  list.querySelectorAll('[data-player-id]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      openPlayer(btn.getAttribute('data-player-id'));
+    });
+  });
+}
 
     function showPlayerCard(show) {
       document.getElementById('playerDetailEmpty').style.display = show ? 'none' : 'block';
@@ -842,9 +862,10 @@ hero {
       document.getElementById('playerStatus').textContent = 'Modification locale prête. Sauvegarde serveur à brancher ensuite.';
       document.getElementById('playerStatus').className = 'status';
 
-      refreshPhotoPreview();
-      renderPlayersList(filteredPlayers);
-      loadPlayerStats(selectedPlayerId);
+refreshPhotoPreview();
+renderPlayersList(filteredPlayers);
+document.getElementById('playersList').scrollTop = 0;
+loadPlayerStats(selectedPlayerId);
     }
 
     function closePlayer() {
