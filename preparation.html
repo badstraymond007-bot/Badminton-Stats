@@ -552,6 +552,7 @@
   let attendanceCache = [];
   let currentSessionRoundsCache = [];
   let previousSessionRoundsCache = [];
+  let cumulativeRankingCache = [];
   let proposalGroups = [];
   let benchPlayers = [];
   let preparationSource = '';
@@ -1465,6 +1466,7 @@ function cascadePreparationPlayers(refA, refB) {
     const noSession = safeText(prepSessionEl.value).trim();
     const dateSession = safeText(prepDateEl.value).trim();
 
+    cumulativeRankingCache = [];
     attendanceCache = [];
     currentSessionRoundsCache = [];
     previousSessionRoundsCache = [];
@@ -1498,27 +1500,41 @@ function cascadePreparationPlayers(refA, refB) {
         no_session: noSession
       });
 
-      const previousMatchesPromise = previousSessionNoCache
-        ? fetchJson(new URLSearchParams({
-            action: 'getSessionMatches',
-            saison_id: saisonId,
-            no_session: previousSessionNoCache
-          }))
-        : Promise.resolve({ ok: true, rounds: [] });
+const previousMatchesPromise = previousSessionNoCache
+  ? fetchJson(new URLSearchParams({
+      action: 'getSessionMatches',
+      saison_id: saisonId,
+      no_session: previousSessionNoCache
+    }))
+  : Promise.resolve({ ok: true, rounds: [] });
 
-      const [attendanceResult, currentMatchesResult, previousMatchesResult] = await Promise.all([
-        fetchJson(attendanceParams),
-        fetchJson(currentMatchesParams),
-        previousMatchesPromise
-      ]);
+const cumulativeRankingPromise = fetchJson(new URLSearchParams({
+  action: 'getRanking',
+  saison_id: saisonId
+}));
+
+const [
+  attendanceResult,
+  currentMatchesResult,
+  previousMatchesResult,
+  cumulativeRankingResult
+] = await Promise.all([
+  fetchJson(attendanceParams),
+  fetchJson(currentMatchesParams),
+  previousMatchesPromise,
+  cumulativeRankingPromise
+]);
 
       if (!attendanceResult.ok) throw new Error(attendanceResult.error || 'Erreur de présence.');
       if (!currentMatchesResult.ok) throw new Error(currentMatchesResult.error || 'Erreur de matchs courants.');
       if (!previousMatchesResult.ok) throw new Error(previousMatchesResult.error || 'Erreur de matchs précédents.');
-
-      attendanceCache = Array.isArray(attendanceResult.joueurs) ? attendanceResult.joueurs : [];
-      currentSessionRoundsCache = Array.isArray(currentMatchesResult.rounds) ? currentMatchesResult.rounds : [];
-      previousSessionRoundsCache = Array.isArray(previousMatchesResult.rounds) ? previousMatchesResult.rounds : [];
+if (!cumulativeRankingResult.ok) {
+  throw new Error(cumulativeRankingResult.error || 'Erreur de classement cumulatif.');
+}
+attendanceCache = Array.isArray(attendanceResult.joueurs) ? attendanceResult.joueurs : [];
+currentSessionRoundsCache = Array.isArray(currentMatchesResult.rounds) ? currentMatchesResult.rounds : [];
+previousSessionRoundsCache = Array.isArray(previousMatchesResult.rounds) ? previousMatchesResult.rounds : [];
+cumulativeRankingCache = Array.isArray(cumulativeRankingResult.rows) ? cumulativeRankingResult.rows : [];
 
       if (attendanceCache.length < 4) {
         setHint('Pas assez de joueurs présents. Il faut au moins 4 joueurs pour préparer la soirée.', 'danger');
