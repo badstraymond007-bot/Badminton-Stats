@@ -1154,10 +1154,10 @@
     return 'Position';
   }
 
-  function getPrepSwapOptionLabel(ref) {
-    const player = getPlayerFromPrepSwapRef(ref);
-    return `${safeText(player?.nom || player?.joueur_id || 'Joueur')} — ${getPrepSwapPositionLabel(ref)}`;
-  }
+function getPrepSwapOptionLabel(ref) {
+  const player = getPlayerFromPrepSwapRef(ref);
+  return safeText(player?.nom || player?.joueur_id || 'Joueur');
+}
 
   function clearPreparationSwapPickerUI() {
     document.querySelectorAll('.prep-swap-picker-wrap').forEach(node => node.remove());
