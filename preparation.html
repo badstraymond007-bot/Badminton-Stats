@@ -1005,14 +1005,6 @@ function buildMovedGroupsFromRound2(rankedGroups, overallStats) {
       source: sourceLabel
     };
   }
-
-function sortFinalPreparationGroups(groups, statsMap) {
-  return (Array.isArray(groups) ? groups : []).map(group => ({
-    ...group,
-    players: [...(Array.isArray(group.players) ? group.players : [])]
-      .sort((a, b) => compareStatsPlayers(a, b, statsMap))
-  }));
-}
   
   function buildFallbackPreparation(activePlayers, reason) {
     const ordered = [...activePlayers].sort(compareNames);
@@ -1066,12 +1058,8 @@ function buildPreparationFromPreviousRound2(activePlayers) {
 
   const movedGroups = buildMovedGroupsFromRound2(rankedGroups, overallStats);
   const seedPlayers = buildSeedOrder(movedGroups, activePlayers);
-  const built = finalizeGroupsFromSeed(seedPlayers, 'Round 2 de la session précédente');
 
-  return {
-    ...built,
-    groups: sortFinalPreparationGroups(built.groups, overallStats)
-  };
+  return finalizeGroupsFromSeed(seedPlayers, 'Round 2 de la session précédente');
 }
 
   function serializePrepSwapRef(ref) {
