@@ -764,20 +764,22 @@
       });
     }
 
-    function serializeMatchSwapRef(ref) {
-      return [
-        safeText(ref?.group_code).trim().toUpperCase(),
-        String(ref?.index ?? '')
-      ].join('|');
-    }
+function serializeMatchSwapRef(ref) {
+  return [
+    safeText(ref?.group_code).trim().toUpperCase(),
+    String(ref?.index ?? ''),
+    safeText(ref?.player_id).trim()
+  ].join('|');
+}
 
-    function deserializeMatchSwapRef(value) {
-      const [group_code, index] = String(value || '').split('|');
-      return {
-        group_code: safeText(group_code).trim().toUpperCase(),
-        index: Number(index)
-      };
-    }
+function deserializeMatchSwapRef(value) {
+  const [group_code, index, player_id] = String(value || '').split('|');
+  return {
+    group_code: safeText(group_code).trim().toUpperCase(),
+    index: Number(index),
+    player_id: safeText(player_id).trim()
+  };
+}
 
     function resolveMatchSwapTarget(ref, groups = currentRoundPlan?.groups || []) {
       if (!ref || !Number.isInteger(Number(ref.index))) return null;
@@ -788,10 +790,21 @@
       return { owner: group.players, key: Number(ref.index) };
     }
 
-    function getPlayerFromMatchSwapRef(ref, groups = currentRoundPlan?.groups || []) {
-      const target = resolveMatchSwapTarget(ref, groups);
-      return target ? target.owner[target.key] || null : null;
-    }
+function getAttendancePlayerById(joueurId) {
+  const cleanJoueurId = safeText(joueurId).trim();
+  if (!cleanJoueurId) return null;
+
+  return attendanceCache.find(player =>
+    safeText(player?.joueur_id).trim() === cleanJoueurId
+  ) || null;
+}
+
+function getPlayerFromMatchSwapRef(ref, groups = currentRoundPlan?.groups || []) {
+  const target = resolveMatchSwapTarget(ref, groups);
+  if (target) return target.owner[target.key] || null;
+
+  return getAttendancePlayerById(ref?.player_id);
+}
 
     function collectMatchSwapRefs(groups = currentRoundPlan?.groups || []) {
       const refs = [];
@@ -808,10 +821,53 @@
       return refs.filter(ref => ref.player_id);
     }
 
-    function getMatchSwapOptionLabel(ref, groups = currentRoundPlan?.groups || []) {
-      const player = getPlayerFromMatchSwapRef(ref, groups);
-      return safeText(player?.nom || player?.joueur_id || 'Joueur');
-    }
+function collectMatchSwapOptions(groups = currentRoundPlan?.groups || []) {
+  const inRoundRefs = collectMatchSwapRefs(groups);
+  const seenIds = new Set(
+    inRoundRefs.map(ref => safeText(ref.player_id).trim()).filter(Boolean)
+  );
+
+  const attendanceOnlyRefs = (Array.isArray(attendanceCache) ? attendanceCache : [])
+    .map(player => ({
+      group_code: 'PRESENCE',
+      index: -1,
+      player_id: safeText(player?.joueur_id).trim()
+    }))
+    .filter(ref => ref.player_id && !seenIds.has(ref.player_id));
+
+  return [...inRoundRefs, ...attendanceOnlyRefs];
+}
+
+function replaceWithAttendancePlayer(sourceRef, targetRef) {
+  const groups = cloneGroups(currentRoundPlan?.groups || []);
+  const sourceTarget = resolveMatchSwapTarget(sourceRef, groups);
+  const incomingPlayer = getPlayerFromMatchSwapRef(targetRef, groups);
+
+  if (!sourceTarget || !incomingPlayer) {
+    setOpenMatchSwapMenu(null);
+    return;
+  }
+
+  const outgoingPlayer = sourceTarget.owner[sourceTarget.key];
+  const incomingId = safeText(incomingPlayer?.joueur_id).trim();
+  const outgoingId = safeText(outgoingPlayer?.joueur_id).trim();
+
+  if (incomingId) setPlayerWithdrawal(currentStageNo, incomingId, false);
+  if (outgoingId && outgoingId !== incomingId) {
+    setPlayerWithdrawal(currentStageNo, outgoingId, true);
+  }
+
+  sourceTarget.owner[sourceTarget.key] = incomingPlayer;
+  applyVisibleMatchGroups(groups);
+}
+    
+function getMatchSwapOptionLabel(ref, groups = currentRoundPlan?.groups || []) {
+  const player = getPlayerFromMatchSwapRef(ref, groups);
+  const name = safeText(player?.nom || player?.joueur_id || 'Joueur');
+  const isInRound = !!resolveMatchSwapTarget(ref, groups);
+
+  return isInRound ? name : `${name} (retiré)`;
+}
 
     function clearMatchSwapPickerUI() {
       document.querySelectorAll('.match-swap-picker-wrap').forEach(node => node.remove());
@@ -824,141 +880,158 @@
       return groupsGridEl.querySelector(selector);
     }
 
-    function setOpenMatchSwapMenu(ref) {
-      openMatchSwapMenuRef = ref ? {
-        group_code: safeText(ref.group_code).trim().toUpperCase(),
-        index: Number(ref.index)
-      } : null;
+function setOpenMatchSwapMenu(ref) {
+  openMatchSwapMenuRef = ref ? {
+    group_code: safeText(ref.group_code).trim().toUpperCase(),
+    index: Number(ref.index),
+    player_id: safeText(ref.player_id).trim()
+  } : null;
 
-      clearMatchSwapPickerUI();
+  clearMatchSwapPickerUI();
 
-      if (!openMatchSwapMenuRef) return;
+  if (!openMatchSwapMenuRef) return;
 
-      const container = findMatchSwapContainer(openMatchSwapMenuRef);
-      if (!container) {
-        openMatchSwapMenuRef = null;
-        return;
-      }
+  const container = findMatchSwapContainer(openMatchSwapMenuRef);
+  if (!container) {
+    openMatchSwapMenuRef = null;
+    return;
+  }
 
-      container.classList.add('match-swap-open');
+  container.classList.add('match-swap-open');
 
-      const options = collectMatchSwapRefs(currentRoundPlan?.groups || [])
-        .filter(optionRef => serializeMatchSwapRef(optionRef) !== serializeMatchSwapRef(openMatchSwapMenuRef))
-        .sort((a, b) => {
-          const aPlayer = getPlayerFromMatchSwapRef(a, currentRoundPlan?.groups || []);
-          const bPlayer = getPlayerFromMatchSwapRef(b, currentRoundPlan?.groups || []);
-          return compareNames(aPlayer, bPlayer);
-        });
+  const options = collectMatchSwapOptions(currentRoundPlan?.groups || [])
+    .filter(optionRef => serializeMatchSwapRef(optionRef) !== serializeMatchSwapRef(openMatchSwapMenuRef))
+    .sort((a, b) => {
+      const aPlayer = getPlayerFromMatchSwapRef(a, currentRoundPlan?.groups || []);
+      const bPlayer = getPlayerFromMatchSwapRef(b, currentRoundPlan?.groups || []);
+      return compareNames(aPlayer, bPlayer);
+    });
 
-      const wrap = document.createElement('div');
-      wrap.className = 'match-swap-picker-wrap';
-      wrap.innerHTML = `
-        <label class="match-swap-picker-label">Action :</label>
-        <select class="match-swap-picker match-swap-mode">
-          <option value="switch">Switch</option>
-          <option value="cascade">Cascade</option>
-        </select>
+  const wrap = document.createElement('div');
+  wrap.className = 'match-swap-picker-wrap';
+  wrap.innerHTML = `
+    <label class="match-swap-picker-label">Action :</label>
+    <select class="match-swap-picker match-swap-mode">
+      <option value="switch">Switch</option>
+      <option value="cascade">Cascade</option>
+    </select>
 
-        <label class="match-swap-picker-label">Joueur cible :</label>
-        <select class="match-swap-picker match-swap-target">
-          <option value="">Choisir un joueur du round</option>
-          ${options.map(optionRef => `
-            <option value="${escapeHtml(serializeMatchSwapRef(optionRef))}">
-              ${escapeHtml(getMatchSwapOptionLabel(optionRef, currentRoundPlan?.groups || []))}
-            </option>
-          `).join('')}
-        </select>
-      `;
+    <label class="match-swap-picker-label">Joueur cible :</label>
+    <select class="match-swap-picker match-swap-target">
+      <option value="">Choisir un joueur présent</option>
+      ${options.map(optionRef => `
+        <option value="${escapeHtml(serializeMatchSwapRef(optionRef))}">
+          ${escapeHtml(getMatchSwapOptionLabel(optionRef, currentRoundPlan?.groups || []))}
+        </option>
+      `).join('')}
+    </select>
+  `;
 
-      container.appendChild(wrap);
+  container.appendChild(wrap);
 
-      const modePicker = wrap.querySelector('.match-swap-mode');
-      const targetPicker = wrap.querySelector('.match-swap-target');
+  const modePicker = wrap.querySelector('.match-swap-mode');
+  const targetPicker = wrap.querySelector('.match-swap-target');
 
-      wrap.addEventListener('click', event => event.stopPropagation());
-      targetPicker.focus();
+  wrap.addEventListener('click', event => event.stopPropagation());
+  targetPicker.focus();
 
-      targetPicker.addEventListener('change', event => {
-        const value = safeText(event.target.value).trim();
-        if (!value) {
-          setOpenMatchSwapMenu(null);
-          return;
-        }
-
-        const targetRef = deserializeMatchSwapRef(value);
-        const mode = safeText(modePicker.value).trim().toLowerCase();
-
-        if (mode === 'cascade') {
-          cascadeMatchPlayers(openMatchSwapMenuRef, targetRef);
-          return;
-        }
-
-        swapMatchPlayers(openMatchSwapMenuRef, targetRef);
-      });
+  targetPicker.addEventListener('change', event => {
+    const value = safeText(event.target.value).trim();
+    if (!value) {
+      setOpenMatchSwapMenu(null);
+      return;
     }
 
+    const targetRef = deserializeMatchSwapRef(value);
+    const mode = safeText(modePicker.value).trim().toLowerCase();
+
+    if (mode === 'cascade') {
+      cascadeMatchPlayers(openMatchSwapMenuRef, targetRef);
+      return;
+    }
+
+    swapMatchPlayers(openMatchSwapMenuRef, targetRef);
+  });
+}
     function applyVisibleMatchGroups(groups) {
       setStageManualOrderFromGroups(currentStageNo, groups);
       openMatchSwapMenuRef = null;
       renderRound();
     }
 
-    function swapMatchPlayers(refA, refB) {
-      const groups = cloneGroups(currentRoundPlan?.groups || []);
-      const targetA = resolveMatchSwapTarget(refA, groups);
-      const targetB = resolveMatchSwapTarget(refB, groups);
+function swapMatchPlayers(refA, refB) {
+  const groups = cloneGroups(currentRoundPlan?.groups || []);
+  const targetA = resolveMatchSwapTarget(refA, groups);
+  const targetB = resolveMatchSwapTarget(refB, groups);
 
-      if (!targetA || !targetB) {
-        setOpenMatchSwapMenu(null);
-        return;
-      }
+  if (!targetA) {
+    setOpenMatchSwapMenu(null);
+    return;
+  }
 
-      const playerA = targetA.owner[targetA.key];
-      const playerB = targetB.owner[targetB.key];
-      targetA.owner[targetA.key] = playerB;
-      targetB.owner[targetB.key] = playerA;
-      applyVisibleMatchGroups(groups);
-    }
+  if (!targetB) {
+    replaceWithAttendancePlayer(refA, refB);
+    return;
+  }
 
-    function cascadeMatchPlayers(refA, refB) {
-      const groups = cloneGroups(currentRoundPlan?.groups || []);
-      const linearRefs = collectMatchSwapRefs(groups);
-      const sourceKey = serializeMatchSwapRef(refA);
-      const targetKey = serializeMatchSwapRef(refB);
+  const playerA = targetA.owner[targetA.key];
+  const playerB = targetB.owner[targetB.key];
+  targetA.owner[targetA.key] = playerB;
+  targetB.owner[targetB.key] = playerA;
+  applyVisibleMatchGroups(groups);
+}
 
-      if (!sourceKey || !targetKey || sourceKey === targetKey) {
-        setOpenMatchSwapMenu(null);
-        return;
-      }
+function cascadeMatchPlayers(refA, refB) {
+  const groups = cloneGroups(currentRoundPlan?.groups || []);
+  const sourceTarget = resolveMatchSwapTarget(refA, groups);
+  const targetTarget = resolveMatchSwapTarget(refB, groups);
 
-      const sourceIndex = linearRefs.findIndex(ref => serializeMatchSwapRef(ref) === sourceKey);
-      const targetIndex = linearRefs.findIndex(ref => serializeMatchSwapRef(ref) === targetKey);
+  if (!sourceTarget) {
+    setOpenMatchSwapMenu(null);
+    return;
+  }
 
-      if (sourceIndex === -1 || targetIndex === -1) {
-        setOpenMatchSwapMenu(null);
-        return;
-      }
+  if (!targetTarget) {
+    replaceWithAttendancePlayer(refA, refB);
+    return;
+  }
 
-      const orderedPlayers = linearRefs.map(ref => getPlayerFromMatchSwapRef(ref, groups));
-      const movingPlayer = orderedPlayers[sourceIndex];
-      if (!movingPlayer) {
-        setOpenMatchSwapMenu(null);
-        return;
-      }
+  const linearRefs = collectMatchSwapRefs(groups);
+  const sourceKey = serializeMatchSwapRef(refA);
+  const targetKey = serializeMatchSwapRef(refB);
 
-      orderedPlayers.splice(sourceIndex, 1);
-      orderedPlayers.splice(targetIndex, 0, movingPlayer);
+  if (!sourceKey || !targetKey || sourceKey === targetKey) {
+    setOpenMatchSwapMenu(null);
+    return;
+  }
 
-      let cursor = 0;
-      groups.forEach(group => {
-        const size = Array.isArray(group.players) ? group.players.length : 0;
-        group.players = orderedPlayers.slice(cursor, cursor + size);
-        cursor += size;
-      });
+  const sourceIndex = linearRefs.findIndex(ref => serializeMatchSwapRef(ref) === sourceKey);
+  const targetIndex = linearRefs.findIndex(ref => serializeMatchSwapRef(ref) === targetKey);
 
-      applyVisibleMatchGroups(groups);
-    }
+  if (sourceIndex === -1 || targetIndex === -1) {
+    setOpenMatchSwapMenu(null);
+    return;
+  }
 
+  const orderedPlayers = linearRefs.map(ref => getPlayerFromMatchSwapRef(ref, groups));
+  const movingPlayer = orderedPlayers[sourceIndex];
+  if (!movingPlayer) {
+    setOpenMatchSwapMenu(null);
+    return;
+  }
+
+  orderedPlayers.splice(sourceIndex, 1);
+  orderedPlayers.splice(targetIndex, 0, movingPlayer);
+
+  let cursor = 0;
+  groups.forEach(group => {
+    const size = Array.isArray(group.players) ? group.players.length : 0;
+    group.players = orderedPlayers.slice(cursor, cursor + size);
+    cursor += size;
+  });
+
+  applyVisibleMatchGroups(groups);
+}
     function setPlayerWithdrawal(stageNo, joueurId, withdrawn = true) {
       const numericStageNo = Number(stageNo || 0);
       const cleanJoueurId = safeText(joueurId).trim();
