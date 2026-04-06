@@ -316,6 +316,45 @@
       color: var(--muted);
     }
 
+
+    .match-swap-enabled {
+      cursor: pointer;
+      position: relative;
+      transition: box-shadow 0.15s ease;
+    }
+
+    .match-swap-enabled:hover {
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.18);
+    }
+
+    .match-swap-open {
+      box-shadow: 0 0 0 3px #f59e0b;
+    }
+
+    .match-swap-picker-wrap {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--line);
+    }
+
+    .match-swap-picker-label {
+      display: block;
+      font-size: 12px;
+      font-weight: bold;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .match-swap-picker {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--soft-line);
+      border-radius: 10px;
+      font: inherit;
+      background: #fff;
+      margin-bottom: 8px;
+    }
+
     .score-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -525,6 +564,8 @@
     let sessionLocked = false;
     let matchControlsBaseDisabled = true;
     let stageWithdrawals = {};
+    let stageManualOrders = {};
+    let openMatchSwapMenuRef = null;
 
     function safeText(value) {
       return value == null ? '' : String(value);
@@ -582,9 +623,12 @@
           </button>
         `
         : '';
+      const swapAttrs = options.canRearrange && Number.isInteger(Number(options.swapIndex))
+        ? ` class="slot-player match-swap-enabled" data-group-code="${escapeHtml(safeText(options.groupCode).trim().toUpperCase())}" data-slot-index="${String(options.swapIndex)}"`
+        : ' class="slot-player"';
 
       return `
-        <div class="slot-player">
+        <div${swapAttrs}>
           <div class="slot-main">
             <img class="slot-photo" src="${getPlayerPhoto(player)}" alt="${escapeHtml(playerName)}">
             <div class="slot-text">
@@ -607,6 +651,11 @@
       stageWithdrawals = {};
     }
 
+    function resetStageManualOrders() {
+      stageManualOrders = {};
+      openMatchSwapMenuRef = null;
+    }
+
     function getStageWithdrawalIds(stageNo) {
       const numericStageNo = Number(stageNo || 0);
       const ids = stageWithdrawals[numericStageNo];
@@ -620,6 +669,294 @@
 
     function canWithdrawFromStage(stageNo) {
       return Number(stageNo || 0) >= 2 && !sessionLocked && !hasSavedMatchesInStage(stageNo);
+    }
+
+
+    function canRearrangeStage(stageNo) {
+      return !sessionLocked && !hasSavedMatchesInStage(stageNo);
+    }
+
+    function cloneGroups(groups) {
+      return (Array.isArray(groups) ? groups : []).map(group => ({
+        group_code: safeText(group?.group_code).trim().toUpperCase(),
+        players: Array.isArray(group?.players) ? [...group.players] : []
+      }));
+    }
+
+    function getLinearPlayersFromGroups(groups) {
+      const players = [];
+      cloneGroups(groups).forEach(group => {
+        (group.players || []).forEach(player => {
+          if (player) players.push(player);
+        });
+      });
+      return players;
+    }
+
+    function setStageManualOrderFromGroups(stageNo, groups) {
+      const numericStageNo = Number(stageNo || 0);
+      const orderedIds = [];
+      const seen = new Set();
+
+      getLinearPlayersFromGroups(groups).forEach(player => {
+        const joueurId = safeText(player?.joueur_id).trim();
+        if (!joueurId || seen.has(joueurId)) return;
+        seen.add(joueurId);
+        orderedIds.push(joueurId);
+      });
+
+      if (orderedIds.length) {
+        stageManualOrders[numericStageNo] = orderedIds;
+      } else {
+        delete stageManualOrders[numericStageNo];
+      }
+    }
+
+    function clearStageManualOrder(stageNo) {
+      delete stageManualOrders[Number(stageNo || 0)];
+      openMatchSwapMenuRef = null;
+    }
+
+    function applyStageManualOrderToGroups(stageNo, groups) {
+      const clonedGroups = cloneGroups(groups);
+      const orderIds = Array.isArray(stageManualOrders[Number(stageNo || 0)])
+        ? [...stageManualOrders[Number(stageNo || 0)]]
+        : [];
+
+      if (!orderIds.length) return clonedGroups;
+
+      const playerMap = {};
+      const originalIds = [];
+      clonedGroups.forEach(group => {
+        (group.players || []).forEach(player => {
+          const joueurId = safeText(player?.joueur_id).trim();
+          if (!joueurId || playerMap[joueurId]) return;
+          playerMap[joueurId] = player;
+          originalIds.push(joueurId);
+        });
+      });
+
+      const orderedPlayers = [];
+      const used = new Set();
+
+      orderIds.forEach(joueurId => {
+        const cleanJoueurId = safeText(joueurId).trim();
+        if (!cleanJoueurId || used.has(cleanJoueurId) || !playerMap[cleanJoueurId]) return;
+        used.add(cleanJoueurId);
+        orderedPlayers.push(playerMap[cleanJoueurId]);
+      });
+
+      originalIds.forEach(joueurId => {
+        if (used.has(joueurId) || !playerMap[joueurId]) return;
+        used.add(joueurId);
+        orderedPlayers.push(playerMap[joueurId]);
+      });
+
+      let cursor = 0;
+      return clonedGroups.map(group => {
+        const size = Array.isArray(group.players) ? group.players.length : 0;
+        const players = orderedPlayers.slice(cursor, cursor + size);
+        cursor += size;
+        return {
+          group_code: group.group_code,
+          players
+        };
+      });
+    }
+
+    function serializeMatchSwapRef(ref) {
+      return [
+        safeText(ref?.group_code).trim().toUpperCase(),
+        String(ref?.index ?? '')
+      ].join('|');
+    }
+
+    function deserializeMatchSwapRef(value) {
+      const [group_code, index] = String(value || '').split('|');
+      return {
+        group_code: safeText(group_code).trim().toUpperCase(),
+        index: Number(index)
+      };
+    }
+
+    function resolveMatchSwapTarget(ref, groups = currentRoundPlan?.groups || []) {
+      if (!ref || !Number.isInteger(Number(ref.index))) return null;
+      const group = (Array.isArray(groups) ? groups : []).find(item =>
+        safeText(item?.group_code).trim().toUpperCase() === safeText(ref.group_code).trim().toUpperCase()
+      );
+      if (!group || !Array.isArray(group.players) || !group.players[ref.index]) return null;
+      return { owner: group.players, key: Number(ref.index) };
+    }
+
+    function getPlayerFromMatchSwapRef(ref, groups = currentRoundPlan?.groups || []) {
+      const target = resolveMatchSwapTarget(ref, groups);
+      return target ? target.owner[target.key] || null : null;
+    }
+
+    function collectMatchSwapRefs(groups = currentRoundPlan?.groups || []) {
+      const refs = [];
+      cloneGroups(groups).forEach(group => {
+        (group.players || []).forEach((player, index) => {
+          if (!player) return;
+          refs.push({
+            group_code: safeText(group.group_code).trim().toUpperCase(),
+            index,
+            player_id: safeText(player.joueur_id).trim()
+          });
+        });
+      });
+      return refs.filter(ref => ref.player_id);
+    }
+
+    function getMatchSwapOptionLabel(ref, groups = currentRoundPlan?.groups || []) {
+      const player = getPlayerFromMatchSwapRef(ref, groups);
+      return safeText(player?.nom || player?.joueur_id || 'Joueur');
+    }
+
+    function clearMatchSwapPickerUI() {
+      document.querySelectorAll('.match-swap-picker-wrap').forEach(node => node.remove());
+      document.querySelectorAll('.match-swap-open').forEach(node => node.classList.remove('match-swap-open'));
+    }
+
+    function findMatchSwapContainer(ref) {
+      if (!ref) return null;
+      const selector = `.match-swap-enabled[data-group-code="${safeText(ref.group_code).trim().toUpperCase()}"][data-slot-index="${String(ref.index)}"]`;
+      return groupsGridEl.querySelector(selector);
+    }
+
+    function setOpenMatchSwapMenu(ref) {
+      openMatchSwapMenuRef = ref ? {
+        group_code: safeText(ref.group_code).trim().toUpperCase(),
+        index: Number(ref.index)
+      } : null;
+
+      clearMatchSwapPickerUI();
+
+      if (!openMatchSwapMenuRef) return;
+
+      const container = findMatchSwapContainer(openMatchSwapMenuRef);
+      if (!container) {
+        openMatchSwapMenuRef = null;
+        return;
+      }
+
+      container.classList.add('match-swap-open');
+
+      const options = collectMatchSwapRefs(currentRoundPlan?.groups || [])
+        .filter(optionRef => serializeMatchSwapRef(optionRef) !== serializeMatchSwapRef(openMatchSwapMenuRef))
+        .sort((a, b) => {
+          const aPlayer = getPlayerFromMatchSwapRef(a, currentRoundPlan?.groups || []);
+          const bPlayer = getPlayerFromMatchSwapRef(b, currentRoundPlan?.groups || []);
+          return compareNames(aPlayer, bPlayer);
+        });
+
+      const wrap = document.createElement('div');
+      wrap.className = 'match-swap-picker-wrap';
+      wrap.innerHTML = `
+        <label class="match-swap-picker-label">Action :</label>
+        <select class="match-swap-picker match-swap-mode">
+          <option value="switch">Switch</option>
+          <option value="cascade">Cascade</option>
+        </select>
+
+        <label class="match-swap-picker-label">Joueur cible :</label>
+        <select class="match-swap-picker match-swap-target">
+          <option value="">Choisir un joueur du round</option>
+          ${options.map(optionRef => `
+            <option value="${escapeHtml(serializeMatchSwapRef(optionRef))}">
+              ${escapeHtml(getMatchSwapOptionLabel(optionRef, currentRoundPlan?.groups || []))}
+            </option>
+          `).join('')}
+        </select>
+      `;
+
+      container.appendChild(wrap);
+
+      const modePicker = wrap.querySelector('.match-swap-mode');
+      const targetPicker = wrap.querySelector('.match-swap-target');
+
+      wrap.addEventListener('click', event => event.stopPropagation());
+      targetPicker.focus();
+
+      targetPicker.addEventListener('change', event => {
+        const value = safeText(event.target.value).trim();
+        if (!value) {
+          setOpenMatchSwapMenu(null);
+          return;
+        }
+
+        const targetRef = deserializeMatchSwapRef(value);
+        const mode = safeText(modePicker.value).trim().toLowerCase();
+
+        if (mode === 'cascade') {
+          cascadeMatchPlayers(openMatchSwapMenuRef, targetRef);
+          return;
+        }
+
+        swapMatchPlayers(openMatchSwapMenuRef, targetRef);
+      });
+    }
+
+    function applyVisibleMatchGroups(groups) {
+      setStageManualOrderFromGroups(currentStageNo, groups);
+      openMatchSwapMenuRef = null;
+      renderRound();
+    }
+
+    function swapMatchPlayers(refA, refB) {
+      const groups = cloneGroups(currentRoundPlan?.groups || []);
+      const targetA = resolveMatchSwapTarget(refA, groups);
+      const targetB = resolveMatchSwapTarget(refB, groups);
+
+      if (!targetA || !targetB) {
+        setOpenMatchSwapMenu(null);
+        return;
+      }
+
+      const playerA = targetA.owner[targetA.key];
+      const playerB = targetB.owner[targetB.key];
+      targetA.owner[targetA.key] = playerB;
+      targetB.owner[targetB.key] = playerA;
+      applyVisibleMatchGroups(groups);
+    }
+
+    function cascadeMatchPlayers(refA, refB) {
+      const groups = cloneGroups(currentRoundPlan?.groups || []);
+      const linearRefs = collectMatchSwapRefs(groups);
+      const sourceKey = serializeMatchSwapRef(refA);
+      const targetKey = serializeMatchSwapRef(refB);
+
+      if (!sourceKey || !targetKey || sourceKey === targetKey) {
+        setOpenMatchSwapMenu(null);
+        return;
+      }
+
+      const sourceIndex = linearRefs.findIndex(ref => serializeMatchSwapRef(ref) === sourceKey);
+      const targetIndex = linearRefs.findIndex(ref => serializeMatchSwapRef(ref) === targetKey);
+
+      if (sourceIndex === -1 || targetIndex === -1) {
+        setOpenMatchSwapMenu(null);
+        return;
+      }
+
+      const orderedPlayers = linearRefs.map(ref => getPlayerFromMatchSwapRef(ref, groups));
+      const movingPlayer = orderedPlayers[sourceIndex];
+      if (!movingPlayer) {
+        setOpenMatchSwapMenu(null);
+        return;
+      }
+
+      orderedPlayers.splice(sourceIndex, 1);
+      orderedPlayers.splice(targetIndex, 0, movingPlayer);
+
+      let cursor = 0;
+      groups.forEach(group => {
+        const size = Array.isArray(group.players) ? group.players.length : 0;
+        group.players = orderedPlayers.slice(cursor, cursor + size);
+        cursor += size;
+      });
+
+      applyVisibleMatchGroups(groups);
     }
 
     function setPlayerWithdrawal(stageNo, joueurId, withdrawn = true) {
@@ -1023,7 +1360,7 @@
       const numericStageNo = Number(stageNo || 1);
 
       if (numericStageNo === 1) {
-        return buildStageOneStructure();
+        return { groups: applyStageManualOrderToGroups(numericStageNo, buildStageOneStructure().groups || []) };
       }
 
       const previousStageNo = numericStageNo - 1;
@@ -1033,7 +1370,8 @@
 
       const previousStage = getSavedStage(previousStageNo);
       const nextStage = buildNextStageGroupsFromPreviousStage(previousStage);
-      const cascaded = applyStageWithdrawalsToGroups(numericStageNo, nextStage.groups || []);
+      const manuallyOrderedGroups = applyStageManualOrderToGroups(numericStageNo, nextStage.groups || []);
+      const cascaded = applyStageWithdrawalsToGroups(numericStageNo, manuallyOrderedGroups || []);
       return {
         groups: cascaded.groups,
         cascade_count: cascaded.cascade_count
@@ -1140,11 +1478,17 @@
       const groupModel = (currentRoundPlan?.groups || []).find(group => safeText(group.group_code).trim().toUpperCase() === groupCode) || null;
       const positionMap = getGroupPositionMap(groupModel);
       const canWithdraw = canWithdrawFromStage(currentStageNo) && !saved;
-      const renderOptions = player => ({
-        position: positionMap[safeText(player?.joueur_id).trim()] || '',
-        canWithdraw,
-        groupCode
-      });
+      const canRearrange = canRearrangeStage(currentStageNo) && !saved;
+      const renderOptions = player => {
+        const position = positionMap[safeText(player?.joueur_id).trim()] || '';
+        return {
+          position,
+          canWithdraw,
+          canRearrange,
+          groupCode,
+          swapIndex: position ? Number(position) - 1 : null
+        };
+      };
 
       return `
         <article class="group-card" data-group-card="${escapeHtml(groupCode)}">
@@ -1153,7 +1497,7 @@
               <h3 class="group-title">Groupe ${escapeHtml(groupCode)}</h3>
               <div class="group-badge ${saved ? 'saved' : ''}">${saved ? 'Sauvegardé' : 'À jouer'}</div>
               <div class="group-meta">Sauvegarde indépendante du groupe.</div>
-              <div class="round-note">Ordre courant du groupe : #1 = plus fort, puis cascade vers le bas si retrait.</div>
+              <div class="round-note">Clique sur un joueur pour faire un switch ou une cascade. #1 = plus fort, puis cascade vers le bas si retrait.</div>
             </div>
           </div>
 
@@ -1222,6 +1566,8 @@
 
       clearWithdrawalsBtn.style.display = currentStageNo >= 2 ? 'inline-block' : 'none';
       clearWithdrawalsBtn.disabled = true;
+      clearMatchSwapPickerUI();
+      openMatchSwapMenuRef = null;
 
       roundTitleEl.textContent = `Round ${currentStageNo} • Match ${currentMatchNo}`;
       sumSeasonEl.textContent = seasonName;
@@ -1279,8 +1625,8 @@
       if (currentStageNo >= 2) {
         if (canWithdrawFromStage(currentStageNo)) {
           hintBoxEl.textContent = cascadeCount
-            ? `Cascade active : ${cascadeCount} retrait(s). Tu peux encore retirer des joueurs avant la première sauvegarde de ce round.`
-            : 'Round recalculé. Tu peux retirer des joueurs en cascade avant la première sauvegarde de ce round.';
+            ? `Cascade active : ${cascadeCount} retrait(s). Tu peux encore cliquer sur un joueur pour switch/cascade avant la première sauvegarde de ce round.`
+            : 'Round recalculé. Tu peux cliquer sur un joueur pour switch/cascade avant la première sauvegarde de ce round.';
         } else if (hasSavedMatchesInStage(currentStageNo)) {
           hintBoxEl.textContent = 'Retrait bloqué pour ce round : au moins un match a déjà été sauvegardé.';
         } else {
@@ -1522,6 +1868,7 @@
       currentStageNo = 1;
       currentMatchNo = 1;
       resetStageWithdrawals();
+      resetStageManualOrders();
       setMatchControlsDisabled(true);
 
       if (!saisonId || !noSession || !dateSession) {
@@ -1626,6 +1973,7 @@
       currentStageNo = 1;
       currentMatchNo = 1;
       resetStageWithdrawals();
+      resetStageManualOrders();
 
       const season = getSelectedSeason();
       if (!season) {
@@ -1747,6 +2095,35 @@
       const saveButton = event.target.closest('[data-action="save-group-scores"]');
       if (saveButton) {
         saveCurrentScores(saveButton.dataset.groupCode || saveButton.closest('[data-group-card]')?.dataset.groupCard || '');
+        return;
+      }
+
+      const swapCard = event.target.closest('.match-swap-enabled');
+      if (swapCard) {
+        if (!canRearrangeStage(currentStageNo)) return;
+
+        const ref = {
+          group_code: safeText(swapCard.dataset.groupCode).trim().toUpperCase(),
+          index: Number(swapCard.dataset.slotIndex)
+        };
+
+        if (
+          openMatchSwapMenuRef &&
+          serializeMatchSwapRef(openMatchSwapMenuRef) === serializeMatchSwapRef(ref)
+        ) {
+          setOpenMatchSwapMenu(null);
+        } else {
+          setOpenMatchSwapMenu(ref);
+        }
+      }
+    });
+
+    document.addEventListener('click', event => {
+      if (event.target.closest('.match-swap-enabled') || event.target.closest('.match-swap-picker-wrap')) {
+        return;
+      }
+      if (openMatchSwapMenuRef) {
+        setOpenMatchSwapMenu(null);
       }
     });
 
