@@ -1059,10 +1059,10 @@ function buildPreparationFromPreviousRound2(activePlayers) {
 
   const movedGroups = buildMovedGroupsFromRound2(rankedGroups, overallStats);
   const seedPlayers = buildSeedOrder(movedGroups, activePlayers);
+  const built = finalizeGroupsFromSeed(seedPlayers, 'Round 2 de la session précédente');
 
-  return finalizeGroupsFromSeed(seedPlayers, 'Round 2 de la session précédente');
+  return applyReturningPlayersFromCumulative(built, activePlayers);
 }
-
 function getPreviousRound2PlayerIds() {
   const round2 = previousSessionRoundsCache.find(round => Number(round?.round_no || 0) === 2);
   const ids = new Set();
@@ -1128,6 +1128,68 @@ function getReturningPlayersToInsert(activePlayers) {
         safeText(item?.joueur_id).trim() === safeText(player?.joueur_id).trim()
       )
     }));
+}
+
+function getLinearPlayersFromBuiltPreparation(built) {
+  const linear = [];
+
+  [...(Array.isArray(built?.groups) ? built.groups : [])]
+    .sort((a, b) => getGroupIndex(a.group_code) - getGroupIndex(b.group_code))
+    .forEach(group => {
+      (group.players || []).forEach(player => {
+        if (player) linear.push(player);
+      });
+    });
+
+  (Array.isArray(built?.bench) ? built.bench : []).forEach(player => {
+    if (player) linear.push(player);
+  });
+
+  return linear;
+}
+
+function applyReturningPlayersFromCumulative(built, activePlayers) {
+  const previousRound2Ids = getPreviousRound2PlayerIds();
+  if (!previousRound2Ids.size) {
+    return built;
+  }
+
+  const returningPlayers = getReturningPlayersToInsert(activePlayers)
+    .slice()
+    .sort((a, b) => Number(a.cumulative_index) - Number(b.cumulative_index));
+
+  if (!returningPlayers.length) {
+    return built;
+  }
+
+  const linearPlayers = getLinearPlayersFromBuiltPreparation(built);
+
+  returningPlayers.forEach(returningPlayer => {
+    const joueurId = safeText(returningPlayer?.joueur_id).trim();
+    if (!joueurId) return;
+
+    const fromIndex = linearPlayers.findIndex(player =>
+      safeText(player?.joueur_id).trim() === joueurId
+    );
+
+    if (fromIndex === -1) return;
+
+    const [movingPlayer] = linearPlayers.splice(fromIndex, 1);
+
+    const targetIndex = Math.max(
+      0,
+      Math.min(Number(returningPlayer.cumulative_index) || 0, linearPlayers.length)
+    );
+
+    linearPlayers.splice(targetIndex, 0, movingPlayer);
+  });
+
+  const rebuilt = finalizeGroupsFromSeed(linearPlayers, built?.source || 'Round 2 de la session précédente');
+
+  return {
+    ...rebuilt,
+    source: built?.source || rebuilt.source
+  };
 }
   
   function serializePrepSwapRef(ref) {
