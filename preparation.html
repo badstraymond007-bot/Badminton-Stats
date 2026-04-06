@@ -1063,6 +1063,73 @@ function buildPreparationFromPreviousRound2(activePlayers) {
   return finalizeGroupsFromSeed(seedPlayers, 'Round 2 de la session précédente');
 }
 
+function getPreviousRound2PlayerIds() {
+  const round2 = previousSessionRoundsCache.find(round => Number(round?.round_no || 0) === 2);
+  const ids = new Set();
+
+  if (!round2 || !Array.isArray(round2.matches)) {
+    return ids;
+  }
+
+  round2.matches.forEach(match => {
+    [
+      match.team1_player1,
+      match.team1_player2,
+      match.team2_player1,
+      match.team2_player2,
+      match.waiting_player
+    ].forEach(player => {
+      const joueurId = safeText(player?.joueur_id).trim();
+      if (joueurId) ids.add(joueurId);
+    });
+  });
+
+  return ids;
+}
+
+function getPresentPlayersRankedByCumulative(activePlayers) {
+  const presentMap = createPlayerMap(activePlayers);
+  const ranked = [];
+  const seen = new Set();
+
+  cumulativeRankingCache
+    .slice()
+    .sort((a, b) => Number(a?.rang || 9999) - Number(b?.rang || 9999))
+    .forEach(row => {
+      const joueurId = safeText(row?.joueur_id).trim();
+      if (!joueurId || !presentMap[joueurId] || seen.has(joueurId)) return;
+      seen.add(joueurId);
+      ranked.push(presentMap[joueurId]);
+    });
+
+  activePlayers.forEach(player => {
+    const joueurId = safeText(player?.joueur_id).trim();
+    if (!joueurId || seen.has(joueurId)) return;
+    seen.add(joueurId);
+    ranked.push(player);
+  });
+
+  return ranked;
+}
+
+function getReturningPlayersToInsert(activePlayers) {
+  const previousRound2Ids = getPreviousRound2PlayerIds();
+  const rankedPresentPlayers = getPresentPlayersRankedByCumulative(activePlayers);
+  const activeMap = createPlayerMap(activePlayers);
+
+  return rankedPresentPlayers
+    .filter(player => {
+      const joueurId = safeText(player?.joueur_id).trim();
+      return joueurId && activeMap[joueurId] && !previousRound2Ids.has(joueurId);
+    })
+    .map(player => ({
+      ...player,
+      cumulative_index: rankedPresentPlayers.findIndex(item =>
+        safeText(item?.joueur_id).trim() === safeText(player?.joueur_id).trim()
+      )
+    }));
+}
+  
   function serializePrepSwapRef(ref) {
     return [
       safeText(ref?.area).trim(),
