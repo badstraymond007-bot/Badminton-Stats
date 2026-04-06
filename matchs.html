@@ -244,6 +244,14 @@
       gap: 10px;
     }
 
+    .slot-main {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+
     .slot-photo {
       width: 42px;
       height: 42px;
@@ -255,8 +263,58 @@
     }
 
     .slot-text { min-width: 0; flex: 1 1 auto; }
+    .slot-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+      flex-wrap: wrap;
+    }
     .slot-name { font-weight: bold; line-height: 1.2; word-break: break-word; }
     .slot-empty { color: var(--muted); font-size: 13px; }
+
+    .player-rank {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 32px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #eef2ff;
+      border: 1px solid #c7d2fe;
+      color: #3730a3;
+      font-size: 12px;
+      font-weight: bold;
+      line-height: 1;
+    }
+
+    .player-action-btn {
+      border: 1px solid #fca5a5;
+      background: #fff1f2;
+      color: #b91c1c;
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+
+    .player-action-btn:hover {
+      background: #ffe4e6;
+    }
+
+    .player-action-btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .round-note {
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--muted);
+    }
 
     .score-row {
       display: grid;
@@ -355,6 +413,7 @@
             <button type="button" class="btn ghost" id="prevRoundBtn">Tour précédent</button>
             <button type="button" class="btn ghost" id="nextRoundBtn">Tour suivant</button>
             <button type="button" class="btn secondary" id="copyPrevRoundBtn">Prochain à jouer</button>
+            <button type="button" class="btn secondary" id="clearWithdrawalsBtn">Annuler retraits</button>
             <button type="button" class="btn" id="finalizeSessionBtn">Terminer + barrer</button>
           </div>
         </div>
@@ -439,6 +498,7 @@
     const prevRoundBtn = document.getElementById('prevRoundBtn');
     const nextRoundBtn = document.getElementById('nextRoundBtn');
     const copyPrevRoundBtn = document.getElementById('copyPrevRoundBtn');
+    const clearWithdrawalsBtn = document.getElementById('clearWithdrawalsBtn');
     const finalizeSessionBtn = document.getElementById('finalizeSessionBtn');
     const lockSessionToggle = document.getElementById('lockSessionToggle');
     const lockSessionNote = document.getElementById('lockSessionNote');
@@ -464,6 +524,7 @@
     let currentRoundPlan = null;
     let sessionLocked = false;
     let matchControlsBaseDisabled = true;
+    let stageWithdrawals = {};
 
     function safeText(value) {
       return value == null ? '' : String(value);
@@ -500,14 +561,38 @@
       return fileId ? `https://drive.google.com/thumbnail?id=${encodeURIComponent(fileId)}&sz=w300` : DEFAULT_AVATAR;
     }
 
-    function renderPlayerCard(player) {
+    function renderPlayerCard(player, options = {}) {
       if (!player) return '<div class="slot-empty">—</div>';
+
+      const joueurId = safeText(player.joueur_id).trim();
+      const playerName = safeText(player.nom || player.joueur_id || '—');
+      const rankBadge = options.position
+        ? `<div class="slot-meta"><span class="player-rank">#${escapeHtml(String(options.position))}</span></div>`
+        : '';
+      const withdrawButton = options.canWithdraw && joueurId
+        ? `
+          <button
+            type="button"
+            class="player-action-btn"
+            data-action="withdraw-player"
+            data-player-id="${escapeHtml(joueurId)}"
+            data-player-name="${escapeHtml(playerName)}"
+            data-group-code="${escapeHtml(safeText(options.groupCode))}">
+            Retirer
+          </button>
+        `
+        : '';
+
       return `
         <div class="slot-player">
-          <img class="slot-photo" src="${getPlayerPhoto(player)}" alt="${escapeHtml(safeText(player.nom || player.joueur_id || 'Joueur'))}">
-          <div class="slot-text">
-            <div class="slot-name">${escapeHtml(safeText(player.nom || player.joueur_id || '—'))}</div>
+          <div class="slot-main">
+            <img class="slot-photo" src="${getPlayerPhoto(player)}" alt="${escapeHtml(playerName)}">
+            <div class="slot-text">
+              ${rankBadge}
+              <div class="slot-name">${escapeHtml(playerName)}</div>
+            </div>
           </div>
+          ${withdrawButton}
         </div>
       `;
     }
@@ -517,6 +602,115 @@
       matchDateEl.value = '';
       matchSessionNoEl.value = '';
     }
+
+    function resetStageWithdrawals() {
+      stageWithdrawals = {};
+    }
+
+    function getStageWithdrawalIds(stageNo) {
+      const numericStageNo = Number(stageNo || 0);
+      const ids = stageWithdrawals[numericStageNo];
+      return ids instanceof Set ? ids : new Set();
+    }
+
+    function hasSavedMatchesInStage(stageNo) {
+      const stage = getSavedStage(stageNo);
+      return !!(stage && Array.isArray(stage.matches) && stage.matches.length);
+    }
+
+    function canWithdrawFromStage(stageNo) {
+      return Number(stageNo || 0) >= 2 && !sessionLocked && !hasSavedMatchesInStage(stageNo);
+    }
+
+    function setPlayerWithdrawal(stageNo, joueurId, withdrawn = true) {
+      const numericStageNo = Number(stageNo || 0);
+      const cleanJoueurId = safeText(joueurId).trim();
+      if (numericStageNo < 2 || !cleanJoueurId) return;
+
+      if (!(stageWithdrawals[numericStageNo] instanceof Set)) {
+        stageWithdrawals[numericStageNo] = new Set();
+      }
+
+      if (withdrawn) {
+        stageWithdrawals[numericStageNo].add(cleanJoueurId);
+      } else {
+        stageWithdrawals[numericStageNo].delete(cleanJoueurId);
+      }
+    }
+
+    function clearWithdrawalsForStage(stageNo) {
+      delete stageWithdrawals[Number(stageNo || 0)];
+    }
+
+    function getCascadeGroupCount(totalPlayers, preferredGroupCount) {
+      const maxAllowed = Math.floor(Number(totalPlayers || 0) / 4);
+      if (maxAllowed <= 0) return 0;
+      return Math.min(Math.max(0, Number(preferredGroupCount || 0)), maxAllowed);
+    }
+
+    function computeCascadeGroupSizes(totalPlayers, preferredGroupCount) {
+      const groupCount = getCascadeGroupCount(totalPlayers, preferredGroupCount);
+      if (!groupCount) return [];
+
+      const sizes = [];
+      let remainingPlayers = Number(totalPlayers || 0);
+      let remainingGroups = groupCount;
+
+      while (remainingGroups > 0) {
+        const canTakeFive = remainingPlayers - 5 >= (remainingGroups - 1) * 4;
+        const size = canTakeFive ? 5 : 4;
+        sizes.push(size);
+        remainingPlayers -= size;
+        remainingGroups -= 1;
+      }
+
+      return sizes;
+    }
+
+    function applyStageWithdrawalsToGroups(stageNo, groups) {
+      const clonedGroups = (Array.isArray(groups) ? groups : []).map(group => ({
+        group_code: safeText(group?.group_code).trim().toUpperCase(),
+        players: Array.isArray(group?.players) ? [...group.players] : []
+      }));
+
+      const withdrawalIds = getStageWithdrawalIds(stageNo);
+      if (Number(stageNo || 0) < 2 || !withdrawalIds.size) {
+        return { groups: clonedGroups, cascade_count: 0 };
+      }
+
+      const orderedPlayers = [];
+      clonedGroups.forEach(group => {
+        (group.players || []).forEach(player => {
+          const joueurId = safeText(player?.joueur_id).trim();
+          if (!joueurId || withdrawalIds.has(joueurId)) return;
+          orderedPlayers.push(player);
+        });
+      });
+
+      const sizes = computeCascadeGroupSizes(orderedPlayers.length, clonedGroups.length);
+      let start = 0;
+      const cascadedGroups = sizes.map((size, index) => {
+        const players = orderedPlayers.slice(start, start + size);
+        start += size;
+        return {
+          group_code: GROUP_CODES[index] || safeText(clonedGroups[index]?.group_code).trim().toUpperCase() || `G${index + 1}`,
+          players
+        };
+      });
+
+      return { groups: cascadedGroups.filter(group => group.players.length >= 4), cascade_count: withdrawalIds.size };
+    }
+
+    function getGroupPositionMap(group) {
+      const map = {};
+      (group?.players || []).forEach((player, index) => {
+        const joueurId = safeText(player?.joueur_id).trim();
+        if (!joueurId) return;
+        map[joueurId] = index + 1;
+      });
+      return map;
+    }
+
 
     function getSelectedSeason() {
       const saisonId = safeText(matchSeasonEl.value).trim();
@@ -838,7 +1032,12 @@
       }
 
       const previousStage = getSavedStage(previousStageNo);
-      return buildNextStageGroupsFromPreviousStage(previousStage);
+      const nextStage = buildNextStageGroupsFromPreviousStage(previousStage);
+      const cascaded = applyStageWithdrawalsToGroups(numericStageNo, nextStage.groups || []);
+      return {
+        groups: cascaded.groups,
+        cascade_count: cascaded.cascade_count
+      };
     }
 
     function buildGeneratedMatchFromGroup(group, matchNo) {
@@ -937,54 +1136,65 @@
 
     function buildGroupCard(match) {
       const saved = safeText(match.match_id).trim() && safeText(match.team1_score).trim() !== '' && safeText(match.team2_score).trim() !== '';
+      const groupCode = safeText(match.group_code).trim().toUpperCase();
+      const groupModel = (currentRoundPlan?.groups || []).find(group => safeText(group.group_code).trim().toUpperCase() === groupCode) || null;
+      const positionMap = getGroupPositionMap(groupModel);
+      const canWithdraw = canWithdrawFromStage(currentStageNo) && !saved;
+      const renderOptions = player => ({
+        position: positionMap[safeText(player?.joueur_id).trim()] || '',
+        canWithdraw,
+        groupCode
+      });
+
       return `
-        <article class="group-card" data-group-card="${escapeHtml(safeText(match.group_code))}">
+        <article class="group-card" data-group-card="${escapeHtml(groupCode)}">
           <div class="group-top">
             <div>
-              <h3 class="group-title">Groupe ${escapeHtml(safeText(match.group_code))}</h3>
+              <h3 class="group-title">Groupe ${escapeHtml(groupCode)}</h3>
               <div class="group-badge ${saved ? 'saved' : ''}">${saved ? 'Sauvegardé' : 'À jouer'}</div>
               <div class="group-meta">Sauvegarde indépendante du groupe.</div>
+              <div class="round-note">Ordre courant du groupe : #1 = plus fort, puis cascade vers le bas si retrait.</div>
             </div>
           </div>
 
           <div class="group-players">
             <div class="slot team1-slot">
               <div class="slot-label">Équipe 1 • Joueur 1</div>
-              <div>${renderPlayerCard(match.team1_player1)}</div>
+              <div>${renderPlayerCard(match.team1_player1, renderOptions(match.team1_player1))}</div>
             </div>
             <div class="slot team1-slot">
               <div class="slot-label">Équipe 1 • Joueur 2</div>
-              <div>${renderPlayerCard(match.team1_player2)}</div>
+              <div>${renderPlayerCard(match.team1_player2, renderOptions(match.team1_player2))}</div>
             </div>
             <div class="slot team2-slot">
               <div class="slot-label">Équipe 2 • Joueur 1</div>
-              <div>${renderPlayerCard(match.team2_player1)}</div>
+              <div>${renderPlayerCard(match.team2_player1, renderOptions(match.team2_player1))}</div>
             </div>
             <div class="slot team2-slot">
               <div class="slot-label">Équipe 2 • Joueur 2</div>
-              <div>${renderPlayerCard(match.team2_player2)}</div>
+              <div>${renderPlayerCard(match.team2_player2, renderOptions(match.team2_player2))}</div>
             </div>
           </div>
 
           <div class="waiting-box" style="margin-top:12px;">
             <div class="waiting-label">Joueur en attente</div>
-            <div>${renderPlayerCard(match.waiting_player)}</div>
+            <div>${renderPlayerCard(match.waiting_player, renderOptions(match.waiting_player))}</div>
           </div>
 
           <div class="score-row">
             <div class="score-box">
-              <label class="score-label team1" for="score-${escapeHtml(safeText(match.group_code))}-1">Score équipe 1</label>
-              <input id="score-${escapeHtml(safeText(match.group_code))}-1" type="number" min="0" data-score-field="team1_score" data-group-code="${escapeHtml(safeText(match.group_code))}" value="${escapeHtml(safeText(match.team1_score))}">
+              <label class="score-label team1" for="score-${escapeHtml(groupCode)}-1">Score équipe 1</label>
+              <input id="score-${escapeHtml(groupCode)}-1" type="number" min="0" data-score-field="team1_score" data-group-code="${escapeHtml(groupCode)}" value="${escapeHtml(safeText(match.team1_score))}">
             </div>
             <div class="score-box">
-              <label class="score-label team2" for="score-${escapeHtml(safeText(match.group_code))}-2">Score équipe 2</label>
-              <input id="score-${escapeHtml(safeText(match.group_code))}-2" type="number" min="0" data-score-field="team2_score" data-group-code="${escapeHtml(safeText(match.group_code))}" value="${escapeHtml(safeText(match.team2_score))}">
+              <label class="score-label team2" for="score-${escapeHtml(groupCode)}-2">Score équipe 2</label>
+              <input id="score-${escapeHtml(groupCode)}-2" type="number" min="0" data-score-field="team2_score" data-group-code="${escapeHtml(groupCode)}" value="${escapeHtml(safeText(match.team2_score))}">
             </div>
           </div>
 
           <div class="group-save-wrap">
-            <button type="button" class="btn" data-action="save-group-scores" data-group-code="${escapeHtml(safeText(match.group_code))}">
-              Sauvegarder le groupe ${escapeHtml(safeText(match.group_code))}
+            <button type="button" class="btn" data-action="save-group-scores" data-group-code="${escapeHtml(groupCode)}">
+              Sauvegarder le groupe ${escapeHtml(groupCode)}
             </button>
           </div>
         </article>
@@ -1010,6 +1220,9 @@
       const season = getSelectedSeason();
       const seasonName = season ? (season.nom_saison || season.saison_id) : '—';
 
+      clearWithdrawalsBtn.style.display = currentStageNo >= 2 ? 'inline-block' : 'none';
+      clearWithdrawalsBtn.disabled = true;
+
       roundTitleEl.textContent = `Round ${currentStageNo} • Match ${currentMatchNo}`;
       sumSeasonEl.textContent = seasonName;
       sumDateEl.textContent = matchDateEl.value || '—';
@@ -1021,6 +1234,7 @@
       const stageGroups = structure.groups || [];
       const roundPlan = buildRoundPlan(currentStageNo, currentMatchNo);
       currentRoundPlan = roundPlan;
+      const cascadeCount = Number(structure.cascade_count || 0);
 
       sumGroupCountEl.textContent = String(stageGroups.length);
       sumVisibleGroupCountEl.textContent = String(roundPlan.matches.length);
@@ -1062,7 +1276,19 @@
       }
 
       sumStateEl.textContent = sessionLocked ? 'Barrée' : 'Active';
-      hintBoxEl.textContent = `Les groupes A à E sont indépendants. Sauvegarde chaque groupe quand sa partie est terminée.`;
+      if (currentStageNo >= 2) {
+        if (canWithdrawFromStage(currentStageNo)) {
+          hintBoxEl.textContent = cascadeCount
+            ? `Cascade active : ${cascadeCount} retrait(s). Tu peux encore retirer des joueurs avant la première sauvegarde de ce round.`
+            : 'Round recalculé. Tu peux retirer des joueurs en cascade avant la première sauvegarde de ce round.';
+        } else if (hasSavedMatchesInStage(currentStageNo)) {
+          hintBoxEl.textContent = 'Retrait bloqué pour ce round : au moins un match a déjà été sauvegardé.';
+        } else {
+          hintBoxEl.textContent = 'Retrait indisponible pour ce round.';
+        }
+      } else {
+        hintBoxEl.textContent = `Les groupes A à E sont indépendants. Sauvegarde chaque groupe quand sa partie est terminée.`;
+      }
 
       groupsGridEl.innerHTML = roundPlan.matches
         .sort((a, b) => getGroupIndex(a.group_code) - getGroupIndex(b.group_code))
@@ -1081,6 +1307,8 @@
       });
 
       setMatchControlsDisabled(false);
+      clearWithdrawalsBtn.style.display = currentStageNo >= 2 ? 'inline-block' : 'none';
+      clearWithdrawalsBtn.disabled = !getStageWithdrawalIds(currentStageNo).size || hasSavedMatchesInStage(currentStageNo);
     }
 
     function upsertSavedMatchInCache(savedMatch) {
@@ -1293,6 +1521,7 @@
       currentRoundPlan = null;
       currentStageNo = 1;
       currentMatchNo = 1;
+      resetStageWithdrawals();
       setMatchControlsDisabled(true);
 
       if (!saisonId || !noSession || !dateSession) {
@@ -1396,6 +1625,7 @@
       rankingSeasonId = '';
       currentStageNo = 1;
       currentMatchNo = 1;
+      resetStageWithdrawals();
 
       const season = getSelectedSeason();
       if (!season) {
@@ -1480,7 +1710,40 @@
       }
     });
 
+
+    clearWithdrawalsBtn.addEventListener('click', () => {
+      if (!getStageWithdrawalIds(currentStageNo).size) return;
+      if (hasSavedMatchesInStage(currentStageNo)) {
+        alert('Impossible d’annuler les retraits : au moins un match de ce round est déjà sauvegardé.');
+        return;
+      }
+      clearWithdrawalsForStage(currentStageNo);
+      renderRound();
+    });
+
+    function withdrawPlayerFromCurrentStage(joueurId, playerName) {
+      if (!canWithdrawFromStage(currentStageNo)) {
+        alert('Le retrait est permis seulement à partir du round 2, avant la première sauvegarde du round.');
+        return;
+      }
+
+      const cleanJoueurId = safeText(joueurId).trim();
+      if (!cleanJoueurId) return;
+
+      const confirmation = window.confirm(`Retirer ${safeText(playerName).trim() || 'ce joueur'} et lancer la cascade pour le round ${currentStageNo} ?`);
+      if (!confirmation) return;
+
+      setPlayerWithdrawal(currentStageNo, cleanJoueurId, true);
+      renderRound();
+    }
+
     groupsGridEl.addEventListener('click', event => {
+      const withdrawButton = event.target.closest('[data-action="withdraw-player"]');
+      if (withdrawButton) {
+        withdrawPlayerFromCurrentStage(withdrawButton.dataset.playerId || '', withdrawButton.dataset.playerName || '');
+        return;
+      }
+
       const saveButton = event.target.closest('[data-action="save-group-scores"]');
       if (saveButton) {
         saveCurrentScores(saveButton.dataset.groupCode || saveButton.closest('[data-group-card]')?.dataset.groupCard || '');
