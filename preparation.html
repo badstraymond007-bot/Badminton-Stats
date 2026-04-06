@@ -1718,100 +1718,101 @@ cumulativeRankingCache = Array.isArray(cumulativeRankingResult.rows) ? cumulativ
     }
   }
 
-  async function savePreparationRound1() {
-    if (!proposalGroups.length) {
-      alert('Aucun groupe à sauvegarder.');
-      return;
+  function buildRound1MatchesFromProposalGroups(groups) {
+  return (Array.isArray(groups) ? groups : [])
+    .filter(group => Array.isArray(group.players) && group.players.length >= 4)
+    .map(group => {
+      const players = group.players;
+
+      return {
+        group_code: safeText(group.group_code).trim().toUpperCase(),
+        court_no: String(getGroupIndex(group.group_code) + 1),
+        team1_player1_id: safeText(players[0]?.joueur_id).trim(),
+        team1_player2_id: safeText(players[3]?.joueur_id).trim(),
+        team2_player1_id: safeText(players[1]?.joueur_id).trim(),
+        team2_player2_id: safeText(players[2]?.joueur_id).trim(),
+        waiting_player_id: safeText(players[4]?.joueur_id).trim(),
+        team1_score: '',
+        team2_score: '',
+        winner_team: '',
+        notes: ''
+      };
+    });
+}
+
+async function postJson(body) {
+  const response = await fetch(API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'text/plain;charset=utf-8'
+    },
+    body: JSON.stringify(body)
+  });
+
+  return response.json();
+}
+  
+async function savePreparationRound1() {
+  if (!proposalGroups.length) {
+    alert('Aucun groupe à sauvegarder.');
+    return;
+  }
+
+  if (currentRound1AlreadyExists) {
+    alert('Le round 1 existe déjà pour cette session.');
+    return;
+  }
+
+  const season = getSelectedSeason();
+  const saisonId = safeText(season?.saison_id).trim();
+  const noSession = safeText(prepSessionEl.value).trim();
+
+  if (!saisonId || !noSession) {
+    alert('Saison ou session invalide.');
+    return;
+  }
+
+  const matches = buildRound1MatchesFromProposalGroups(proposalGroups);
+
+  if (!matches.length) {
+    alert('Aucun match valide à sauvegarder.');
+    return;
+  }
+
+  savePrepBtn.disabled = true;
+
+  try {
+    const result = await postJson({
+      action: 'saveRoundMatches',
+      saison_id: saisonId,
+      no_session: noSession,
+      round_no: '1',
+      match_no: '1',
+      matches,
+      refresh_rankings: false
+    });
+
+    if (!result.ok) {
+      throw new Error(result.error || 'Erreur inconnue lors de la sauvegarde du round 1.');
     }
 
-    if (currentRound1AlreadyExists) {
-      alert('Le round 1 existe déjà pour cette session.');
-      return;
-    }
+    currentRound1AlreadyExists = true;
 
-    alert(
-      "La préparation visuelle est prête.\n\n" +
-      "La prochaine étape est de brancher ce bouton sur une action Apps Script dédiée " +
-      "pour écrire le round 1 dans l’onglet matchs sans demander de scores."
+    setHint(
+      `Round 1 sauvegardé avec succès (${result.nb_matchs || matches.length} groupe(s)).`,
+      'ok'
     );
+
+    await loadPreparationContext();
+  } catch (error) {
+    console.error(error);
+    setHint(
+      'Erreur lors de la sauvegarde du round 1 : ' + (error.message || error),
+      'danger'
+    );
+    savePrepBtn.disabled = false;
   }
-
-  prepSeasonEl.addEventListener('change', () => {
-    populateSessionSelect();
-    updateSessionFields();
-    resetPreparation();
-    updateSummary();
-  });
-
-  prepSessionEl.addEventListener('change', () => {
-    updateSessionFields();
-    loadPreparationContext();
-  });
-
-  reloadPrepBtn.addEventListener('click', () => {
-    loadPreparationContext();
-  });
-
-  savePrepBtn.addEventListener('click', () => {
-    savePreparationRound1();
-  });
-
-  groupsGridEl.addEventListener('click', event => {
-    const card = event.target.closest('.prep-swap-enabled');
-    if (!card) return;
-
-    const ref = {
-      area: safeText(card.dataset.swapArea).trim(),
-      group_code: safeText(card.dataset.groupCode).trim(),
-      index: Number(card.dataset.slotIndex)
-    };
-
-    if (
-      openPrepSwapMenuRef &&
-      serializePrepSwapRef(openPrepSwapMenuRef) === serializePrepSwapRef(ref)
-    ) {
-      setOpenPreparationSwapMenu(null);
-      return;
-    }
-
-    setOpenPreparationSwapMenu(ref);
-  });
-
-  benchListEl.addEventListener('click', event => {
-    const card = event.target.closest('.prep-swap-enabled');
-    if (!card) return;
-
-    const ref = {
-      area: safeText(card.dataset.swapArea).trim(),
-      group_code: '',
-      index: Number(card.dataset.slotIndex)
-    };
-
-    if (
-      openPrepSwapMenuRef &&
-      serializePrepSwapRef(openPrepSwapMenuRef) === serializePrepSwapRef(ref)
-    ) {
-      setOpenPreparationSwapMenu(null);
-      return;
-    }
-
-    setOpenPreparationSwapMenu(ref);
-  });
-
-  document.addEventListener('click', event => {
-    if (event.target.closest('.prep-swap-enabled') || event.target.closest('.prep-swap-picker-wrap')) {
-      return;
-    }
-    setOpenPreparationSwapMenu(null);
-  });
-
-  async function init() {
-    resetPreparation();
-    await loadSeasons();
-    updateSummary();
-  }
-
-  init();
+}
 </script>
 </body>
 </html>
