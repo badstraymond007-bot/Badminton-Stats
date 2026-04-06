@@ -1813,6 +1813,82 @@ async function savePreparationRound1() {
     savePrepBtn.disabled = false;
   }
 }
+  prepSeasonEl.addEventListener('change', () => {
+    populateSessionSelect();
+    updateSessionFields();
+    resetPreparation();
+    updateSummary();
+  });
+
+  prepSessionEl.addEventListener('change', () => {
+    updateSessionFields();
+    loadPreparationContext();
+  });
+
+  reloadPrepBtn.addEventListener('click', () => {
+    loadPreparationContext();
+  });
+
+  savePrepBtn.addEventListener('click', () => {
+    savePreparationRound1();
+  });
+
+  groupsGridEl.addEventListener('click', event => {
+    const card = event.target.closest('.prep-swap-enabled');
+    if (!card) return;
+
+    const ref = {
+      area: safeText(card.dataset.swapArea).trim(),
+      group_code: safeText(card.dataset.groupCode).trim(),
+      index: Number(card.dataset.slotIndex)
+    };
+
+    if (
+      openPrepSwapMenuRef &&
+      serializePrepSwapRef(openPrepSwapMenuRef) === serializePrepSwapRef(ref)
+    ) {
+      setOpenPreparationSwapMenu(null);
+      return;
+    }
+
+    setOpenPreparationSwapMenu(ref);
+  });
+
+  benchListEl.addEventListener('click', event => {
+    const card = event.target.closest('.prep-swap-enabled');
+    if (!card) return;
+
+    const ref = {
+      area: safeText(card.dataset.swapArea).trim(),
+      group_code: '',
+      index: Number(card.dataset.slotIndex)
+    };
+
+    if (
+      openPrepSwapMenuRef &&
+      serializePrepSwapRef(openPrepSwapMenuRef) === serializePrepSwapRef(ref)
+    ) {
+      setOpenPreparationSwapMenu(null);
+      return;
+    }
+
+    setOpenPreparationSwapMenu(ref);
+  });
+
+  document.addEventListener('click', event => {
+    if (event.target.closest('.prep-swap-enabled') || event.target.closest('.prep-swap-picker-wrap')) {
+      return;
+    }
+    setOpenPreparationSwapMenu(null);
+  });
+
+  async function init() {
+    resetPreparation();
+    await loadSeasons();
+    updateSummary();
+  }
+
+  init();  
 </script>
 </body>
 </html>
