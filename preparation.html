@@ -1018,6 +1018,14 @@
     };
   }
 
+function sortFinalPreparationGroups(groups, statsMap) {
+  return (Array.isArray(groups) ? groups : []).map(group => ({
+    ...group,
+    players: [...(Array.isArray(group.players) ? group.players : [])]
+      .sort((a, b) => compareStatsPlayers(a, b, statsMap))
+  }));
+}
+  
   function buildFallbackPreparation(activePlayers, reason) {
     const ordered = [...activePlayers].sort(compareNames);
     return finalizeGroupsFromSeed(ordered, reason);
@@ -1055,24 +1063,28 @@
       }));
   }
 
-  function buildPreparationFromPreviousRound2(activePlayers) {
-    const round2 = previousSessionRoundsCache.find(round => Number(round?.round_no || 0) === 2);
+function buildPreparationFromPreviousRound2(activePlayers) {
+  const round2 = previousSessionRoundsCache.find(round => Number(round?.round_no || 0) === 2);
 
-    if (!round2 || !Array.isArray(round2.matches) || !round2.matches.length) {
-      return buildFallbackPreparation(activePlayers, 'Aucun round 2 précédent disponible');
-    }
-
-    const { groups: rankedGroups, overallStats } = rankRound2Groups(round2.matches);
-
-    if (!rankedGroups.length) {
-      return buildFallbackPreparation(activePlayers, 'Round 2 précédent vide');
-    }
-
-    const movedGroups = buildMovedGroupsFromRound2(rankedGroups, overallStats);
-    const seedPlayers = buildSeedOrder(movedGroups, activePlayers);
-
-    return finalizeGroupsFromSeed(seedPlayers, 'Round 2 de la session précédente');
+  if (!round2 || !Array.isArray(round2.matches) || !round2.matches.length) {
+    return buildFallbackPreparation(activePlayers, 'Aucun round 2 précédent disponible');
   }
+
+  const { groups: rankedGroups, overallStats } = rankRound2Groups(round2.matches);
+
+  if (!rankedGroups.length) {
+    return buildFallbackPreparation(activePlayers, 'Round 2 précédent vide');
+  }
+
+  const movedGroups = buildMovedGroupsFromRound2(rankedGroups, overallStats);
+  const seedPlayers = buildSeedOrder(movedGroups, activePlayers);
+  const built = finalizeGroupsFromSeed(seedPlayers, 'Round 2 de la session précédente');
+
+  return {
+    ...built,
+    groups: sortFinalPreparationGroups(built.groups, overallStats)
+  };
+}
 
   function serializePrepSwapRef(ref) {
     return [
