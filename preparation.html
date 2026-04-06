@@ -363,6 +363,45 @@
       .layout { grid-template-columns: 1fr; }
       .session-grid { grid-template-columns: 1fr; }
     }
+<style>
+  .prep-swap-enabled {
+    cursor: pointer;
+    position: relative;
+    transition: box-shadow 0.15s ease;
+  }
+
+  .prep-swap-enabled:hover {
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.18);
+  }
+
+  .prep-swap-open {
+    box-shadow: 0 0 0 3px #f59e0b;
+  }
+
+  .prep-swap-picker-wrap {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+  }
+
+  .prep-swap-picker-label {
+    display: block;
+    font-size: 12px;
+    font-weight: bold;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .prep-swap-picker {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--soft-line);
+    border-radius: 10px;
+    font: inherit;
+    background: #fff;
+  }
+</style>
+    
   </style>
 
 </head>
@@ -473,813 +512,1090 @@
       </aside>
     </div>
   </div>
-  <script>
-    const API_URL = 'https://script.google.com/macros/s/AKfycbwddJ7s8j6uWH2fXP_h7161F_MT5ZU12X15oMx6Xx7icxud1jg9_e3iq28bjfs3X4_y/exec';
-    const GROUP_CODES = ['A', 'B', 'C', 'D', 'E'];
+<script>
+  const API_URL = 'https://script.google.com/macros/s/AKfycbwddJ7s8j6uWH2fXP_h7161F_MT5ZU12X15oMx6Xx7icxud1jg9_e3iq28bjfs3X4_y/exec';
+  const GROUP_CODES = ['A', 'B', 'C', 'D', 'E'];
 
-    const DEFAULT_AVATAR =
-      'data:image/svg+xml;utf8,' +
-      encodeURIComponent(`
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
-          <rect width="200" height="200" fill="#e5e7eb"/>
-          <circle cx="100" cy="78" r="34" fill="#9ca3af"/>
-          <path d="M40 170c10-30 34-46 60-46s50 16 60 46" fill="#9ca3af"/>
-        </svg>
-      `);
+  const DEFAULT_AVATAR =
+    'data:image/svg+xml;utf8,' +
+    encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+        <rect width="200" height="200" fill="#e5e7eb"/>
+        <circle cx="100" cy="78" r="34" fill="#9ca3af"/>
+        <path d="M40 170c10-30 34-46 60-46s50 16 60 46" fill="#9ca3af"/>
+      </svg>
+    `);
 
-    const prepSeasonEl = document.getElementById('prepSeason');
-    const prepSessionEl = document.getElementById('prepSession');
-    const prepDateEl = document.getElementById('prepDate');
-    const prepSessionNoEl = document.getElementById('prepSessionNo');
-    const prepTitleEl = document.getElementById('prepTitle');
-    const reloadPrepBtn = document.getElementById('reloadPrepBtn');
-    const savePrepBtn = document.getElementById('savePrepBtn');
-    const hintBoxEl = document.getElementById('hintBox');
-    const groupsGridEl = document.getElementById('groupsGrid');
-    const benchListEl = document.getElementById('benchList');
+  const prepSeasonEl = document.getElementById('prepSeason');
+  const prepSessionEl = document.getElementById('prepSession');
+  const prepDateEl = document.getElementById('prepDate');
+  const prepSessionNoEl = document.getElementById('prepSessionNo');
+  const prepTitleEl = document.getElementById('prepTitle');
+  const reloadPrepBtn = document.getElementById('reloadPrepBtn');
+  const savePrepBtn = document.getElementById('savePrepBtn');
+  const hintBoxEl = document.getElementById('hintBox');
+  const groupsGridEl = document.getElementById('groupsGrid');
+  const benchListEl = document.getElementById('benchList');
 
-    const sumSeasonEl = document.getElementById('sumSeason');
-    const sumDateEl = document.getElementById('sumDate');
-    const sumSessionEl = document.getElementById('sumSession');
-    const sumPrevSessionEl = document.getElementById('sumPrevSession');
-    const sumPresentCountEl = document.getElementById('sumPresentCount');
-    const sumGroupedCountEl = document.getElementById('sumGroupedCount');
-    const sumBenchCountEl = document.getElementById('sumBenchCount');
-    const sumGroupCountEl = document.getElementById('sumGroupCount');
-    const sumSourceEl = document.getElementById('sumSource');
-    const sumStateEl = document.getElementById('sumState');
+  const sumSeasonEl = document.getElementById('sumSeason');
+  const sumDateEl = document.getElementById('sumDate');
+  const sumSessionEl = document.getElementById('sumSession');
+  const sumPrevSessionEl = document.getElementById('sumPrevSession');
+  const sumPresentCountEl = document.getElementById('sumPresentCount');
+  const sumGroupedCountEl = document.getElementById('sumGroupedCount');
+  const sumBenchCountEl = document.getElementById('sumBenchCount');
+  const sumGroupCountEl = document.getElementById('sumGroupCount');
+  const sumSourceEl = document.getElementById('sumSource');
+  const sumStateEl = document.getElementById('sumState');
 
-    let seasonsCache = [];
-    let attendanceCache = [];
-    let currentSessionRoundsCache = [];
-    let previousSessionRoundsCache = [];
-    let proposalGroups = [];
-    let benchPlayers = [];
-    let preparationSource = '';
-    let previousSessionNoCache = '';
-    let currentRound1AlreadyExists = false;
+  let seasonsCache = [];
+  let attendanceCache = [];
+  let currentSessionRoundsCache = [];
+  let previousSessionRoundsCache = [];
+  let proposalGroups = [];
+  let benchPlayers = [];
+  let preparationSource = '';
+  let previousSessionNoCache = '';
+  let currentRound1AlreadyExists = false;
+  let openPrepSwapMenuRef = null;
 
-    function safeText(value) {
-      return value == null ? '' : String(value);
+  function safeText(value) {
+    return value == null ? '' : String(value);
+  }
+
+  function escapeHtml(value) {
+    return safeText(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function safeSessionNo(value) {
+    return String(value ?? '').trim().replace(/\.0+$/, '');
+  }
+
+  function compareNames(a, b) {
+    return safeText(a?.nom || a?.joueur_id || '').localeCompare(
+      safeText(b?.nom || b?.joueur_id || ''),
+      'fr',
+      { sensitivity: 'base' }
+    );
+  }
+
+  function compareNumericLike(a, b) {
+    const na = Number(String(a ?? '').trim());
+    const nb = Number(String(b ?? '').trim());
+
+    if (Number.isFinite(na) && Number.isFinite(nb) && na !== nb) {
+      return na - nb;
     }
 
-    function escapeHtml(value) {
-      return safeText(value)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
+    return String(a ?? '').localeCompare(String(b ?? ''), 'fr', {
+      numeric: true,
+      sensitivity: 'base'
+    });
+  }
+
+  function getGroupIndex(groupCode) {
+    const index = GROUP_CODES.indexOf(safeText(groupCode).trim().toUpperCase());
+    return index === -1 ? 999 : index;
+  }
+
+  function getPlayerPhoto(player) {
+    const fileId = safeText(player?.photo_drive).trim();
+    return fileId
+      ? `https://drive.google.com/thumbnail?id=${encodeURIComponent(fileId)}&sz=w300`
+      : DEFAULT_AVATAR;
+  }
+
+  function clearSessionFields() {
+    prepSessionEl.innerHTML = '<option value="">Choisir une session</option>';
+    prepDateEl.value = '';
+    prepSessionNoEl.value = '';
+  }
+
+  function setHint(message, variant = '') {
+    hintBoxEl.className = 'hint-box' + (variant ? ` ${variant}` : '');
+    hintBoxEl.textContent = message;
+  }
+
+  function resetPreparation(message = 'Choisis une session pour afficher la préparation.', variant = '') {
+    proposalGroups = [];
+    benchPlayers = [];
+    preparationSource = '';
+    previousSessionNoCache = '';
+    currentRound1AlreadyExists = false;
+    openPrepSwapMenuRef = null;
+
+    groupsGridEl.innerHTML = `
+      <article class="group-card empty-card">
+        <h3 class="group-title">Préparation</h3>
+        <div class="group-meta">${escapeHtml(message)}</div>
+      </article>
+    `;
+
+    benchListEl.innerHTML = '';
+    setHint(message, variant);
+
+    sumPresentCountEl.textContent = '0';
+    sumGroupedCountEl.textContent = '0';
+    sumBenchCountEl.textContent = '0';
+    sumGroupCountEl.textContent = '0';
+    sumSourceEl.textContent = '—';
+    sumPrevSessionEl.textContent = '—';
+    sumStateEl.textContent = '—';
+
+    savePrepBtn.disabled = true;
+  }
+
+  async function fetchJson(params) {
+    const response = await fetch(`${API_URL}?${params.toString()}`);
+    return response.json();
+  }
+
+  function getSelectedSeason() {
+    const saisonId = safeText(prepSeasonEl.value).trim();
+    return seasonsCache.find(season => safeText(season.saison_id).trim() === saisonId) || null;
+  }
+
+  function getSelectedSessionMeta() {
+    const season = getSelectedSeason();
+    const noSession = safeText(prepSessionEl.value).trim();
+    if (!season || !noSession) return null;
+
+    const sessions = Array.isArray(season.sessions) ? season.sessions : [];
+    return sessions.find(session => safeSessionNo(session.no_session) === noSession) || null;
+  }
+
+  function getPreviousSessionNo(noSession) {
+    const season = getSelectedSeason();
+    if (!season || !Array.isArray(season.sessions)) return '';
+
+    const ordered = [...season.sessions].sort((a, b) =>
+      compareNumericLike(a.no_session, b.no_session)
+    );
+
+    const index = ordered.findIndex(session =>
+      safeSessionNo(session.no_session) === safeSessionNo(noSession)
+    );
+
+    if (index <= 0) return '';
+    return safeSessionNo(ordered[index - 1].no_session);
+  }
+
+  function populateSeasonSelect() {
+    const currentValue = safeText(prepSeasonEl.value).trim();
+
+    prepSeasonEl.innerHTML =
+      '<option value="">Choisir une saison</option>' +
+      seasonsCache.map(season => `
+        <option value="${escapeHtml(safeText(season.saison_id))}">
+          ${escapeHtml(safeText(season.nom_saison || season.saison_id))}
+        </option>
+      `).join('');
+
+    if (
+      currentValue &&
+      seasonsCache.some(season => safeText(season.saison_id).trim() === currentValue)
+    ) {
+      prepSeasonEl.value = currentValue;
+    }
+  }
+
+  function populateSessionSelect() {
+    clearSessionFields();
+    const season = getSelectedSeason();
+    if (!season || !Array.isArray(season.sessions)) return;
+
+    const ordered = [...season.sessions].sort((a, b) =>
+      compareNumericLike(a.no_session, b.no_session)
+    );
+
+    prepSessionEl.innerHTML =
+      '<option value="">Choisir une session</option>' +
+      ordered.map(session => `
+        <option value="${escapeHtml(safeSessionNo(session.no_session))}">
+          Session ${escapeHtml(safeSessionNo(session.no_session))} — ${escapeHtml(safeText(session.date))}
+        </option>
+      `).join('');
+  }
+
+  function updateSessionFields() {
+    const sessionMeta = getSelectedSessionMeta();
+
+    prepDateEl.value = safeText(sessionMeta?.date).trim();
+    prepSessionNoEl.value = safeSessionNo(sessionMeta?.no_session);
+    sumDateEl.textContent = prepDateEl.value || '—';
+    sumSessionEl.textContent = prepSessionNoEl.value || '—';
+  }
+
+  function createEmptyStats(player) {
+    return {
+      joueur_id: safeText(player?.joueur_id).trim(),
+      nom: safeText(player?.nom || player?.joueur_id).trim(),
+      points_pour: 0,
+      points_contre: 0,
+      plus_moins: 0,
+      matchs_joues: 0
+    };
+  }
+
+  function upsertStats(statsMap, player) {
+    const joueurId = safeText(player?.joueur_id).trim();
+    if (!joueurId) return null;
+
+    if (!statsMap[joueurId]) {
+      statsMap[joueurId] = createEmptyStats(player);
     }
 
-    function safeSessionNo(value) {
-      return String(value ?? '').trim().replace(/\.0+$/, '');
-    }
+    return statsMap[joueurId];
+  }
 
-    function compareNames(a, b) {
-      return safeText(a?.nom || a?.joueur_id || '').localeCompare(
-        safeText(b?.nom || b?.joueur_id || ''),
-        'fr',
-        { sensitivity: 'base' }
-      );
-    }
+  function applyMatchStats(statsMap, players, ownScore, otherScore) {
+    players.forEach(player => {
+      const stats = upsertStats(statsMap, player);
+      if (!stats) return;
 
-    function compareNumericLike(a, b) {
-      const na = Number(String(a ?? '').trim());
-      const nb = Number(String(b ?? '').trim());
+      stats.matchs_joues += 1;
+      stats.points_pour += Number(ownScore || 0);
+      stats.points_contre += Number(otherScore || 0);
+      stats.plus_moins = stats.points_pour - stats.points_contre;
+    });
+  }
 
-      if (Number.isFinite(na) && Number.isFinite(nb) && na !== nb) {
-        return na - nb;
-      }
-
-      return String(a ?? '').localeCompare(String(b ?? ''), 'fr', {
-        numeric: true,
-        sensitivity: 'base'
-      });
-    }
-
-    function getGroupIndex(groupCode) {
-      const index = GROUP_CODES.indexOf(safeText(groupCode).trim().toUpperCase());
-      return index === -1 ? 999 : index;
-    }
-
-    function getPlayerPhoto(player) {
-      const fileId = safeText(player?.photo_drive).trim();
-      return fileId
-        ? `https://drive.google.com/thumbnail?id=${encodeURIComponent(fileId)}&sz=w300`
-        : DEFAULT_AVATAR;
-    }
-
-    function clearSessionFields() {
-      prepSessionEl.innerHTML = '<option value="">Choisir une session</option>';
-      prepDateEl.value = '';
-      prepSessionNoEl.value = '';
-    }
-
-    function resetPreparation(message = 'Choisis une session pour afficher la préparation.', variant = '') {
-      proposalGroups = [];
-      benchPlayers = [];
-      preparationSource = '';
-      previousSessionNoCache = '';
-      currentRound1AlreadyExists = false;
-
-      groupsGridEl.innerHTML = `
-        <article class="group-card empty-card">
-          <h3 class="group-title">Préparation</h3>
-          <div class="group-meta">${escapeHtml(message)}</div>
-        </article>
-      `;
-
-      benchListEl.innerHTML = '';
-      setHint(message, variant);
-
-      sumPresentCountEl.textContent = '0';
-      sumGroupedCountEl.textContent = '0';
-      sumBenchCountEl.textContent = '0';
-      sumGroupCountEl.textContent = '0';
-      sumSourceEl.textContent = '—';
-      sumPrevSessionEl.textContent = '—';
-      sumStateEl.textContent = '—';
-
-      savePrepBtn.disabled = true;
-    }
-
-    function setHint(message, variant = '') {
-      hintBoxEl.className = 'hint-box' + (variant ? ` ${variant}` : '');
-      hintBoxEl.textContent = message;
-    }
-
-    async function fetchJson(params) {
-      const response = await fetch(`${API_URL}?${params.toString()}`);
-      return response.json();
-    }
-
-    function getSelectedSeason() {
-      const saisonId = safeText(prepSeasonEl.value).trim();
-      return seasonsCache.find(season => safeText(season.saison_id).trim() === saisonId) || null;
-    }
-
-    function getSelectedSessionMeta() {
-      const season = getSelectedSeason();
-      const noSession = safeText(prepSessionEl.value).trim();
-      if (!season || !noSession) return null;
-
-      const sessions = Array.isArray(season.sessions) ? season.sessions : [];
-      return sessions.find(session => safeSessionNo(session.no_session) === noSession) || null;
-    }
-
-    function getPreviousSessionNo(noSession) {
-      const season = getSelectedSeason();
-      if (!season || !Array.isArray(season.sessions)) return '';
-
-      const ordered = [...season.sessions].sort((a, b) =>
-        compareNumericLike(a.no_session, b.no_session)
-      );
-
-      const index = ordered.findIndex(session => safeSessionNo(session.no_session) === safeSessionNo(noSession));
-      if (index <= 0) return '';
-
-      return safeSessionNo(ordered[index - 1].no_session);
-    }
-
-    function populateSeasonSelect() {
-      const currentValue = safeText(prepSeasonEl.value).trim();
-
-      prepSeasonEl.innerHTML = '<option value="">Choisir une saison</option>' +
-        seasonsCache.map(season => `
-          <option value="${escapeHtml(safeText(season.saison_id))}">
-            ${escapeHtml(safeText(season.nom_saison || season.saison_id))}
-          </option>
-        `).join('');
-
-      if (currentValue && seasonsCache.some(season => safeText(season.saison_id).trim() === currentValue)) {
-        prepSeasonEl.value = currentValue;
-      }
-    }
-
-    function populateSessionSelect() {
-      clearSessionFields();
-      const season = getSelectedSeason();
-      if (!season || !Array.isArray(season.sessions)) return;
-
-      const ordered = [...season.sessions].sort((a, b) => compareNumericLike(a.no_session, b.no_session));
-
-      prepSessionEl.innerHTML =
-        '<option value="">Choisir une session</option>' +
-        ordered.map(session => `
-          <option value="${escapeHtml(safeSessionNo(session.no_session))}">
-            Session ${escapeHtml(safeSessionNo(session.no_session))} — ${escapeHtml(safeText(session.date))}
-          </option>
-        `).join('');
-    }
-
-    function updateSessionFields() {
-      const sessionMeta = getSelectedSessionMeta();
-
-      prepDateEl.value = safeText(sessionMeta?.date).trim();
-      prepSessionNoEl.value = safeSessionNo(sessionMeta?.no_session);
-      sumDateEl.textContent = prepDateEl.value || '—';
-      sumSessionEl.textContent = prepSessionNoEl.value || '—';
-    }
-
-    function createEmptyStats(player) {
-      return {
-        joueur_id: safeText(player?.joueur_id).trim(),
-        nom: safeText(player?.nom || player?.joueur_id).trim(),
-        points_pour: 0,
-        points_contre: 0,
-        plus_moins: 0,
-        matchs_joues: 0
-      };
-    }
-
-    function upsertStats(statsMap, player) {
+  function createPlayerMap(players) {
+    const map = {};
+    players.forEach(player => {
       const joueurId = safeText(player?.joueur_id).trim();
-      if (!joueurId) return null;
+      if (joueurId) map[joueurId] = player;
+    });
+    return map;
+  }
 
-      if (!statsMap[joueurId]) {
-        statsMap[joueurId] = createEmptyStats(player);
-      }
+  function collectUniquePlayersFromMatches(matches) {
+    const seen = new Set();
+    const players = [];
 
-      return statsMap[joueurId];
-    }
-
-    function applyMatchStats(statsMap, players, ownScore, otherScore) {
-      players.forEach(player => {
-        const stats = upsertStats(statsMap, player);
-        if (!stats) return;
-
-        stats.matchs_joues += 1;
-        stats.points_pour += Number(ownScore || 0);
-        stats.points_contre += Number(otherScore || 0);
-        stats.plus_moins = stats.points_pour - stats.points_contre;
-      });
-    }
-
-    function createPlayerMap(players) {
-      const map = {};
-      players.forEach(player => {
-        const joueurId = safeText(player?.joueur_id).trim();
-        if (joueurId) map[joueurId] = player;
-      });
-      return map;
-    }
-
-    function collectUniquePlayersFromMatches(matches) {
-      const seen = new Set();
-      const players = [];
-
-      matches.forEach(match => {
-        [
-          match.team1_player1,
-          match.team1_player2,
-          match.team2_player1,
-          match.team2_player2,
-          match.waiting_player
-        ].forEach(player => {
-          const joueurId = safeText(player?.joueur_id).trim();
-          if (!joueurId || seen.has(joueurId)) return;
-          seen.add(joueurId);
-          players.push(player);
-        });
-      });
-
-      return players;
-    }
-
-    function compareStatsPlayers(a, b, statsMap) {
-      const aId = safeText(a?.joueur_id).trim();
-      const bId = safeText(b?.joueur_id).trim();
-
-      const aStats = statsMap[aId] || createEmptyStats(a);
-      const bStats = statsMap[bId] || createEmptyStats(b);
-
-      if (bStats.plus_moins !== aStats.plus_moins) return bStats.plus_moins - aStats.plus_moins;
-      if (bStats.points_pour !== aStats.points_pour) return bStats.points_pour - aStats.points_pour;
-      return compareNames(a, b);
-    }
-
-    function rankRound2Groups(round2Matches) {
-      const groupedMatches = {};
-
-      round2Matches.forEach(match => {
-        const code = safeText(match?.group_code).trim().toUpperCase();
-        if (!code) return;
-        if (!groupedMatches[code]) groupedMatches[code] = [];
-        groupedMatches[code].push(match);
-      });
-
-      const overallStats = {};
-      const groups = Object.keys(groupedMatches)
-        .sort((a, b) => getGroupIndex(a) - getGroupIndex(b))
-        .map(groupCode => {
-          const groupMatches = groupedMatches[groupCode];
-          const groupPlayers = collectUniquePlayersFromMatches(groupMatches);
-          const groupStats = {};
-
-          groupPlayers.forEach(player => {
-            upsertStats(groupStats, player);
-            upsertStats(overallStats, player);
-          });
-
-          groupMatches.forEach(match => {
-            const team1 = [match.team1_player1, match.team1_player2].filter(Boolean);
-            const team2 = [match.team2_player1, match.team2_player2].filter(Boolean);
-            const score1 = Number(match.team1_score ?? '');
-            const score2 = Number(match.team2_score ?? '');
-
-            if (!Number.isFinite(score1) || !Number.isFinite(score2)) return;
-
-            applyMatchStats(groupStats, team1, score1, score2);
-            applyMatchStats(groupStats, team2, score2, score1);
-            applyMatchStats(overallStats, team1, score1, score2);
-            applyMatchStats(overallStats, team2, score2, score1);
-          });
-
-          const rankedPlayers = [...groupPlayers].sort((a, b) => compareStatsPlayers(a, b, groupStats));
-
-          return {
-            group_code: groupCode,
-            players: rankedPlayers,
-            stats_map: groupStats
-          };
-        });
-
-      return { groups, overallStats };
-    }
-
-    function buildBucketsFromRankedGroups(rankedGroups) {
-      return rankedGroups.map(group => {
-        const players = Array.isArray(group.players) ? group.players : [];
-        const isFive = players.length === 5;
-
-        return {
-          group_code: group.group_code,
-          top: players.slice(0, 2),
-          middle: isFive ? players.slice(2, 3) : [],
-          bottom: isFive ? players.slice(3, 5) : players.slice(2, 4)
-        };
-      });
-    }
-
-    function orderPlayersInsideNewGroup(players, overallStats, fixedMiddlePlayer = null) {
-      const sorted = [...players].sort((a, b) => compareStatsPlayers(a, b, overallStats));
-      const fixedMiddleId = safeText(fixedMiddlePlayer?.joueur_id).trim();
-
-      if (fixedMiddleId && sorted.length === 5) {
-        const middle = sorted.find(player => safeText(player?.joueur_id).trim() === fixedMiddleId) || fixedMiddlePlayer;
-        const others = sorted.filter(player => safeText(player?.joueur_id).trim() !== fixedMiddleId);
-        return [others[0], others[1], middle, others[2], others[3]].filter(Boolean);
-      }
-
-      return sorted;
-    }
-
-    function buildMovedGroupsFromRound2(rankedGroups, overallStats) {
-      const buckets = buildBucketsFromRankedGroups(rankedGroups);
-
-      return buckets.map((bucket, index) => {
-        const fromAbove = index > 0 ? buckets[index - 1].bottom : [];
-        const fromBelow = index < buckets.length - 1 ? buckets[index + 1].top : [];
-        const middle = bucket.middle[0] || null;
-
-        let nextPlayers = [];
-
-        if (index === 0) {
-          nextPlayers = [...bucket.top, ...bucket.middle, ...fromBelow];
-        } else if (index === buckets.length - 1) {
-          nextPlayers = [...fromAbove, ...bucket.middle, ...bucket.bottom];
-        } else {
-          nextPlayers = [...fromAbove, ...bucket.middle, ...fromBelow];
-        }
-
-        return {
-          group_code: bucket.group_code,
-          players: orderPlayersInsideNewGroup(
-            nextPlayers.filter(Boolean),
-            overallStats,
-            middle
-          )
-        };
-      });
-    }
-
-    function dedupePlayers(players) {
-      const seen = new Set();
-      const result = [];
-
-      players.forEach(player => {
+    matches.forEach(match => {
+      [
+        match.team1_player1,
+        match.team1_player2,
+        match.team2_player1,
+        match.team2_player2,
+        match.waiting_player
+      ].forEach(player => {
         const joueurId = safeText(player?.joueur_id).trim();
         if (!joueurId || seen.has(joueurId)) return;
         seen.add(joueurId);
-        result.push(player);
+        players.push(player);
       });
+    });
 
-      return result;
-    }
+    return players;
+  }
 
-    function getGroupSizeCombo(total) {
-      for (let countFive = Math.floor(total / 5); countFive >= 0; countFive -= 1) {
-        const remaining = total - (countFive * 5);
-        if (remaining % 4 === 0) {
-          const countFour = remaining / 4;
-          return [
-            ...Array(countFive).fill(5),
-            ...Array(countFour).fill(4)
-          ];
-        }
-      }
+  function compareStatsPlayers(a, b, statsMap) {
+    const aId = safeText(a?.joueur_id).trim();
+    const bId = safeText(b?.joueur_id).trim();
 
-      return null;
-    }
+    const aStats = statsMap[aId] || createEmptyStats(a);
+    const bStats = statsMap[bId] || createEmptyStats(b);
 
-    function getBestUsablePlayerCount(totalPlayers) {
-      for (let usable = totalPlayers; usable >= 4; usable -= 1) {
-        if (getGroupSizeCombo(usable)) return usable;
-      }
-      return 0;
-    }
+    if (bStats.plus_moins !== aStats.plus_moins) return bStats.plus_moins - aStats.plus_moins;
+    if (bStats.points_pour !== aStats.points_pour) return bStats.points_pour - aStats.points_pour;
+    return compareNames(a, b);
+  }
 
-    function buildSeedOrder(movedGroups, activePlayers) {
-      const presentMap = createPlayerMap(activePlayers);
-      const ordered = [];
-      const seen = new Set();
+  function rankRound2Groups(round2Matches) {
+    const groupedMatches = {};
 
-      movedGroups
-        .sort((a, b) => getGroupIndex(a.group_code) - getGroupIndex(b.group_code))
-        .forEach(group => {
-          group.players.forEach(player => {
-            const joueurId = safeText(player?.joueur_id).trim();
-            if (!joueurId || seen.has(joueurId) || !presentMap[joueurId]) return;
-            seen.add(joueurId);
-            ordered.push(presentMap[joueurId]);
-          });
+    round2Matches.forEach(match => {
+      const code = safeText(match?.group_code).trim().toUpperCase();
+      if (!code) return;
+      if (!groupedMatches[code]) groupedMatches[code] = [];
+      groupedMatches[code].push(match);
+    });
+
+    const overallStats = {};
+
+    const groups = Object.keys(groupedMatches)
+      .sort((a, b) => getGroupIndex(a) - getGroupIndex(b))
+      .map(groupCode => {
+        const groupMatches = groupedMatches[groupCode];
+        const groupPlayers = collectUniquePlayersFromMatches(groupMatches);
+        const groupStats = {};
+
+        groupPlayers.forEach(player => {
+          upsertStats(groupStats, player);
+          upsertStats(overallStats, player);
         });
 
-      const extras = activePlayers
-        .filter(player => !seen.has(safeText(player?.joueur_id).trim()))
-        .sort(compareNames);
+        groupMatches.forEach(match => {
+          const team1 = [match.team1_player1, match.team1_player2].filter(Boolean);
+          const team2 = [match.team2_player1, match.team2_player2].filter(Boolean);
+          const score1 = Number(match.team1_score ?? '');
+          const score2 = Number(match.team2_score ?? '');
 
-      return [...ordered, ...extras];
-    }
+          if (!Number.isFinite(score1) || !Number.isFinite(score2)) return;
 
-    function finalizeGroupsFromSeed(seedPlayers, sourceLabel) {
-      const deduped = dedupePlayers(seedPlayers);
-      const usableCount = getBestUsablePlayerCount(deduped.length);
+          applyMatchStats(groupStats, team1, score1, score2);
+          applyMatchStats(groupStats, team2, score2, score1);
+          applyMatchStats(overallStats, team1, score1, score2);
+          applyMatchStats(overallStats, team2, score2, score1);
+        });
 
-      if (usableCount < 4) {
+        const rankedPlayers = [...groupPlayers].sort((a, b) =>
+          compareStatsPlayers(a, b, groupStats)
+        );
+
         return {
-          groups: [],
-          bench: deduped,
-          source: sourceLabel
+          group_code: groupCode,
+          players: rankedPlayers,
+          stats_map: groupStats
         };
-      }
-
-      const sizes = getGroupSizeCombo(usableCount) || [];
-      const groupedPlayers = deduped.slice(0, usableCount);
-      const bench = deduped.slice(usableCount);
-
-      const groups = [];
-      let cursor = 0;
-
-      sizes.forEach((size, index) => {
-        const players = groupedPlayers.slice(cursor, cursor + size);
-        cursor += size;
-
-        if (players.length >= 4) {
-          groups.push({
-            group_code: GROUP_CODES[index] || String(index + 1),
-            players
-          });
-        }
       });
 
+    return { groups, overallStats };
+  }
+
+  function buildBucketsFromRankedGroups(rankedGroups) {
+    return rankedGroups.map(group => {
+      const players = Array.isArray(group.players) ? group.players : [];
+      const isFive = players.length === 5;
+
       return {
-        groups,
-        bench,
+        group_code: group.group_code,
+        top: players.slice(0, 2),
+        middle: isFive ? players.slice(2, 3) : [],
+        bottom: isFive ? players.slice(3, 5) : players.slice(2, 4)
+      };
+    });
+  }
+
+  function orderPlayersInsideNewGroup(players, overallStats, fixedMiddlePlayer = null) {
+    const sorted = [...players].sort((a, b) => compareStatsPlayers(a, b, overallStats));
+    const fixedMiddleId = safeText(fixedMiddlePlayer?.joueur_id).trim();
+
+    if (fixedMiddleId && sorted.length === 5) {
+      const middle =
+        sorted.find(player => safeText(player?.joueur_id).trim() === fixedMiddleId) ||
+        fixedMiddlePlayer;
+
+      const others = sorted.filter(player =>
+        safeText(player?.joueur_id).trim() !== fixedMiddleId
+      );
+
+      return [others[0], others[1], middle, others[2], others[3]].filter(Boolean);
+    }
+
+    return sorted;
+  }
+
+  function buildMovedGroupsFromRound2(rankedGroups, overallStats) {
+    const buckets = buildBucketsFromRankedGroups(rankedGroups);
+
+    return buckets.map((bucket, index) => {
+      const fromAbove = index > 0 ? buckets[index - 1].bottom : [];
+      const fromBelow = index < buckets.length - 1 ? buckets[index + 1].top : [];
+      const middle = bucket.middle[0] || null;
+
+      let nextPlayers = [];
+
+      if (index === 0) {
+        nextPlayers = [...bucket.top, ...bucket.middle, ...fromBelow];
+      } else if (index === buckets.length - 1) {
+        nextPlayers = [...fromAbove, ...bucket.middle, ...bucket.bottom];
+      } else {
+        nextPlayers = [...fromAbove, ...bucket.middle, ...fromBelow];
+      }
+
+      return {
+        group_code: bucket.group_code,
+        players: orderPlayersInsideNewGroup(
+          nextPlayers.filter(Boolean),
+          overallStats,
+          middle
+        )
+      };
+    });
+  }
+
+  function dedupePlayers(players) {
+    const seen = new Set();
+    const result = [];
+
+    players.forEach(player => {
+      const joueurId = safeText(player?.joueur_id).trim();
+      if (!joueurId || seen.has(joueurId)) return;
+      seen.add(joueurId);
+      result.push(player);
+    });
+
+    return result;
+  }
+
+  function getGroupSizeCombo(total) {
+    for (let countFive = Math.floor(total / 5); countFive >= 0; countFive -= 1) {
+      const remaining = total - (countFive * 5);
+      if (remaining % 4 === 0) {
+        const countFour = remaining / 4;
+        return [
+          ...Array(countFive).fill(5),
+          ...Array(countFour).fill(4)
+        ];
+      }
+    }
+    return null;
+  }
+
+  function getBestUsablePlayerCount(totalPlayers) {
+    for (let usable = totalPlayers; usable >= 4; usable -= 1) {
+      if (getGroupSizeCombo(usable)) return usable;
+    }
+    return 0;
+  }
+
+  function buildSeedOrder(movedGroups, activePlayers) {
+    const presentMap = createPlayerMap(activePlayers);
+    const ordered = [];
+    const seen = new Set();
+
+    movedGroups
+      .sort((a, b) => getGroupIndex(a.group_code) - getGroupIndex(b.group_code))
+      .forEach(group => {
+        group.players.forEach(player => {
+          const joueurId = safeText(player?.joueur_id).trim();
+          if (!joueurId || seen.has(joueurId) || !presentMap[joueurId]) return;
+          seen.add(joueurId);
+          ordered.push(presentMap[joueurId]);
+        });
+      });
+
+    const extras = activePlayers
+      .filter(player => !seen.has(safeText(player?.joueur_id).trim()))
+      .sort(compareNames);
+
+    return [...ordered, ...extras];
+  }
+
+  function finalizeGroupsFromSeed(seedPlayers, sourceLabel) {
+    const deduped = dedupePlayers(seedPlayers);
+    const usableCount = getBestUsablePlayerCount(deduped.length);
+
+    if (usableCount < 4) {
+      return {
+        groups: [],
+        bench: deduped,
         source: sourceLabel
       };
     }
 
-    function buildFallbackPreparation(activePlayers, reason) {
-      const ordered = [...activePlayers].sort(compareNames);
-      return finalizeGroupsFromSeed(ordered, reason);
+    const sizes = getGroupSizeCombo(usableCount) || [];
+    const groupedPlayers = deduped.slice(0, usableCount);
+    const bench = deduped.slice(usableCount);
+
+    const groups = [];
+    let cursor = 0;
+
+    sizes.forEach((size, index) => {
+      const players = groupedPlayers.slice(cursor, cursor + size);
+      cursor += size;
+
+      if (players.length >= 4) {
+        groups.push({
+          group_code: GROUP_CODES[index] || String(index + 1),
+          players
+        });
+      }
+    });
+
+    return {
+      groups,
+      bench,
+      source: sourceLabel
+    };
+  }
+
+  function buildFallbackPreparation(activePlayers, reason) {
+    const ordered = [...activePlayers].sort(compareNames);
+    return finalizeGroupsFromSeed(ordered, reason);
+  }
+
+  function extractGroupsFromSavedRound(matches) {
+    const byGroup = {};
+
+    matches.forEach(match => {
+      const groupCode = safeText(match?.group_code).trim().toUpperCase();
+      if (!groupCode) return;
+      if (!byGroup[groupCode]) byGroup[groupCode] = [];
+
+      [
+        match.team1_player1,
+        match.team1_player2,
+        match.team2_player1,
+        match.team2_player2,
+        match.waiting_player
+      ].forEach(player => {
+        const joueurId = safeText(player?.joueur_id).trim();
+        if (!joueurId) return;
+
+        if (!byGroup[groupCode].some(item => safeText(item?.joueur_id).trim() === joueurId)) {
+          byGroup[groupCode].push(player);
+        }
+      });
+    });
+
+    return Object.keys(byGroup)
+      .sort((a, b) => getGroupIndex(a) - getGroupIndex(b))
+      .map(groupCode => ({
+        group_code: groupCode,
+        players: byGroup[groupCode]
+      }));
+  }
+
+  function buildPreparationFromPreviousRound2(activePlayers) {
+    const round2 = previousSessionRoundsCache.find(round => Number(round?.round_no || 0) === 2);
+
+    if (!round2 || !Array.isArray(round2.matches) || !round2.matches.length) {
+      return buildFallbackPreparation(activePlayers, 'Aucun round 2 précédent disponible');
     }
 
-    function extractGroupsFromSavedRound(matches) {
-      const byGroup = {};
+    const { groups: rankedGroups, overallStats } = rankRound2Groups(round2.matches);
 
-      matches.forEach(match => {
-        const groupCode = safeText(match?.group_code).trim().toUpperCase();
-        if (!groupCode) return;
-        if (!byGroup[groupCode]) byGroup[groupCode] = [];
+    if (!rankedGroups.length) {
+      return buildFallbackPreparation(activePlayers, 'Round 2 précédent vide');
+    }
 
-        [
-          match.team1_player1,
-          match.team1_player2,
-          match.team2_player1,
-          match.team2_player2,
-          match.waiting_player
-        ].forEach(player => {
-          const joueurId = safeText(player?.joueur_id).trim();
-          if (!joueurId) return;
+    const movedGroups = buildMovedGroupsFromRound2(rankedGroups, overallStats);
+    const seedPlayers = buildSeedOrder(movedGroups, activePlayers);
 
-          if (!byGroup[groupCode].some(item => safeText(item?.joueur_id).trim() === joueurId)) {
-            byGroup[groupCode].push(player);
-          }
+    return finalizeGroupsFromSeed(seedPlayers, 'Round 2 de la session précédente');
+  }
+
+  function serializePrepSwapRef(ref) {
+    return [
+      safeText(ref?.area).trim(),
+      safeText(ref?.group_code).trim(),
+      String(ref?.index ?? '')
+    ].join('|');
+  }
+
+  function deserializePrepSwapRef(value) {
+    const [area, group_code, index] = String(value || '').split('|');
+    return {
+      area: area || '',
+      group_code: group_code || '',
+      index: Number(index)
+    };
+  }
+
+  function resolvePrepSwapTarget(ref) {
+    if (!ref || !Number.isInteger(Number(ref.index))) return null;
+
+    if (ref.area === 'group') {
+      const group = proposalGroups.find(item =>
+        safeText(item.group_code).trim() === safeText(ref.group_code).trim()
+      );
+
+      if (!group || !Array.isArray(group.players) || !group.players[ref.index]) return null;
+      return { owner: group.players, key: Number(ref.index) };
+    }
+
+    if (ref.area === 'bench') {
+      if (!Array.isArray(benchPlayers) || !benchPlayers[ref.index]) return null;
+      return { owner: benchPlayers, key: Number(ref.index) };
+    }
+
+    return null;
+  }
+
+  function getPlayerFromPrepSwapRef(ref) {
+    const target = resolvePrepSwapTarget(ref);
+    return target ? target.owner[target.key] || null : null;
+  }
+
+  function collectPreparationSwapRefs() {
+    const refs = [];
+
+    proposalGroups.forEach(group => {
+      (group.players || []).forEach((player, index) => {
+        if (!player) return;
+        refs.push({
+          area: 'group',
+          group_code: safeText(group.group_code).trim(),
+          index,
+          player_id: safeText(player.joueur_id).trim()
         });
       });
+    });
 
-      return Object.keys(byGroup)
-        .sort((a, b) => getGroupIndex(a) - getGroupIndex(b))
-        .map(groupCode => ({
-          group_code: groupCode,
-          players: byGroup[groupCode]
-        }));
+    benchPlayers.forEach((player, index) => {
+      if (!player) return;
+      refs.push({
+        area: 'bench',
+        group_code: '',
+        index,
+        player_id: safeText(player.joueur_id).trim()
+      });
+    });
+
+    return refs.filter(ref => ref.player_id);
+  }
+
+  function getPrepSwapPositionLabel(ref) {
+    if (ref.area === 'group') {
+      return `Groupe ${safeText(ref.group_code).trim()} • Position ${Number(ref.index) + 1}`;
+    }
+    if (ref.area === 'bench') {
+      return `Attente • Position ${Number(ref.index) + 1}`;
+    }
+    return 'Position';
+  }
+
+  function getPrepSwapOptionLabel(ref) {
+    const player = getPlayerFromPrepSwapRef(ref);
+    return `${safeText(player?.nom || player?.joueur_id || 'Joueur')} — ${getPrepSwapPositionLabel(ref)}`;
+  }
+
+  function clearPreparationSwapPickerUI() {
+    document.querySelectorAll('.prep-swap-picker-wrap').forEach(node => node.remove());
+    document.querySelectorAll('.prep-swap-open').forEach(node => node.classList.remove('prep-swap-open'));
+  }
+
+  function findPrepSwapContainer(ref) {
+    if (!ref) return null;
+
+    if (ref.area === 'group') {
+      const selector =
+        `.prep-swap-enabled[data-swap-area="group"][data-group-code="${safeText(ref.group_code).trim()}"][data-slot-index="${String(ref.index)}"]`;
+      return groupsGridEl.querySelector(selector);
     }
 
-    function buildPreparationFromPreviousRound2(activePlayers) {
-      const round2 = previousSessionRoundsCache.find(round => Number(round?.round_no || 0) === 2);
-
-      if (!round2 || !Array.isArray(round2.matches) || !round2.matches.length) {
-        return buildFallbackPreparation(activePlayers, 'Aucun round 2 précédent disponible');
-      }
-
-      const { groups: rankedGroups, overallStats } = rankRound2Groups(round2.matches);
-
-      if (!rankedGroups.length) {
-        return buildFallbackPreparation(activePlayers, 'Round 2 précédent vide');
-      }
-
-      const movedGroups = buildMovedGroupsFromRound2(rankedGroups, overallStats);
-      const seedPlayers = buildSeedOrder(movedGroups, activePlayers);
-
-      return finalizeGroupsFromSeed(seedPlayers, 'Round 2 de la session précédente');
+    if (ref.area === 'bench') {
+      const selector =
+        `.prep-swap-enabled[data-swap-area="bench"][data-slot-index="${String(ref.index)}"]`;
+      return benchListEl.querySelector(selector);
     }
 
-    function renderPlayerSlot(player, index) {
-      return `
-        <div class="slot">
-          <div class="slot-player">
-            <div class="slot-rank">${index + 1}</div>
-            <img class="slot-photo" src="${getPlayerPhoto(player)}" alt="${escapeHtml(safeText(player?.nom || player?.joueur_id || 'Joueur'))}">
-            <div class="slot-text">
-              <div class="slot-name">${escapeHtml(safeText(player?.nom || player?.joueur_id || '—'))}</div>
-              <div class="slot-meta">${escapeHtml(safeText(player?.joueur_id || ''))}</div>
-            </div>
+    return null;
+  }
+
+  function setOpenPreparationSwapMenu(ref) {
+    openPrepSwapMenuRef = ref ? {
+      area: safeText(ref.area).trim(),
+      group_code: safeText(ref.group_code).trim(),
+      index: Number(ref.index)
+    } : null;
+
+    clearPreparationSwapPickerUI();
+
+    if (!openPrepSwapMenuRef) return;
+
+    const container = findPrepSwapContainer(openPrepSwapMenuRef);
+    if (!container) {
+      openPrepSwapMenuRef = null;
+      return;
+    }
+
+    container.classList.add('prep-swap-open');
+
+    const options = collectPreparationSwapRefs()
+      .filter(optionRef =>
+        serializePrepSwapRef(optionRef) !== serializePrepSwapRef(openPrepSwapMenuRef)
+      )
+      .sort((a, b) => {
+        const aPlayer = getPlayerFromPrepSwapRef(a);
+        const bPlayer = getPlayerFromPrepSwapRef(b);
+        return compareNames(aPlayer, bPlayer);
+      });
+
+    const wrap = document.createElement('div');
+    wrap.className = 'prep-swap-picker-wrap';
+    wrap.innerHTML = `
+      <label class="prep-swap-picker-label">Remplacer par :</label>
+      <select class="prep-swap-picker">
+        <option value="">Choisir un joueur présent</option>
+        ${options.map(optionRef => `
+          <option value="${escapeHtml(serializePrepSwapRef(optionRef))}">
+            ${escapeHtml(getPrepSwapOptionLabel(optionRef))}
+          </option>
+        `).join('')}
+      </select>
+    `;
+
+    container.appendChild(wrap);
+
+    const picker = wrap.querySelector('.prep-swap-picker');
+    picker.focus();
+
+    picker.addEventListener('click', event => event.stopPropagation());
+
+    picker.addEventListener('change', event => {
+      const value = safeText(event.target.value).trim();
+
+      if (!value) {
+        setOpenPreparationSwapMenu(null);
+        return;
+      }
+
+      const targetRef = deserializePrepSwapRef(value);
+      swapPreparationPlayers(openPrepSwapMenuRef, targetRef);
+    });
+  }
+
+  function swapPreparationPlayers(refA, refB) {
+    const targetA = resolvePrepSwapTarget(refA);
+    const targetB = resolvePrepSwapTarget(refB);
+
+    if (!targetA || !targetB) {
+      setOpenPreparationSwapMenu(null);
+      return;
+    }
+
+    const playerA = targetA.owner[targetA.key];
+    const playerB = targetB.owner[targetB.key];
+
+    targetA.owner[targetA.key] = playerB;
+    targetB.owner[targetB.key] = playerA;
+
+    openPrepSwapMenuRef = null;
+    renderGroups();
+    renderBench();
+    updateSummary();
+  }
+
+  function renderPlayerSlot(player, index, groupCode) {
+    return `
+      <div
+        class="slot prep-swap-enabled"
+        data-swap-area="group"
+        data-group-code="${escapeHtml(groupCode)}"
+        data-slot-index="${index}"
+      >
+        <div class="slot-player">
+          <div class="slot-rank">${index + 1}</div>
+          <img class="slot-photo" src="${getPlayerPhoto(player)}" alt="${escapeHtml(safeText(player?.nom || player?.joueur_id || 'Joueur'))}">
+          <div class="slot-text">
+            <div class="slot-name">${escapeHtml(safeText(player?.nom || player?.joueur_id || '—'))}</div>
+            <div class="slot-meta">${escapeHtml(safeText(player?.joueur_id || ''))}</div>
           </div>
         </div>
+      </div>
+    `;
+  }
+
+  function renderGroups() {
+    clearPreparationSwapPickerUI();
+    openPrepSwapMenuRef = null;
+
+    if (!proposalGroups.length) {
+      groupsGridEl.innerHTML = `
+        <article class="group-card empty-card">
+          <h3 class="group-title">Aucun groupe</h3>
+          <div class="group-meta">Pas assez de joueurs pour préparer des matchs.</div>
+        </article>
       `;
+      return;
     }
 
-    function renderGroups() {
-      if (!proposalGroups.length) {
-        groupsGridEl.innerHTML = `
-          <article class="group-card empty-card">
-            <h3 class="group-title">Aucun groupe</h3>
-            <div class="group-meta">Pas assez de joueurs pour préparer des matchs.</div>
-          </article>
-        `;
-        return;
-      }
-
-      groupsGridEl.innerHTML = proposalGroups
-        .sort((a, b) => getGroupIndex(a.group_code) - getGroupIndex(b.group_code))
-        .map(group => `
-          <article class="group-card" data-group-card="${escapeHtml(group.group_code)}">
-            <div class="group-top">
-              <div>
-                <h3 class="group-title">Groupe ${escapeHtml(group.group_code)}</h3>
-                <div class="group-badge">${group.players.length} joueurs</div>
-              </div>
+    groupsGridEl.innerHTML = proposalGroups
+      .sort((a, b) => getGroupIndex(a.group_code) - getGroupIndex(b.group_code))
+      .map(group => `
+        <article class="group-card" data-group-card="${escapeHtml(group.group_code)}">
+          <div class="group-top">
+            <div>
+              <h3 class="group-title">Groupe ${escapeHtml(group.group_code)}</h3>
+              <div class="group-badge">${group.players.length} joueurs</div>
             </div>
-            <div class="group-meta">
-              Ordre proposé pour le départ du round 1.
-            </div>
-            <div class="group-players">
-              ${group.players.map((player, index) => renderPlayerSlot(player, index)).join('')}
-            </div>
-          </article>
-        `).join('');
-    }
-
-    function renderBench() {
-      if (!benchPlayers.length) {
-        benchListEl.innerHTML = '';
-        return;
-      }
-
-      benchListEl.innerHTML = `
-        <div class="card" style="margin-top:16px; padding:16px;">
-          <h2 style="margin:0 0 8px; font-size:18px;">Joueurs en attente</h2>
-          <p style="margin:0;">Ces joueurs ne rentrent pas dans une combinaison valide de groupes de 4 ou 5.</p>
-          <div class="bench-list">
-            ${benchPlayers.map(player => `
-              <div class="bench-item">
-                <img class="mini-photo" src="${getPlayerPhoto(player)}" alt="${escapeHtml(safeText(player?.nom || player?.joueur_id || 'Joueur'))}">
-                <div class="mini-text">
-                  <div class="mini-name">${escapeHtml(safeText(player?.nom || player?.joueur_id || '—'))}</div>
-                  <div class="mini-meta">${escapeHtml(safeText(player?.joueur_id || ''))}</div>
-                </div>
-              </div>
-            `).join('')}
           </div>
+          <div class="group-meta">
+            Clique sur un joueur pour le remplacer par un autre joueur présent ce soir.
+          </div>
+          <div class="group-players">
+            ${group.players.map((player, index) => renderPlayerSlot(player, index, group.group_code)).join('')}
+          </div>
+        </article>
+      `).join('');
+  }
+
+  function renderBench() {
+    if (!benchPlayers.length) {
+      benchListEl.innerHTML = '';
+      return;
+    }
+
+    benchListEl.innerHTML = `
+      <div class="card" style="margin-top:16px; padding:16px;">
+        <h2 style="margin:0 0 8px; font-size:18px;">Joueurs en attente</h2>
+        <p style="margin:0;">Ces joueurs sont présents, mais hors des groupes de départ.</p>
+        <div class="bench-list">
+          ${benchPlayers.map((player, index) => `
+            <div
+              class="bench-item prep-swap-enabled"
+              data-swap-area="bench"
+              data-slot-index="${index}"
+            >
+              <img class="mini-photo" src="${getPlayerPhoto(player)}" alt="${escapeHtml(safeText(player?.nom || player?.joueur_id || 'Joueur'))}">
+              <div class="mini-text">
+                <div class="mini-name">${escapeHtml(safeText(player?.nom || player?.joueur_id || '—'))}</div>
+                <div class="mini-meta">${escapeHtml(safeText(player?.joueur_id || ''))}</div>
+              </div>
+            </div>
+          `).join('')}
         </div>
-      `;
+      </div>
+    `;
+  }
+
+  function updateSummary() {
+    const season = getSelectedSeason();
+    const groupedCount = proposalGroups.reduce((sum, group) => sum + group.players.length, 0);
+
+    sumSeasonEl.textContent = safeText(season?.nom_saison || season?.saison_id || '—');
+    sumDateEl.textContent = prepDateEl.value || '—';
+    sumSessionEl.textContent = prepSessionNoEl.value || '—';
+    sumPrevSessionEl.textContent = previousSessionNoCache || '—';
+    sumPresentCountEl.textContent = String(attendanceCache.length);
+    sumGroupedCountEl.textContent = String(groupedCount);
+    sumBenchCountEl.textContent = String(benchPlayers.length);
+    sumGroupCountEl.textContent = String(proposalGroups.length);
+    sumSourceEl.textContent = preparationSource || '—';
+
+    if (!prepSessionEl.value) {
+      sumStateEl.textContent = 'Choisir une session';
+    } else if (currentRound1AlreadyExists) {
+      sumStateEl.textContent = 'Déjà préparé';
+    } else if (proposalGroups.length) {
+      sumStateEl.textContent = 'Prêt à sauvegarder';
+    } else {
+      sumStateEl.textContent = 'Incomplet';
+    }
+  }
+
+  async function loadSeasons() {
+    try {
+      const result = await fetchJson(new URLSearchParams({ action: 'getSeasons' }));
+      if (!result.ok) throw new Error(result.error || 'Erreur API inconnue');
+
+      seasonsCache = Array.isArray(result.data) ? result.data : [];
+      populateSeasonSelect();
+    } catch (error) {
+      console.error(error);
+      resetPreparation('Erreur lors du chargement des saisons : ' + (error.message || error), 'danger');
+    }
+  }
+
+  async function loadPreparationContext() {
+    const season = getSelectedSeason();
+    const saisonId = safeText(season?.saison_id).trim();
+    const noSession = safeText(prepSessionEl.value).trim();
+    const dateSession = safeText(prepDateEl.value).trim();
+
+    attendanceCache = [];
+    currentSessionRoundsCache = [];
+    previousSessionRoundsCache = [];
+    proposalGroups = [];
+    benchPlayers = [];
+    preparationSource = '';
+    previousSessionNoCache = '';
+    currentRound1AlreadyExists = false;
+    openPrepSwapMenuRef = null;
+    savePrepBtn.disabled = true;
+
+    if (!saisonId || !noSession || !dateSession) {
+      resetPreparation('Choisis une session pour afficher la préparation.');
+      return;
     }
 
-    function updateSummary() {
-      const season = getSelectedSeason();
-      const groupedCount = proposalGroups.reduce((sum, group) => sum + group.players.length, 0);
+    prepTitleEl.textContent = 'Round 1 • Groupes de départ';
+    previousSessionNoCache = getPreviousSessionNo(noSession);
 
-      sumSeasonEl.textContent = safeText(season?.nom_saison || season?.saison_id || '—');
-      sumDateEl.textContent = prepDateEl.value || '—';
-      sumSessionEl.textContent = prepSessionNoEl.value || '—';
-      sumPrevSessionEl.textContent = previousSessionNoCache || '—';
-      sumPresentCountEl.textContent = String(attendanceCache.length);
-      sumGroupedCountEl.textContent = String(groupedCount);
-      sumBenchCountEl.textContent = String(benchPlayers.length);
-      sumGroupCountEl.textContent = String(proposalGroups.length);
-      sumSourceEl.textContent = preparationSource || '—';
+    try {
+      const attendanceParams = new URLSearchParams({
+        action: 'getAttendanceForSession',
+        saison_id: saisonId,
+        date_session: dateSession,
+        no_session: noSession
+      });
 
-      if (!prepSessionEl.value) {
-        sumStateEl.textContent = 'Choisir une session';
-      } else if (currentRound1AlreadyExists) {
-        sumStateEl.textContent = 'Déjà préparé';
-      } else if (proposalGroups.length) {
-        sumStateEl.textContent = 'Prêt à sauvegarder';
-      } else {
-        sumStateEl.textContent = 'Incomplet';
-      }
-    }
+      const currentMatchesParams = new URLSearchParams({
+        action: 'getSessionMatches',
+        saison_id: saisonId,
+        no_session: noSession
+      });
 
-    async function loadSeasons() {
-      try {
-        const result = await fetchJson(new URLSearchParams({ action: 'getSeasons' }));
-        if (!result.ok) throw new Error(result.error || 'Erreur API inconnue');
+      const previousMatchesPromise = previousSessionNoCache
+        ? fetchJson(new URLSearchParams({
+            action: 'getSessionMatches',
+            saison_id: saisonId,
+            no_session: previousSessionNoCache
+          }))
+        : Promise.resolve({ ok: true, rounds: [] });
 
-        seasonsCache = Array.isArray(result.data) ? result.data : [];
-        populateSeasonSelect();
-      } catch (error) {
-        console.error(error);
-        resetPreparation('Erreur lors du chargement des saisons : ' + (error.message || error), 'danger');
-      }
-    }
+      const [attendanceResult, currentMatchesResult, previousMatchesResult] = await Promise.all([
+        fetchJson(attendanceParams),
+        fetchJson(currentMatchesParams),
+        previousMatchesPromise
+      ]);
 
-    async function loadPreparationContext() {
-      const season = getSelectedSeason();
-      const saisonId = safeText(season?.saison_id).trim();
-      const noSession = safeText(prepSessionEl.value).trim();
-      const dateSession = safeText(prepDateEl.value).trim();
+      if (!attendanceResult.ok) throw new Error(attendanceResult.error || 'Erreur de présence.');
+      if (!currentMatchesResult.ok) throw new Error(currentMatchesResult.error || 'Erreur de matchs courants.');
+      if (!previousMatchesResult.ok) throw new Error(previousMatchesResult.error || 'Erreur de matchs précédents.');
 
-      attendanceCache = [];
-      currentSessionRoundsCache = [];
-      previousSessionRoundsCache = [];
-      proposalGroups = [];
-      benchPlayers = [];
-      preparationSource = '';
-      previousSessionNoCache = '';
-      currentRound1AlreadyExists = false;
-      savePrepBtn.disabled = true;
+      attendanceCache = Array.isArray(attendanceResult.joueurs) ? attendanceResult.joueurs : [];
+      currentSessionRoundsCache = Array.isArray(currentMatchesResult.rounds) ? currentMatchesResult.rounds : [];
+      previousSessionRoundsCache = Array.isArray(previousMatchesResult.rounds) ? previousMatchesResult.rounds : [];
 
-      if (!saisonId || !noSession || !dateSession) {
-        resetPreparation('Choisis une session pour afficher la préparation.');
+      if (attendanceCache.length < 4) {
+        setHint('Pas assez de joueurs présents. Il faut au moins 4 joueurs pour préparer la soirée.', 'danger');
+        renderGroups();
+        renderBench();
+        updateSummary();
         return;
       }
 
-      prepTitleEl.textContent = `Round 1 • Groupes de départ`;
-      previousSessionNoCache = getPreviousSessionNo(noSession);
+      const existingRound1 = currentSessionRoundsCache.find(round => Number(round?.round_no || 0) === 1);
 
-      try {
-        const attendanceParams = new URLSearchParams({
-          action: 'getAttendanceForSession',
-          saison_id: saisonId,
-          date_session: dateSession,
-          no_session: noSession
-        });
+      if (existingRound1 && Array.isArray(existingRound1.matches) && existingRound1.matches.length) {
+        currentRound1AlreadyExists = true;
+        proposalGroups = extractGroupsFromSavedRound(existingRound1.matches);
+        benchPlayers = [];
+        preparationSource = 'Round 1 déjà sauvegardé';
 
-        const currentMatchesParams = new URLSearchParams({
-          action: 'getSessionMatches',
-          saison_id: saisonId,
-          no_session: noSession
-        });
-
-        const previousMatchesPromise = previousSessionNoCache
-          ? fetchJson(new URLSearchParams({
-              action: 'getSessionMatches',
-              saison_id: saisonId,
-              no_session: previousSessionNoCache
-            }))
-          : Promise.resolve({ ok: true, rounds: [] });
-
-        const [attendanceResult, currentMatchesResult, previousMatchesResult] = await Promise.all([
-          fetchJson(attendanceParams),
-          fetchJson(currentMatchesParams),
-          previousMatchesPromise
-        ]);
-
-        if (!attendanceResult.ok) throw new Error(attendanceResult.error || 'Erreur de présence.');
-        if (!currentMatchesResult.ok) throw new Error(currentMatchesResult.error || 'Erreur de matchs courants.');
-        if (!previousMatchesResult.ok) throw new Error(previousMatchesResult.error || 'Erreur de matchs précédents.');
-
-        attendanceCache = Array.isArray(attendanceResult.joueurs) ? attendanceResult.joueurs : [];
-        currentSessionRoundsCache = Array.isArray(currentMatchesResult.rounds) ? currentMatchesResult.rounds : [];
-        previousSessionRoundsCache = Array.isArray(previousMatchesResult.rounds) ? previousMatchesResult.rounds : [];
-
-        if (attendanceCache.length < 4) {
-          setHint('Pas assez de joueurs présents. Il faut au moins 4 joueurs pour préparer la soirée.', 'danger');
-          renderGroups();
-          renderBench();
-          updateSummary();
-          return;
-        }
-
-        const existingRound1 = currentSessionRoundsCache.find(round => Number(round?.round_no || 0) === 1);
-
-        if (existingRound1 && Array.isArray(existingRound1.matches) && existingRound1.matches.length) {
-          currentRound1AlreadyExists = true;
-          proposalGroups = extractGroupsFromSavedRound(existingRound1.matches);
-          benchPlayers = [];
-          preparationSource = 'Round 1 déjà sauvegardé';
-          setHint('Le round 1 existe déjà pour cette session. La page affiche la préparation déjà enregistrée.', 'ok');
-          renderGroups();
-          renderBench();
-          updateSummary();
-          return;
-        }
-
-        const built = buildPreparationFromPreviousRound2(attendanceCache);
-        proposalGroups = Array.isArray(built.groups) ? built.groups : [];
-        benchPlayers = Array.isArray(built.bench) ? built.bench : [];
-        preparationSource = safeText(built.source).trim();
-
-        if (proposalGroups.length) {
-          setHint(
-            previousSessionNoCache
-              ? `Préparation générée à partir du round 2 de la session ${previousSessionNoCache}.`
-              : 'Aucune session précédente trouvée. Répartition de secours utilisée.',
-            previousSessionNoCache ? 'ok' : 'warn'
-          );
-          savePrepBtn.disabled = false;
-        } else {
-          setHint('Impossible de générer des groupes valides avec les présences actuelles.', 'danger');
-        }
+        setHint(
+          'Le round 1 existe déjà pour cette session. La page affiche la préparation déjà enregistrée.',
+          'ok'
+        );
 
         renderGroups();
         renderBench();
         updateSummary();
-      } catch (error) {
-        console.error(error);
-        resetPreparation('Erreur lors du chargement de la préparation : ' + (error.message || error), 'danger');
-      }
-    }
-
-    async function savePreparationRound1() {
-      if (!proposalGroups.length) {
-        alert('Aucun groupe à sauvegarder.');
         return;
       }
 
-      if (currentRound1AlreadyExists) {
-        alert('Le round 1 existe déjà pour cette session.');
-        return;
+      const built = buildPreparationFromPreviousRound2(attendanceCache);
+      proposalGroups = Array.isArray(built.groups) ? built.groups : [];
+      benchPlayers = Array.isArray(built.bench) ? built.bench : [];
+      preparationSource = safeText(built.source).trim();
+
+      if (proposalGroups.length) {
+        setHint(
+          previousSessionNoCache
+            ? `Préparation générée à partir du round 2 de la session ${previousSessionNoCache}.`
+            : 'Aucune session précédente trouvée. Répartition de secours utilisée.',
+          previousSessionNoCache ? 'ok' : 'warn'
+        );
+        savePrepBtn.disabled = false;
+      } else {
+        setHint('Impossible de générer des groupes valides avec les présences actuelles.', 'danger');
       }
 
-      alert(
-        "La page Préparation est prête visuellement.\n\n" +
-        "À l’étape suivante, on va brancher ce bouton sur une action Apps Script dédiée " +
-        "pour écrire le round 1 dans l’onglet matchs sans demander de scores."
-      );
+      renderGroups();
+      renderBench();
+      updateSummary();
+    } catch (error) {
+      console.error(error);
+      resetPreparation('Erreur lors du chargement de la préparation : ' + (error.message || error), 'danger');
+    }
+  }
+
+  async function savePreparationRound1() {
+    if (!proposalGroups.length) {
+      alert('Aucun groupe à sauvegarder.');
+      return;
     }
 
-    prepSeasonEl.addEventListener('change', () => {
-      populateSessionSelect();
-      updateSessionFields();
-      resetPreparation();
-      updateSummary();
-    });
-
-    prepSessionEl.addEventListener('change', () => {
-      updateSessionFields();
-      loadPreparationContext();
-    });
-
-    reloadPrepBtn.addEventListener('click', () => {
-      loadPreparationContext();
-    });
-
-    savePrepBtn.addEventListener('click', () => {
-      savePreparationRound1();
-    });
-
-    async function init() {
-      resetPreparation();
-      await loadSeasons();
-      updateSummary();
+    if (currentRound1AlreadyExists) {
+      alert('Le round 1 existe déjà pour cette session.');
+      return;
     }
 
-    init();
-  </script>
+    alert(
+      "La préparation visuelle est prête.\n\n" +
+      "La prochaine étape est de brancher ce bouton sur une action Apps Script dédiée " +
+      "pour écrire le round 1 dans l’onglet matchs sans demander de scores."
+    );
+  }
+
+  prepSeasonEl.addEventListener('change', () => {
+    populateSessionSelect();
+    updateSessionFields();
+    resetPreparation();
+    updateSummary();
+  });
+
+  prepSessionEl.addEventListener('change', () => {
+    updateSessionFields();
+    loadPreparationContext();
+  });
+
+  reloadPrepBtn.addEventListener('click', () => {
+    loadPreparationContext();
+  });
+
+  savePrepBtn.addEventListener('click', () => {
+    savePreparationRound1();
+  });
+
+  groupsGridEl.addEventListener('click', event => {
+    const card = event.target.closest('.prep-swap-enabled');
+    if (!card) return;
+
+    const ref = {
+      area: safeText(card.dataset.swapArea).trim(),
+      group_code: safeText(card.dataset.groupCode).trim(),
+      index: Number(card.dataset.slotIndex)
+    };
+
+    if (
+      openPrepSwapMenuRef &&
+      serializePrepSwapRef(openPrepSwapMenuRef) === serializePrepSwapRef(ref)
+    ) {
+      setOpenPreparationSwapMenu(null);
+      return;
+    }
+
+    setOpenPreparationSwapMenu(ref);
+  });
+
+  benchListEl.addEventListener('click', event => {
+    const card = event.target.closest('.prep-swap-enabled');
+    if (!card) return;
+
+    const ref = {
+      area: safeText(card.dataset.swapArea).trim(),
+      group_code: '',
+      index: Number(card.dataset.slotIndex)
+    };
+
+    if (
+      openPrepSwapMenuRef &&
+      serializePrepSwapRef(openPrepSwapMenuRef) === serializePrepSwapRef(ref)
+    ) {
+      setOpenPreparationSwapMenu(null);
+      return;
+    }
+
+    setOpenPreparationSwapMenu(ref);
+  });
+
+  document.addEventListener('click', event => {
+    if (event.target.closest('.prep-swap-enabled') || event.target.closest('.prep-swap-picker-wrap')) {
+      return;
+    }
+    setOpenPreparationSwapMenu(null);
+  });
+
+  async function init() {
+    resetPreparation();
+    await loadSeasons();
+    updateSummary();
+  }
+
+  init();
+</script>
 </body>
 </html>
   
