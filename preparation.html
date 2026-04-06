@@ -874,53 +874,41 @@
     });
   }
 
-  function orderPlayersInsideNewGroup(players, overallStats, fixedMiddlePlayer = null) {
-    const sorted = [...players].sort((a, b) => compareStatsPlayers(a, b, overallStats));
-    const fixedMiddleId = safeText(fixedMiddlePlayer?.joueur_id).trim();
+function orderPlayersInsideNewGroup(blocks, overallStats) {
+  return (Array.isArray(blocks) ? blocks : [])
+    .map(block =>
+      [...(Array.isArray(block) ? block : [])]
+        .filter(Boolean)
+        .sort((a, b) => compareStatsPlayers(a, b, overallStats))
+    )
+    .reduce((acc, block) => acc.concat(block), []);
+}
 
-    if (fixedMiddleId && sorted.length === 5) {
-      const middle =
-        sorted.find(player => safeText(player?.joueur_id).trim() === fixedMiddleId) ||
-        fixedMiddlePlayer;
+function buildMovedGroupsFromRound2(rankedGroups, overallStats) {
+  const buckets = buildBucketsFromRankedGroups(rankedGroups);
 
-      const others = sorted.filter(player =>
-        safeText(player?.joueur_id).trim() !== fixedMiddleId
-      );
+  return buckets.map((bucket, index) => {
+    const fromAbove = index > 0 ? buckets[index - 1].bottom : [];
+    const fromBelow = index < buckets.length - 1 ? buckets[index + 1].top : [];
 
-      return [others[0], others[1], middle, others[2], others[3]].filter(Boolean);
+    let orderedBlocks = [];
+
+    if (index === 0) {
+      orderedBlocks = [bucket.top, bucket.middle, fromBelow];
+    } else if (index === buckets.length - 1) {
+      orderedBlocks = [fromAbove, bucket.middle, bucket.bottom];
+    } else {
+      orderedBlocks = [fromAbove, bucket.middle, fromBelow];
     }
 
-    return sorted;
-  }
-
-  function buildMovedGroupsFromRound2(rankedGroups, overallStats) {
-    const buckets = buildBucketsFromRankedGroups(rankedGroups);
-
-    return buckets.map((bucket, index) => {
-      const fromAbove = index > 0 ? buckets[index - 1].bottom : [];
-      const fromBelow = index < buckets.length - 1 ? buckets[index + 1].top : [];
-      const middle = bucket.middle[0] || null;
-
-      let nextPlayers = [];
-
-      if (index === 0) {
-        nextPlayers = [...bucket.top, ...bucket.middle, ...fromBelow];
-      } else if (index === buckets.length - 1) {
-        nextPlayers = [...fromAbove, ...bucket.middle, ...bucket.bottom];
-      } else {
-        nextPlayers = [...fromAbove, ...bucket.middle, ...fromBelow];
-      }
-
-      return {
-        group_code: bucket.group_code,
-        players: orderPlayersInsideNewGroup(
-          nextPlayers.filter(Boolean),
-          overallStats,
-          middle
-        )
-      };
-    });
-  }
+    return {
+      group_code: bucket.group_code,
+      players: dedupePlayers(
+        orderPlayersInsideNewGroup(orderedBlocks, overallStats)
+      )
+    };
+  });
+}
 
   function dedupePlayers(players) {
     const seen = new Set();
