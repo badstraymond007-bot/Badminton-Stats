@@ -1170,69 +1170,153 @@ function getPrepSwapOptionLabel(ref) {
     return null;
   }
 
-  function setOpenPreparationSwapMenu(ref) {
-    openPrepSwapMenuRef = ref ? {
-      area: safeText(ref.area).trim(),
-      group_code: safeText(ref.group_code).trim(),
-      index: Number(ref.index)
-    } : null;
+function setOpenPreparationSwapMenu(ref) {
+  openPrepSwapMenuRef = ref ? {
+    area: safeText(ref.area).trim(),
+    group_code: safeText(ref.group_code).trim(),
+    index: Number(ref.index)
+  } : null;
 
-    clearPreparationSwapPickerUI();
+  clearPreparationSwapPickerUI();
 
-    if (!openPrepSwapMenuRef) return;
+  if (!openPrepSwapMenuRef) return;
 
-    const container = findPrepSwapContainer(openPrepSwapMenuRef);
-    if (!container) {
-      openPrepSwapMenuRef = null;
+  const container = findPrepSwapContainer(openPrepSwapMenuRef);
+  if (!container) {
+    openPrepSwapMenuRef = null;
+    return;
+  }
+
+  container.classList.add('prep-swap-open');
+
+  const options = collectPreparationSwapRefs()
+    .filter(optionRef =>
+      serializePrepSwapRef(optionRef) !== serializePrepSwapRef(openPrepSwapMenuRef)
+    )
+    .sort((a, b) => {
+      const aPlayer = getPlayerFromPrepSwapRef(a);
+      const bPlayer = getPlayerFromPrepSwapRef(b);
+      return compareNames(aPlayer, bPlayer);
+    });
+
+  const wrap = document.createElement('div');
+  wrap.className = 'prep-swap-picker-wrap';
+  wrap.innerHTML = `
+    <label class="prep-swap-picker-label">Action :</label>
+    <select class="prep-swap-picker prep-swap-mode">
+      <option value="switch">Switch</option>
+      <option value="cascade">Cascade</option>
+    </select>
+
+    <label class="prep-swap-picker-label">Joueur cible :</label>
+    <select class="prep-swap-picker prep-swap-target">
+      <option value="">Choisir un joueur présent</option>
+      ${options.map(optionRef => `
+        <option value="${escapeHtml(serializePrepSwapRef(optionRef))}">
+          ${escapeHtml(getPrepSwapOptionLabel(optionRef))}
+        </option>
+      `).join('')}
+    </select>
+  `;
+
+  container.appendChild(wrap);
+
+  const modePicker = wrap.querySelector('.prep-swap-mode');
+  const targetPicker = wrap.querySelector('.prep-swap-target');
+
+  wrap.addEventListener('click', event => event.stopPropagation());
+
+  targetPicker.focus();
+
+  targetPicker.addEventListener('change', event => {
+    const value = safeText(event.target.value).trim();
+
+    if (!value) {
+      setOpenPreparationSwapMenu(null);
       return;
     }
 
-    container.classList.add('prep-swap-open');
+    const targetRef = deserializePrepSwapRef(value);
+    const mode = safeText(modePicker.value).trim().toLowerCase();
 
-    const options = collectPreparationSwapRefs()
-      .filter(optionRef =>
-        serializePrepSwapRef(optionRef) !== serializePrepSwapRef(openPrepSwapMenuRef)
-      )
-      .sort((a, b) => {
-        const aPlayer = getPlayerFromPrepSwapRef(a);
-        const bPlayer = getPlayerFromPrepSwapRef(b);
-        return compareNames(aPlayer, bPlayer);
+    if (mode === 'cascade') {
+      cascadePreparationPlayers(openPrepSwapMenuRef, targetRef);
+      return;
+    }
+
+    swapPreparationPlayers(openPrepSwapMenuRef, targetRef);
+  });
+}
+
+function getPreparationLinearRefs() {
+  const refs = [];
+
+  [...proposalGroups]
+    .sort((a, b) => getGroupIndex(a.group_code) - getGroupIndex(b.group_code))
+    .forEach(group => {
+      (group.players || []).forEach((player, index) => {
+        if (!player) return;
+        refs.push({
+          area: 'group',
+          group_code: safeText(group.group_code).trim(),
+          index
+        });
       });
-
-    const wrap = document.createElement('div');
-    wrap.className = 'prep-swap-picker-wrap';
-    wrap.innerHTML = `
-      <label class="prep-swap-picker-label">Remplacer par :</label>
-      <select class="prep-swap-picker">
-        <option value="">Choisir un joueur présent</option>
-        ${options.map(optionRef => `
-          <option value="${escapeHtml(serializePrepSwapRef(optionRef))}">
-            ${escapeHtml(getPrepSwapOptionLabel(optionRef))}
-          </option>
-        `).join('')}
-      </select>
-    `;
-
-    container.appendChild(wrap);
-
-    const picker = wrap.querySelector('.prep-swap-picker');
-    picker.focus();
-
-    picker.addEventListener('click', event => event.stopPropagation());
-
-    picker.addEventListener('change', event => {
-      const value = safeText(event.target.value).trim();
-
-      if (!value) {
-        setOpenPreparationSwapMenu(null);
-        return;
-      }
-
-      const targetRef = deserializePrepSwapRef(value);
-      swapPreparationPlayers(openPrepSwapMenuRef, targetRef);
     });
+
+  benchPlayers.forEach((player, index) => {
+    if (!player) return;
+    refs.push({
+      area: 'bench',
+      group_code: '',
+      index
+    });
+  });
+
+  return refs;
+}
+
+function cascadePreparationPlayers(refA, refB) {
+  const sourceKey = serializePrepSwapRef(refA);
+  const targetKey = serializePrepSwapRef(refB);
+
+  if (!sourceKey || !targetKey || sourceKey === targetKey) {
+    setOpenPreparationSwapMenu(null);
+    return;
   }
 
+  const linearRefs = getPreparationLinearRefs();
+  const sourceIndex = linearRefs.findIndex(ref => serializePrepSwapRef(ref) === sourceKey);
+  const targetIndex = linearRefs.findIndex(ref => serializePrepSwapRef(ref) === targetKey);
+
+  if (sourceIndex === -1 || targetIndex === -1) {
+    setOpenPreparationSwapMenu(null);
+    return;
+  }
+
+  const orderedPlayers = linearRefs.map(ref => getPlayerFromPrepSwapRef(ref));
+  const movingPlayer = orderedPlayers[sourceIndex];
+
+  if (!movingPlayer) {
+    setOpenPreparationSwapMenu(null);
+    return;
+  }
+
+  orderedPlayers.splice(sourceIndex, 1);
+  orderedPlayers.splice(targetIndex, 0, movingPlayer);
+
+  linearRefs.forEach((ref, index) => {
+    const target = resolvePrepSwapTarget(ref);
+    if (!target) return;
+    target.owner[target.key] = orderedPlayers[index];
+  });
+
+  openPrepSwapMenuRef = null;
+  renderGroups();
+  renderBench();
+  updateSummary();
+}
+  
   function swapPreparationPlayers(refA, refB) {
     const targetA = resolvePrepSwapTarget(refA);
     const targetB = resolvePrepSwapTarget(refB);
