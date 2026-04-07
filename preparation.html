@@ -400,9 +400,8 @@
     font: inherit;
     background: #fff;
   }
-</style>
-    
 
+  </style>
 
 </head>
 <body>
@@ -1149,37 +1148,118 @@ function getPreviousRound2PlayerIds() {
   return ids;
 }
 
-function buildLinearSlotsFromMovedGroups(movedGroups, activePlayers) {
-  const presentMap = createPlayerMap(activePlayers);
-  const slotIds = [];
-  const linearSlots = [];
-  const seen = new Set();
 
-  movedGroups
+function buildFilledSlotGroupsFromMovedGroups(movedGroups, activePlayers) {
+  const presentMap = createPlayerMap(activePlayers);
+  const previousRound2Ids = getPreviousRound2PlayerIds();
+  const returningPlayers = getReturningPlayersOrderedByCumulative(activePlayers, previousRound2Ids);
+
+  let returningIndex = 0;
+
+  return movedGroups
     .slice()
     .sort((a, b) => getGroupIndex(a.group_code) - getGroupIndex(b.group_code))
-    .forEach(group => {
-      (group.players || []).forEach(player => {
+    .map(group => {
+      const filledSlots = (group.players || []).map(player => {
         const joueurId = safeText(player?.joueur_id).trim();
-        if (!joueurId || seen.has(joueurId)) return;
 
-        seen.add(joueurId);
-        slotIds.push(joueurId);
-        linearSlots.push(presentMap[joueurId] || null);
+        if (joueurId && presentMap[joueurId]) {
+          return presentMap[joueurId];
+        }
+
+        const returningPlayer = returningPlayers[returningIndex] || null;
+        if (returningPlayer) returningIndex += 1;
+        return returningPlayer;
       });
-    });
 
-  return { slotIds, linearSlots };
+      return {
+        group_code: safeText(group.group_code).trim().toUpperCase(),
+        players: filledSlots.filter(Boolean)
+      };
+    });
 }
 
-function getReturningPlayersOrderedByCumulative(activePlayers, excludedIds) {
-  const excluded = excludedIds instanceof Set ? excludedIds : new Set();
+function buildPreparationFromSlotGroups(slotGroups, sourceLabel, totalPlayers) {
+  const working = (Array.isArray(slotGroups) ? slotGroups : [])
+    .map(group => ({
+      group_code: safeText(group?.group_code).trim().toUpperCase(),
+      players: dedupePlayers([...(Array.isArray(group?.players) ? group.players : [])].filter(Boolean))
+    }))
+    .filter(group => group.players.length);
 
-  return getPresentPlayersRankedByCumulative(activePlayers)
-    .filter(player => {
-      const joueurId = safeText(player?.joueur_id).trim();
-      return joueurId && !excluded.has(joueurId);
+  const usableCount = getBestUsablePlayerCount(totalPlayers);
+
+  if (usableCount < 4) {
+    return {
+      groups: [],
+      bench: working.flatMap(group => group.players),
+      source: sourceLabel
+    };
+  }
+
+  const targetSizes = getGroupSizeCombo(usableCount) || [];
+  const targetGroupCount = targetSizes.length;
+  const bench = [];
+
+  let totalAssigned = working.reduce((sum, group) => sum + group.players.length, 0);
+
+  while (totalAssigned > usableCount && working.length) {
+    const lastGroup = working[working.length - 1];
+    const removed = lastGroup.players.pop();
+
+    if (removed) {
+      bench.unshift(removed);
+      totalAssigned -= 1;
+    }
+
+    if (!lastGroup.players.length) {
+      working.pop();
+    }
+  }
+
+  while (working.length > targetGroupCount) {
+    const overflowGroup = working.pop();
+    if (!overflowGroup) break;
+
+    if (!working.length) {
+      working.push(overflowGroup);
+      break;
+    }
+
+    working[working.length - 1].players.push(...overflowGroup.players);
+  }
+
+  while (working.length < targetGroupCount) {
+    working.push({
+      group_code: GROUP_CODES[working.length] || String(working.length + 1),
+      players: []
     });
+  }
+
+  for (let i = 0; i < targetGroupCount - 1; i += 1) {
+    while (working[i].players.length < targetSizes[i] && working[i + 1].players.length) {
+      working[i].players.push(working[i + 1].players.shift());
+    }
+
+    while (working[i].players.length > targetSizes[i]) {
+      const movedDown = working[i].players.pop();
+      if (!movedDown) break;
+      working[i + 1].players.unshift(movedDown);
+    }
+  }
+
+  const groups = working
+    .map((group, index) => ({
+      group_code: GROUP_CODES[index] || group.group_code || String(index + 1),
+      players: group.players.slice(0, targetSizes[index] || group.players.length)
+    }))
+    .filter(group => group.players.length >= 4);
+
+  return {
+    groups,
+    bench,
+    source: sourceLabel
+  };
 }
 
 function buildPreparationFromPreviousRoundRanking(activePlayers) {
@@ -1194,27 +1274,13 @@ function buildPreparationFromPreviousRoundRanking(activePlayers) {
   }
 
   const movedGroups = buildMovedGroupsFromRoundRanking(rankedGroups);
-  const previousRound2Ids = getPreviousRound2PlayerIds();
-  const { linearSlots } = buildLinearSlotsFromMovedGroups(movedGroups, activePlayers);
-  const returningPlayers = getReturningPlayersOrderedByCumulative(activePlayers, previousRound2Ids);
+  const filledSlotGroups = buildFilledSlotGroupsFromMovedGroups(movedGroups, activePlayers);
 
-  let returningIndex = 0;
-
-  const filledSlots = linearSlots.map(player => {
-    if (player) return player;
-    const returningPlayer = returningPlayers[returningIndex] || null;
-    if (returningPlayer) returningIndex += 1;
-    return returningPlayer;
-  });
-
-  while (returningIndex < returningPlayers.length) {
-    filledSlots.push(returningPlayers[returningIndex]);
-    returningIndex += 1;
-  }
-
-  const seedPlayers = filledSlots.filter(Boolean);
-
-  return finalizeGroupsFromSeed(seedPlayers, 'Slots conservés du round 2 précédent');
+  return buildPreparationFromSlotGroups(
+    filledSlotGroups,
+    'Slots conservés du round 2 précédent',
+    activePlayers.length
+  );
 }
   
   function serializePrepSwapRef(ref) {
