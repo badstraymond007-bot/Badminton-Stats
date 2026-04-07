@@ -925,20 +925,22 @@ function buildMovedGroupsFromRound2(rankedGroups, overallStats) {
     return result;
   }
 
-  function getGroupSizeCombo(total) {
-    for (let countFive = Math.floor(total / 5); countFive >= 0; countFive -= 1) {
-      const remaining = total - (countFive * 5);
-      if (remaining % 4 === 0) {
-        const countFour = remaining / 4;
-        return [
-          ...Array(countFive).fill(5),
-          ...Array(countFour).fill(4)
-        ];
-      }
+function getGroupSizeCombo(total) {
+  for (let countFive = Math.floor(total / 5); countFive >= 0; countFive -= 1) {
+    const remaining = total - (countFive * 5);
+
+    if (remaining % 4 === 0) {
+      const countFour = remaining / 4;
+
+      return [
+        ...Array(countFour).fill(4),
+        ...Array(countFive).fill(5)
+      ];
     }
-    return null;
   }
 
+  return null;
+}
   function getBestUsablePlayerCount(totalPlayers) {
     for (let usable = totalPlayers; usable >= 4; usable -= 1) {
       if (getGroupSizeCombo(usable)) return usable;
