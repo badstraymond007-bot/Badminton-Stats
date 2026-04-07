@@ -401,6 +401,7 @@
     background: #fff;
   }
 
+    
   </style>
 
 </head>
@@ -1146,6 +1147,16 @@ function getPreviousRound2PlayerIds() {
   });
 
   return ids;
+}
+
+function getReturningPlayersOrderedByCumulative(activePlayers, excludedIds) {
+  const excluded = excludedIds instanceof Set ? excludedIds : new Set();
+
+  return getPresentPlayersRankedByCumulative(activePlayers)
+    .filter(player => {
+      const joueurId = safeText(player?.joueur_id).trim();
+      return joueurId && !excluded.has(joueurId);
+    });
 }
 
 
