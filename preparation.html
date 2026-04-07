@@ -1138,9 +1138,21 @@ function getPresentPlayersRankedByCumulative(activePlayers) {
   return ranked;
 }
 
-function buildSeedOrderFromRoundRanking(movedGroups, activePlayers) {
+function getPreviousRound2PlayerIds() {
+  const ids = new Set();
+
+  previousRoundRankingCache.forEach(row => {
+    const joueurId = safeText(row?.joueur_id).trim();
+    if (joueurId) ids.add(joueurId);
+  });
+
+  return ids;
+}
+
+function buildLinearSlotsFromMovedGroups(movedGroups, activePlayers) {
   const presentMap = createPlayerMap(activePlayers);
-  const ordered = [];
+  const slotIds = [];
+  const linearSlots = [];
   const seen = new Set();
 
   movedGroups
@@ -1149,17 +1161,25 @@ function buildSeedOrderFromRoundRanking(movedGroups, activePlayers) {
     .forEach(group => {
       (group.players || []).forEach(player => {
         const joueurId = safeText(player?.joueur_id).trim();
-        if (!joueurId || seen.has(joueurId) || !presentMap[joueurId]) return;
+        if (!joueurId || seen.has(joueurId)) return;
 
         seen.add(joueurId);
-        ordered.push(presentMap[joueurId]);
+        slotIds.push(joueurId);
+        linearSlots.push(presentMap[joueurId] || null);
       });
     });
 
-  const extras = getPresentPlayersRankedByCumulative(activePlayers)
-    .filter(player => !seen.has(safeText(player?.joueur_id).trim()));
+  return { slotIds, linearSlots };
+}
 
-  return [...ordered, ...extras];
+function getReturningPlayersOrderedByCumulative(activePlayers, excludedIds) {
+  const excluded = excludedIds instanceof Set ? excludedIds : new Set();
+
+  return getPresentPlayersRankedByCumulative(activePlayers)
+    .filter(player => {
+      const joueurId = safeText(player?.joueur_id).trim();
+      return joueurId && !excluded.has(joueurId);
+    });
 }
 
 function buildPreparationFromPreviousRoundRanking(activePlayers) {
@@ -1174,89 +1194,27 @@ function buildPreparationFromPreviousRoundRanking(activePlayers) {
   }
 
   const movedGroups = buildMovedGroupsFromRoundRanking(rankedGroups);
-  const seedPlayers = buildSeedOrderFromRoundRanking(movedGroups, activePlayers);
-
-  return finalizeGroupsFromSeed(seedPlayers, 'Classement round 2 de la session précédente');
-}  
-
-function getReturningPlayersToInsert(activePlayers) {
   const previousRound2Ids = getPreviousRound2PlayerIds();
-  const rankedPresentPlayers = getPresentPlayersRankedByCumulative(activePlayers);
-  const activeMap = createPlayerMap(activePlayers);
+  const { linearSlots } = buildLinearSlotsFromMovedGroups(movedGroups, activePlayers);
+  const returningPlayers = getReturningPlayersOrderedByCumulative(activePlayers, previousRound2Ids);
 
-  return rankedPresentPlayers
-    .filter(player => {
-      const joueurId = safeText(player?.joueur_id).trim();
-      return joueurId && activeMap[joueurId] && !previousRound2Ids.has(joueurId);
-    })
-    .map(player => ({
-      ...player,
-      cumulative_index: rankedPresentPlayers.findIndex(item =>
-        safeText(item?.joueur_id).trim() === safeText(player?.joueur_id).trim()
-      )
-    }));
-}
+  let returningIndex = 0;
 
-function getLinearPlayersFromBuiltPreparation(built) {
-  const linear = [];
-
-  [...(Array.isArray(built?.groups) ? built.groups : [])]
-    .sort((a, b) => getGroupIndex(a.group_code) - getGroupIndex(b.group_code))
-    .forEach(group => {
-      (group.players || []).forEach(player => {
-        if (player) linear.push(player);
-      });
-    });
-
-  (Array.isArray(built?.bench) ? built.bench : []).forEach(player => {
-    if (player) linear.push(player);
+  const filledSlots = linearSlots.map(player => {
+    if (player) return player;
+    const returningPlayer = returningPlayers[returningIndex] || null;
+    if (returningPlayer) returningIndex += 1;
+    return returningPlayer;
   });
 
-  return linear;
-}
-
-function applyReturningPlayersFromCumulative(built, activePlayers) {
-  const previousRound2Ids = getPreviousRound2PlayerIds();
-  if (!previousRound2Ids.size) {
-    return built;
+  while (returningIndex < returningPlayers.length) {
+    filledSlots.push(returningPlayers[returningIndex]);
+    returningIndex += 1;
   }
 
-  const returningPlayers = getReturningPlayersToInsert(activePlayers)
-    .slice()
-    .sort((a, b) => Number(a.cumulative_index) - Number(b.cumulative_index));
+  const seedPlayers = filledSlots.filter(Boolean);
 
-  if (!returningPlayers.length) {
-    return built;
-  }
-
-  const linearPlayers = getLinearPlayersFromBuiltPreparation(built);
-
-  returningPlayers.forEach(returningPlayer => {
-    const joueurId = safeText(returningPlayer?.joueur_id).trim();
-    if (!joueurId) return;
-
-    const fromIndex = linearPlayers.findIndex(player =>
-      safeText(player?.joueur_id).trim() === joueurId
-    );
-
-    if (fromIndex === -1) return;
-
-    const [movingPlayer] = linearPlayers.splice(fromIndex, 1);
-
-    const targetIndex = Math.max(
-      0,
-      Math.min(Number(returningPlayer.cumulative_index) || 0, linearPlayers.length)
-    );
-
-    linearPlayers.splice(targetIndex, 0, movingPlayer);
-  });
-
-  const rebuilt = finalizeGroupsFromSeed(linearPlayers, built?.source || 'Round 2 de la session précédente');
-
-  return {
-    ...rebuilt,
-    source: built?.source || rebuilt.source
-  };
+  return finalizeGroupsFromSeed(seedPlayers, 'Slots conservés du round 2 précédent');
 }
   
   function serializePrepSwapRef(ref) {
@@ -1781,17 +1739,17 @@ cumulativeRankingCache = Array.isArray(cumulativeRankingResult.rows) ? cumulativ
       benchPlayers = Array.isArray(built.bench) ? built.bench : [];
       preparationSource = safeText(built.source).trim();
 
-if (proposalGroups.length) {
-  setHint(
-    previousSessionNoCache
-      ? `Préparation générée à partir du classement round 2 de la session ${previousSessionNoCache}.`
-      : 'Aucune session précédente trouvée. Répartition de secours utilisée.',
-    previousSessionNoCache ? 'ok' : 'warn'
-  );
-  savePrepBtn.disabled = false;
-} else {
-  setHint('Impossible de générer des groupes valides avec les présences actuelles.', 'danger');
-}
+      if (proposalGroups.length) {
+        setHint(
+          previousSessionNoCache
+            ? `Préparation générée à partir des slots conservés du round 2 de la session ${previousSessionNoCache}.`
+            : 'Aucune session précédente trouvée. Répartition de secours utilisée.',
+          previousSessionNoCache ? 'ok' : 'warn'
+        );
+        savePrepBtn.disabled = false;
+      } else {
+        setHint('Impossible de générer des groupes valides avec les présences actuelles.', 'danger');
+      }
 
       renderGroups();
       renderBench();
