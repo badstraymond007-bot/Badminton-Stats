@@ -552,6 +552,7 @@
   let attendanceCache = [];
   let currentSessionRoundsCache = [];
   let previousSessionRoundsCache = [];
+  let previousRoundRankingCache = [];
   let cumulativeRankingCache = [];
   let proposalGroups = [];
   let benchPlayers = [];
@@ -1046,47 +1047,70 @@ function getGroupSizeCombo(total) {
       }));
   }
 
-function buildPreparationFromPreviousRound2(activePlayers) {
-  const round2 = previousSessionRoundsCache.find(round => Number(round?.round_no || 0) === 2);
-
-  if (!round2 || !Array.isArray(round2.matches) || !round2.matches.length) {
-    return buildFallbackPreparation(activePlayers, 'Aucun round 2 précédent disponible');
-  }
-
-  const { groups: rankedGroups, overallStats } = rankRound2Groups(round2.matches);
-
-  if (!rankedGroups.length) {
-    return buildFallbackPreparation(activePlayers, 'Round 2 précédent vide');
-  }
-
-  const movedGroups = buildMovedGroupsFromRound2(rankedGroups, overallStats);
-  const seedPlayers = buildSeedOrder(movedGroups, activePlayers);
-  const built = finalizeGroupsFromSeed(seedPlayers, 'Round 2 de la session précédente');
-
-  return applyReturningPlayersFromCumulative(built, activePlayers);
+function getRoundRankingGroupCode(row) {
+  return safeText(row?.groupe_code || row?.group_code).trim().toUpperCase();
 }
-function getPreviousRound2PlayerIds() {
-  const round2 = previousSessionRoundsCache.find(round => Number(round?.round_no || 0) === 2);
-  const ids = new Set();
 
-  if (!round2 || !Array.isArray(round2.matches)) {
-    return ids;
-  }
+function getRoundRankingRank(row) {
+  const rangRound = Number(row?.rang_round);
+  if (Number.isFinite(rangRound) && rangRound > 0) return rangRound;
 
-  round2.matches.forEach(match => {
-    [
-      match.team1_player1,
-      match.team1_player2,
-      match.team2_player1,
-      match.team2_player2,
-      match.waiting_player
-    ].forEach(player => {
-      const joueurId = safeText(player?.joueur_id).trim();
-      if (joueurId) ids.add(joueurId);
-    });
+  const rang = Number(row?.rang);
+  if (Number.isFinite(rang) && rang > 0) return rang;
+
+  return 999;
+}
+
+function buildRankedGroupsFromPreviousRoundRanking() {
+  const byGroup = {};
+
+  previousRoundRankingCache.forEach(row => {
+    const groupCode = getRoundRankingGroupCode(row);
+    const joueurId = safeText(row?.joueur_id).trim();
+
+    if (!groupCode || !joueurId) return;
+
+    if (!byGroup[groupCode]) byGroup[groupCode] = [];
+    byGroup[groupCode].push(row);
   });
 
-  return ids;
+  return Object.keys(byGroup)
+    .sort((a, b) => getGroupIndex(a) - getGroupIndex(b))
+    .map(groupCode => ({
+      group_code: groupCode,
+      players: byGroup[groupCode]
+        .slice()
+        .sort((a, b) => {
+          const rankCompare = getRoundRankingRank(a) - getRoundRankingRank(b);
+          if (rankCompare !== 0) return rankCompare;
+          return compareNames(a, b);
+        })
+    }))
+    .filter(group => group.players.length >= 4);
+}
+
+function buildMovedGroupsFromRoundRanking(rankedGroups) {
+  const buckets = buildBucketsFromRankedGroups(rankedGroups);
+
+  return buckets.map((bucket, index) => {
+    const fromAbove = index > 0 ? buckets[index - 1].bottom : [];
+    const fromBelow = index < buckets.length - 1 ? buckets[index + 1].top : [];
+
+    let players = [];
+
+    if (index === 0) {
+      players = [...bucket.top, ...bucket.middle, ...fromBelow];
+    } else if (index === buckets.length - 1) {
+      players = [...fromAbove, ...bucket.middle, ...bucket.bottom];
+    } else {
+      players = [...fromAbove, ...bucket.middle, ...fromBelow];
+    }
+
+    return {
+      group_code: bucket.group_code,
+      players: dedupePlayers(players)
+    };
+  });
 }
 
 function getPresentPlayersRankedByCumulative(activePlayers) {
@@ -1113,6 +1137,47 @@ function getPresentPlayersRankedByCumulative(activePlayers) {
 
   return ranked;
 }
+
+function buildSeedOrderFromRoundRanking(movedGroups, activePlayers) {
+  const presentMap = createPlayerMap(activePlayers);
+  const ordered = [];
+  const seen = new Set();
+
+  movedGroups
+    .slice()
+    .sort((a, b) => getGroupIndex(a.group_code) - getGroupIndex(b.group_code))
+    .forEach(group => {
+      (group.players || []).forEach(player => {
+        const joueurId = safeText(player?.joueur_id).trim();
+        if (!joueurId || seen.has(joueurId) || !presentMap[joueurId]) return;
+
+        seen.add(joueurId);
+        ordered.push(presentMap[joueurId]);
+      });
+    });
+
+  const extras = getPresentPlayersRankedByCumulative(activePlayers)
+    .filter(player => !seen.has(safeText(player?.joueur_id).trim()));
+
+  return [...ordered, ...extras];
+}
+
+function buildPreparationFromPreviousRoundRanking(activePlayers) {
+  if (!Array.isArray(previousRoundRankingCache) || !previousRoundRankingCache.length) {
+    return buildFallbackPreparation(activePlayers, 'Aucun classement round 2 précédent disponible');
+  }
+
+  const rankedGroups = buildRankedGroupsFromPreviousRoundRanking();
+
+  if (!rankedGroups.length) {
+    return buildFallbackPreparation(activePlayers, 'Classement round 2 précédent vide');
+  }
+
+  const movedGroups = buildMovedGroupsFromRoundRanking(rankedGroups);
+  const seedPlayers = buildSeedOrderFromRoundRanking(movedGroups, activePlayers);
+
+  return finalizeGroupsFromSeed(seedPlayers, 'Classement round 2 de la session précédente');
+}  
 
 function getReturningPlayersToInsert(activePlayers) {
   const previousRound2Ids = getPreviousRound2PlayerIds();
@@ -1601,6 +1666,7 @@ function cascadePreparationPlayers(refA, refB) {
     attendanceCache = [];
     currentSessionRoundsCache = [];
     previousSessionRoundsCache = [];
+    previousRoundRankingCache = [];
     proposalGroups = [];
     benchPlayers = [];
     preparationSource = '';
@@ -1639,6 +1705,15 @@ const previousMatchesPromise = previousSessionNoCache
     }))
   : Promise.resolve({ ok: true, rounds: [] });
 
+const previousRoundRankingPromise = previousSessionNoCache
+  ? fetchJson(new URLSearchParams({
+      action: 'getRoundRanking',
+      saison_id: saisonId,
+      no_session: previousSessionNoCache,
+      round_no: '2'
+    }))
+  : Promise.resolve({ ok: true, rows: [] });
+
 const cumulativeRankingPromise = fetchJson(new URLSearchParams({
   action: 'getRanking',
   saison_id: saisonId
@@ -1648,25 +1723,32 @@ const [
   attendanceResult,
   currentMatchesResult,
   previousMatchesResult,
+  previousRoundRankingResult,
   cumulativeRankingResult
 ] = await Promise.all([
   fetchJson(attendanceParams),
   fetchJson(currentMatchesParams),
   previousMatchesPromise,
+  previousRoundRankingPromise,
   cumulativeRankingPromise
 ]);
 
-      if (!attendanceResult.ok) throw new Error(attendanceResult.error || 'Erreur de présence.');
-      if (!currentMatchesResult.ok) throw new Error(currentMatchesResult.error || 'Erreur de matchs courants.');
-      if (!previousMatchesResult.ok) throw new Error(previousMatchesResult.error || 'Erreur de matchs précédents.');
+if (!attendanceResult.ok) throw new Error(attendanceResult.error || 'Erreur de présence.');
+if (!currentMatchesResult.ok) throw new Error(currentMatchesResult.error || 'Erreur de matchs courants.');
+if (!previousMatchesResult.ok) throw new Error(previousMatchesResult.error || 'Erreur de matchs précédents.');
+if (!previousRoundRankingResult.ok) {
+  throw new Error(previousRoundRankingResult.error || 'Erreur de classement round.');
+}
 if (!cumulativeRankingResult.ok) {
   throw new Error(cumulativeRankingResult.error || 'Erreur de classement cumulatif.');
 }
+
 attendanceCache = Array.isArray(attendanceResult.joueurs) ? attendanceResult.joueurs : [];
 currentSessionRoundsCache = Array.isArray(currentMatchesResult.rounds) ? currentMatchesResult.rounds : [];
 previousSessionRoundsCache = Array.isArray(previousMatchesResult.rounds) ? previousMatchesResult.rounds : [];
+previousRoundRankingCache = Array.isArray(previousRoundRankingResult.rows) ? previousRoundRankingResult.rows : [];
 cumulativeRankingCache = Array.isArray(cumulativeRankingResult.rows) ? cumulativeRankingResult.rows : [];
-
+      
       if (attendanceCache.length < 4) {
         setHint('Pas assez de joueurs présents. Il faut au moins 4 joueurs pour préparer la soirée.', 'danger');
         renderGroups();
@@ -1694,16 +1776,16 @@ cumulativeRankingCache = Array.isArray(cumulativeRankingResult.rows) ? cumulativ
         return;
       }
 
-      const built = buildPreparationFromPreviousRound2(attendanceCache);
+      const built = buildPreparationFromPreviousRoundRanking(attendanceCache);
       proposalGroups = Array.isArray(built.groups) ? built.groups : [];
       benchPlayers = Array.isArray(built.bench) ? built.bench : [];
       preparationSource = safeText(built.source).trim();
 
       if (proposalGroups.length) {
         setHint(
-          previousSessionNoCache
-            ? `Préparation générée à partir du round 2 de la session ${previousSessionNoCache}.`
-            : 'Aucune session précédente trouvée. Répartition de secours utilisée.',
+         previousSessionNoCache
+  ? `Préparation générée à partir du classement round 2 de la session ${previousSessionNoCache}.`
+  : 'Aucune session précédente trouvée. Répartition de secours utilisée.'
           previousSessionNoCache ? 'ok' : 'warn'
         );
         savePrepBtn.disabled = false;
