@@ -1781,17 +1781,17 @@ cumulativeRankingCache = Array.isArray(cumulativeRankingResult.rows) ? cumulativ
       benchPlayers = Array.isArray(built.bench) ? built.bench : [];
       preparationSource = safeText(built.source).trim();
 
-      if (proposalGroups.length) {
-        setHint(
-         previousSessionNoCache
-  ? `Préparation générée à partir du classement round 2 de la session ${previousSessionNoCache}.`
-  : 'Aucune session précédente trouvée. Répartition de secours utilisée.'
-          previousSessionNoCache ? 'ok' : 'warn'
-        );
-        savePrepBtn.disabled = false;
-      } else {
-        setHint('Impossible de générer des groupes valides avec les présences actuelles.', 'danger');
-      }
+if (proposalGroups.length) {
+  setHint(
+    previousSessionNoCache
+      ? `Préparation générée à partir du classement round 2 de la session ${previousSessionNoCache}.`
+      : 'Aucune session précédente trouvée. Répartition de secours utilisée.',
+    previousSessionNoCache ? 'ok' : 'warn'
+  );
+  savePrepBtn.disabled = false;
+} else {
+  setHint('Impossible de générer des groupes valides avec les présences actuelles.', 'danger');
+}
 
       renderGroups();
       renderBench();
