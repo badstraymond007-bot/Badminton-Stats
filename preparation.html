@@ -1227,6 +1227,64 @@ function buildGroupedPreparationFromMovedGroups(movedGroups, activePlayers) {
   };
 }
 
+function buildGroupedPreparationFromMovedGroups(movedGroups, activePlayers) {
+  const presentMap = createPlayerMap(activePlayers);
+  const usableCount = getBestUsablePlayerCount(activePlayers.length);
+  const sizes = getGroupSizeCombo(usableCount) || [];
+
+  if (!sizes.length || usableCount < 4) {
+    return {
+      groups: [],
+      bench: dedupePlayers(activePlayers),
+      source: 'Pas assez de joueurs présents'
+    };
+  }
+
+  const groupCount = sizes.length;
+
+  const grouped = Array.from({ length: groupCount }, (_, index) => ({
+    group_code: GROUP_CODES[index] || String(index + 1),
+    players: []
+  }));
+
+  const alreadyPlaced = new Set();
+
+  movedGroups
+    .slice()
+    .sort((a, b) => getGroupIndex(a.group_code) - getGroupIndex(b.group_code))
+    .forEach((group, index) => {
+      if (index >= groupCount) return;
+
+      (group.players || []).forEach(player => {
+        const joueurId = safeText(player?.joueur_id).trim();
+        if (!joueurId || !presentMap[joueurId] || alreadyPlaced.has(joueurId)) return;
+
+        alreadyPlaced.add(joueurId);
+        grouped[index].players.push(presentMap[joueurId]);
+      });
+    });
+
+  const extras = getPresentPlayersRankedByCumulative(activePlayers)
+    .filter(player => !alreadyPlaced.has(safeText(player?.joueur_id).trim()));
+
+  grouped.forEach((group, index) => {
+    while (group.players.length < sizes[index] && extras.length) {
+      const nextPlayer = extras.shift();
+      const joueurId = safeText(nextPlayer?.joueur_id).trim();
+      if (!joueurId || alreadyPlaced.has(joueurId)) continue;
+
+      alreadyPlaced.add(joueurId);
+      group.players.push(nextPlayer);
+    }
+  });
+
+  return {
+    groups: grouped.filter(group => group.players.length >= 4),
+    bench: dedupePlayers(extras),
+    source: 'Classement round 2 de la session précédente'
+  };
+}
+  
 function buildPreparationFromPreviousRoundRanking(activePlayers) {
   if (!Array.isArray(previousRoundRankingCache) || !previousRoundRankingCache.length) {
     return buildFallbackPreparation(activePlayers, 'Aucun classement round 2 précédent disponible');
