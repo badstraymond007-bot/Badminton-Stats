@@ -1138,153 +1138,30 @@ function getPresentPlayersRankedByCumulative(activePlayers) {
   return ranked;
 }
 
-function getTonightGroupSizes(totalPlayers) {
-  const usableCount = getBestUsablePlayerCount(totalPlayers);
-  const sizes = getGroupSizeCombo(usableCount) || [];
-
-  return {
-    usableCount,
-    sizes
-  };
-}
-
-function buildGroupedPreparationFromMovedGroups(movedGroups, activePlayers) {
+function buildSeedOrderFromRoundRanking(movedGroups, activePlayers) {
   const presentMap = createPlayerMap(activePlayers);
-  const { usableCount, sizes } = getTonightGroupSizes(activePlayers.length);
-
-  if (!sizes.length || usableCount < 4) {
-    return {
-      groups: [],
-      bench: dedupePlayers(activePlayers),
-      source: 'Pas assez de joueurs présents'
-    };
-  }
-
-  const groupCount = sizes.length;
-
-  const grouped = Array.from({ length: groupCount }, (_, index) => ({
-    group_code: GROUP_CODES[index] || String(index + 1),
-    players: []
-  }));
-
-  const alreadyPlaced = new Set();
+  const ordered = [];
+  const seen = new Set();
 
   movedGroups
     .slice()
     .sort((a, b) => getGroupIndex(a.group_code) - getGroupIndex(b.group_code))
-    .forEach((group, index) => {
-      if (index >= groupCount) return;
-
+    .forEach(group => {
       (group.players || []).forEach(player => {
         const joueurId = safeText(player?.joueur_id).trim();
-        if (!joueurId || !presentMap[joueurId] || alreadyPlaced.has(joueurId)) return;
+        if (!joueurId || seen.has(joueurId) || !presentMap[joueurId]) return;
 
-        alreadyPlaced.add(joueurId);
-        grouped[index].players.push(presentMap[joueurId]);
+        seen.add(joueurId);
+        ordered.push(presentMap[joueurId]);
       });
     });
 
   const extras = getPresentPlayersRankedByCumulative(activePlayers)
-    .filter(player => !alreadyPlaced.has(safeText(player?.joueur_id).trim()));
+    .filter(player => !seen.has(safeText(player?.joueur_id).trim()));
 
-  grouped.forEach((group, index) => {
-    while (group.players.length < sizes[index] && extras.length) {
-      const nextPlayer = extras.shift();
-      const joueurId = safeText(nextPlayer?.joueur_id).trim();
-      if (!joueurId || alreadyPlaced.has(joueurId)) continue;
-
-      alreadyPlaced.add(joueurId);
-      group.players.push(nextPlayer);
-    }
-  });
-
-  const linearPlayers = grouped.flatMap(group => group.players);
-  const placedPlayers = linearPlayers.slice(0, usableCount);
-  const benchPlayersLocal = [
-    ...linearPlayers.slice(usableCount),
-    ...extras
-  ];
-
-  const finalGroups = [];
-  let cursor = 0;
-
-  sizes.forEach((size, index) => {
-    const players = placedPlayers.slice(cursor, cursor + size);
-    cursor += size;
-
-    if (players.length >= 4) {
-      finalGroups.push({
-        group_code: GROUP_CODES[index] || String(index + 1),
-        players
-      });
-    }
-  });
-
-  return {
-    groups: finalGroups,
-    bench: dedupePlayers(benchPlayersLocal),
-    source: 'Classement round 2 de la session précédente'
-  };
+  return [...ordered, ...extras];
 }
 
-function buildGroupedPreparationFromMovedGroups(movedGroups, activePlayers) {
-  const presentMap = createPlayerMap(activePlayers);
-  const usableCount = getBestUsablePlayerCount(activePlayers.length);
-  const sizes = getGroupSizeCombo(usableCount) || [];
-
-  if (!sizes.length || usableCount < 4) {
-    return {
-      groups: [],
-      bench: dedupePlayers(activePlayers),
-      source: 'Pas assez de joueurs présents'
-    };
-  }
-
-  const groupCount = sizes.length;
-
-  const grouped = Array.from({ length: groupCount }, (_, index) => ({
-    group_code: GROUP_CODES[index] || String(index + 1),
-    players: []
-  }));
-
-  const alreadyPlaced = new Set();
-
-  movedGroups
-    .slice()
-    .sort((a, b) => getGroupIndex(a.group_code) - getGroupIndex(b.group_code))
-    .forEach((group, index) => {
-      if (index >= groupCount) return;
-
-      (group.players || []).forEach(player => {
-        const joueurId = safeText(player?.joueur_id).trim();
-        if (!joueurId || !presentMap[joueurId] || alreadyPlaced.has(joueurId)) return;
-
-        alreadyPlaced.add(joueurId);
-        grouped[index].players.push(presentMap[joueurId]);
-      });
-    });
-
-  const extras = getPresentPlayersRankedByCumulative(activePlayers)
-    .filter(player => !alreadyPlaced.has(safeText(player?.joueur_id).trim()));
-
-  grouped.forEach((group, index) => {
-    while (group.players.length < sizes[index] && extras.length) {
-      const nextPlayer = extras.shift();
-      const joueurId = safeText(nextPlayer?.joueur_id).trim();
-      if (!joueurId || alreadyPlaced.has(joueurId)) continue;
-
-      alreadyPlaced.add(joueurId);
-      group.players.push(nextPlayer);
-    }
-  });
-
-  return {
-    groups: grouped.filter(group => group.players.length >= 4),
-    bench: dedupePlayers(extras),
-    source: 'Classement round 2 de la session précédente'
-  };
-}
-  
 function buildPreparationFromPreviousRoundRanking(activePlayers) {
   if (!Array.isArray(previousRoundRankingCache) || !previousRoundRankingCache.length) {
     return buildFallbackPreparation(activePlayers, 'Aucun classement round 2 précédent disponible');
@@ -1297,9 +1174,10 @@ function buildPreparationFromPreviousRoundRanking(activePlayers) {
   }
 
   const movedGroups = buildMovedGroupsFromRoundRanking(rankedGroups);
+  const seedPlayers = buildSeedOrderFromRoundRanking(movedGroups, activePlayers);
 
-  return buildGroupedPreparationFromMovedGroups(movedGroups, activePlayers);
-}
+  return finalizeGroupsFromSeed(seedPlayers, 'Classement round 2 de la session précédente');
+}  
 
 function getReturningPlayersToInsert(activePlayers) {
   const previousRound2Ids = getPreviousRound2PlayerIds();
@@ -1903,17 +1781,18 @@ cumulativeRankingCache = Array.isArray(cumulativeRankingResult.rows) ? cumulativ
       benchPlayers = Array.isArray(built.bench) ? built.bench : [];
       preparationSource = safeText(built.source).trim();
 
-if (proposalGroups.length) {
-  setHint(
-    previousSessionNoCache
-      ? `Préparation générée à partir du classement round 2 de la session ${previousSessionNoCache}.`
-      : 'Aucune session précédente trouvée. Répartition de secours utilisée.',
-    previousSessionNoCache ? 'ok' : 'warn'
-  );
-  savePrepBtn.disabled = false;
-} else {
-  setHint('Impossible de générer des groupes valides avec les présences actuelles.', 'danger');
-}
+      if (proposalGroups.length) {
+        setHint(
+         previousSessionNoCache
+  ? `Préparation générée à partir du classement round 2 de la session ${previousSessionNoCache}.`
+  : 'Aucune session précédente trouvée. Répartition de secours utilisée.'
+          previousSessionNoCache ? 'ok' : 'warn'
+        );
+        savePrepBtn.disabled = false;
+      } else {
+        setHint('Impossible de générer des groupes valides avec les présences actuelles.', 'danger');
+      }
+
       renderGroups();
       renderBench();
       updateSummary();
