@@ -1793,23 +1793,7 @@ cumulativeRankingCache = Array.isArray(cumulativeRankingResult.rows) ? cumulativ
       }
 
       const existingRound1 = currentSessionRoundsCache.find(round => Number(round?.round_no || 0) === 1);
-
-      if (existingRound1 && Array.isArray(existingRound1.matches) && existingRound1.matches.length) {
-        currentRound1AlreadyExists = true;
-        proposalGroups = extractGroupsFromSavedRound(existingRound1.matches);
-        benchPlayers = [];
-        preparationSource = 'Round 1 déjà sauvegardé';
-
-        setHint(
-          'Le round 1 existe déjà pour cette session. La page affiche la préparation déjà enregistrée.',
-          'ok'
-        );
-
-        renderGroups();
-        renderBench();
-        updateSummary();
-        return;
-      }
+      currentRound1AlreadyExists = !!(existingRound1 && Array.isArray(existingRound1.matches) && existingRound1.matches.length);
 
       const built = buildPreparationFromPreviousRoundRanking(attendanceCache);
       proposalGroups = Array.isArray(built.groups) ? built.groups : [];
@@ -1817,13 +1801,23 @@ cumulativeRankingCache = Array.isArray(cumulativeRankingResult.rows) ? cumulativ
       preparationSource = safeText(built.source).trim();
 
       if (proposalGroups.length) {
-        setHint(
-          previousSessionNoCache
-            ? `Préparation générée à partir des slots conservés du round 2 de la session ${previousSessionNoCache}.`
-            : 'Aucune session précédente trouvée. Répartition de secours utilisée.',
-          previousSessionNoCache ? 'ok' : 'warn'
-        );
-        savePrepBtn.disabled = false;
+        if (currentRound1AlreadyExists) {
+          setHint(
+            previousSessionNoCache
+              ? `Round 1 existe déjà en base pour cette session. La page affiche quand même le recalcul théorique à partir du round 2 de la session ${previousSessionNoCache}.`
+              : 'Round 1 existe déjà en base pour cette session. La page affiche quand même le recalcul théorique.',
+            'warn'
+          );
+          savePrepBtn.disabled = true;
+        } else {
+          setHint(
+            previousSessionNoCache
+              ? `Préparation générée à partir des slots conservés du round 2 de la session ${previousSessionNoCache}.`
+              : 'Aucune session précédente trouvée. Répartition de secours utilisée.',
+            previousSessionNoCache ? 'ok' : 'warn'
+          );
+          savePrepBtn.disabled = false;
+        }
       } else {
         setHint('Impossible de générer des groupes valides avec les présences actuelles.', 'danger');
       }
