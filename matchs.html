@@ -667,13 +667,17 @@
       return !!(stage && Array.isArray(stage.matches) && stage.matches.length);
     }
 
+    function canEditRoundOpening(stageNo, matchNo = currentMatchNo) {
+      return !sessionLocked && Number(matchNo || 0) === 1 && !hasSavedMatchesInStage(stageNo);
+    }
+
     function canWithdrawFromStage(stageNo) {
-      return Number(stageNo || 0) >= 2 && !sessionLocked && !hasSavedMatchesInStage(stageNo);
+      return Number(stageNo || 0) >= 2 && canEditRoundOpening(stageNo);
     }
 
 
     function canRearrangeStage(stageNo) {
-      return !sessionLocked && !hasSavedMatchesInStage(stageNo);
+      return canEditRoundOpening(stageNo);
     }
 
     function cloneGroups(groups) {
@@ -1572,7 +1576,7 @@ function cascadeMatchPlayers(refA, refB) {
               <h3 class="group-title">Groupe ${escapeHtml(groupCode)}</h3>
               <div class="group-badge ${saved ? 'saved' : ''}">${saved ? 'Sauvegardé' : 'À jouer'}</div>
               <div class="group-meta">Sauvegarde indépendante du groupe.</div>
-              <div class="round-note">Clique sur un joueur pour faire un switch ou une cascade. #1 = plus fort, puis cascade vers le bas si retrait.</div>
+              <div class="round-note">Clique sur un joueur pour faire un switch ou une cascade sur le match 1 du round. #1 = plus fort, puis cascade vers le bas si retrait.</div>
             </div>
           </div>
 
@@ -1700,10 +1704,12 @@ function cascadeMatchPlayers(refA, refB) {
       if (currentStageNo >= 2) {
         if (canWithdrawFromStage(currentStageNo)) {
           hintBoxEl.textContent = cascadeCount
-            ? `Cascade active : ${cascadeCount} retrait(s). Tu peux encore cliquer sur un joueur pour switch/cascade avant la première sauvegarde de ce round.`
-            : 'Round recalculé. Tu peux cliquer sur un joueur pour switch/cascade avant la première sauvegarde de ce round.';
+            ? `Cascade active : ${cascadeCount} retrait(s). Tu peux encore cliquer sur un joueur pour switch/cascade sur le match 1, avant la première sauvegarde de ce round.`
+            : 'Round recalculé. Tu peux cliquer sur un joueur pour switch/cascade sur le match 1, avant la première sauvegarde de ce round.';
         } else if (hasSavedMatchesInStage(currentStageNo)) {
           hintBoxEl.textContent = 'Retrait bloqué pour ce round : au moins un match a déjà été sauvegardé.';
+        } else if (currentMatchNo !== 1) {
+          hintBoxEl.textContent = 'Retrait et switch/cascade disponibles seulement sur le match 1 de ce round.';
         } else {
           hintBoxEl.textContent = 'Retrait indisponible pour ce round.';
         }
@@ -1729,7 +1735,7 @@ function cascadeMatchPlayers(refA, refB) {
 
       setMatchControlsDisabled(false);
       clearWithdrawalsBtn.style.display = currentStageNo >= 2 ? 'inline-block' : 'none';
-      clearWithdrawalsBtn.disabled = !getStageWithdrawalIds(currentStageNo).size || hasSavedMatchesInStage(currentStageNo);
+      clearWithdrawalsBtn.disabled = !getStageWithdrawalIds(currentStageNo).size || !canWithdrawFromStage(currentStageNo);
     }
 
     function upsertSavedMatchInCache(savedMatch) {
@@ -2146,7 +2152,7 @@ function cascadeMatchPlayers(refA, refB) {
 
     function withdrawPlayerFromCurrentStage(joueurId, playerName) {
       if (!canWithdrawFromStage(currentStageNo)) {
-        alert('Le retrait est permis seulement à partir du round 2, avant la première sauvegarde du round.');
+        alert('Le retrait est permis seulement à partir du round 2, sur le match 1, avant la première sauvegarde du round.');
         return;
       }
 
