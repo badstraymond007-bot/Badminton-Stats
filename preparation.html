@@ -1367,6 +1367,33 @@ function buildSeedOrderFromPreviousRoundRanking(activePlayers, movedGroups) {
   return [...ordered, ...extras];
 }
 
+function buildCompressedSeedOrderFromPreviousRoundRanking(activePlayers, rankedGroups) {
+  const presentMap = createPlayerMap(activePlayers);
+  const ordered = [];
+  const seen = new Set();
+
+  rankedGroups
+    .slice()
+    .sort((a, b) => getGroupIndex(a.group_code) - getGroupIndex(b.group_code))
+    .forEach(group => {
+      (group.players || []).forEach(player => {
+        const joueurId = safeText(player?.joueur_id).trim();
+        if (!joueurId || seen.has(joueurId) || !presentMap[joueurId]) return;
+        seen.add(joueurId);
+        ordered.push(presentMap[joueurId]);
+      });
+    });
+
+  const previousRound2Ids = getPreviousRound2PlayerIds();
+  const returningPlayers = getReturningPlayersOrderedByCumulative(activePlayers, previousRound2Ids)
+    .filter(player => {
+      const joueurId = safeText(player?.joueur_id).trim();
+      return joueurId && !seen.has(joueurId);
+    });
+
+  return [...ordered, ...returningPlayers];
+}
+
 function buildPreparationFromPreviousRoundRanking(activePlayers) {
   if (!Array.isArray(previousRoundRankingCache) || !previousRoundRankingCache.length) {
     return buildFallbackPreparation(activePlayers, 'Aucun classement round 2 précédent disponible');
@@ -1378,12 +1405,11 @@ function buildPreparationFromPreviousRoundRanking(activePlayers) {
     return buildFallbackPreparation(activePlayers, 'Classement round 2 précédent vide');
   }
 
-  const movedGroups = buildMovedGroupsFromRoundRanking(rankedGroups);
-  const seedPlayers = buildSeedOrderFromPreviousRoundRanking(activePlayers, movedGroups);
+  const seedPlayers = buildCompressedSeedOrderFromPreviousRoundRanking(activePlayers, rankedGroups);
 
   return finalizeGroupsFromSeed(
     seedPlayers,
-    'Tri du round 2 par performance, puis retours laissés à la fin'
+    'Round 2 précédent compacté, puis retours ajoutés à la fin'
   );
 }
   
@@ -1905,7 +1931,7 @@ cumulativeRankingCache = Array.isArray(cumulativeRankingResult.rows) ? cumulativ
         } else {
           setHint(
             previousSessionNoCache
-              ? `Préparation générée à partir des slots conservés du round 2 de la session ${previousSessionNoCache}.`
+              ? `Préparation générée à partir du round 2 de la session ${previousSessionNoCache}, en compactant les présents puis en ajoutant les retours à la fin.`
               : 'Aucune session précédente trouvée. Répartition de secours utilisée.',
             previousSessionNoCache ? 'ok' : 'warn'
           );
