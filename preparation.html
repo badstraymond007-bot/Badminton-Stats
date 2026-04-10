@@ -798,16 +798,54 @@
     return players;
   }
 
+  function getPlayerId(value) {
+    return safeText(value?.joueur_id || value?.player_id || value?.id || value).trim();
+  }
+
+  function getNumericValue(...values) {
+    for (const value of values) {
+      const number = Number(String(value ?? '').replace(',', '.').trim());
+      if (Number.isFinite(number)) return number;
+    }
+    return 0;
+  }
+
+  function getCumulativeRankValue(value) {
+    const joueurId = getPlayerId(value);
+    if (!joueurId) return 999999;
+
+    const row = cumulativeRankingCache.find(item => getPlayerId(item) === joueurId);
+    const rank = getNumericValue(row?.rang, row?.rang_global, row?.rank);
+    return rank > 0 ? rank : 999999;
+  }
+
+  function compareByPerformance(aStats, bStats) {
+    if (bStats.plus_moins !== aStats.plus_moins) return bStats.plus_moins - aStats.plus_moins;
+    if (bStats.points_pour !== aStats.points_pour) return bStats.points_pour - aStats.points_pour;
+    if (aStats.points_contre !== bStats.points_contre) return aStats.points_contre - bStats.points_contre;
+    return 0;
+  }
+
+  function comparePlayersByCumulativeThenId(a, b) {
+    const cumulativeCompare = getCumulativeRankValue(a) - getCumulativeRankValue(b);
+    if (cumulativeCompare !== 0) return cumulativeCompare;
+    return getPlayerId(a).localeCompare(getPlayerId(b), 'fr', {
+      numeric: true,
+      sensitivity: 'base'
+    });
+  }
+
   function compareStatsPlayers(a, b, statsMap) {
-    const aId = safeText(a?.joueur_id).trim();
-    const bId = safeText(b?.joueur_id).trim();
+    const aId = getPlayerId(a);
+    const bId = getPlayerId(b);
 
     const aStats = statsMap[aId] || createEmptyStats(a);
     const bStats = statsMap[bId] || createEmptyStats(b);
 
-    if (bStats.plus_moins !== aStats.plus_moins) return bStats.plus_moins - aStats.plus_moins;
-    if (bStats.points_pour !== aStats.points_pour) return bStats.points_pour - aStats.points_pour;
-    return compareNames(a, b);
+    const performanceCompare = compareByPerformance(aStats, bStats);
+    if (performanceCompare !== 0) return performanceCompare;
+
+    return comparePlayersByCumulativeThenId(a, b);
   }
 
   function rankRound2Groups(round2Matches) {
@@ -1011,7 +1049,7 @@ function getGroupSizeCombo(total) {
   }
   
   function buildFallbackPreparation(activePlayers, reason) {
-    const ordered = [...activePlayers].sort(compareNames);
+    const ordered = getPresentPlayersRankedByCumulative(activePlayers);
     return finalizeGroupsFromSeed(ordered, reason);
   }
 
@@ -1051,14 +1089,48 @@ function getRoundRankingGroupCode(row) {
   return safeText(row?.groupe_code || row?.group_code).trim().toUpperCase();
 }
 
-function getRoundRankingRank(row) {
-  const rangRound = Number(row?.rang_round);
-  if (Number.isFinite(rangRound) && rangRound > 0) return rangRound;
+function getRoundRankingStats(row) {
+  const pointsPour = getNumericValue(
+    row?.points_pour,
+    row?.point_pour,
+    row?.pts_pour,
+    row?.pour,
+    row?.pointsFor,
+    row?.pf
+  );
 
-  const rang = Number(row?.rang);
-  if (Number.isFinite(rang) && rang > 0) return rang;
+  const pointsContre = getNumericValue(
+    row?.points_contre,
+    row?.point_contre,
+    row?.pts_contre,
+    row?.contre,
+    row?.pointsAgainst,
+    row?.pa
+  );
 
-  return 999;
+  const plusMoinsRaw = getNumericValue(
+    row?.plus_moins,
+    row?.diff,
+    row?.differentiel,
+    row?.différentiel
+  );
+
+  return {
+    points_pour: pointsPour,
+    points_contre: pointsContre,
+    plus_moins: plusMoinsRaw || (pointsPour - pointsContre)
+  };
+}
+
+function comparePreviousRoundRankingRows(a, b) {
+  const performanceCompare = compareByPerformance(
+    getRoundRankingStats(a),
+    getRoundRankingStats(b)
+  );
+
+  if (performanceCompare !== 0) return performanceCompare;
+
+  return comparePlayersByCumulativeThenId(a, b);
 }
 
 function buildRankedGroupsFromPreviousRoundRanking() {
@@ -1066,7 +1138,7 @@ function buildRankedGroupsFromPreviousRoundRanking() {
 
   previousRoundRankingCache.forEach(row => {
     const groupCode = getRoundRankingGroupCode(row);
-    const joueurId = safeText(row?.joueur_id).trim();
+    const joueurId = getPlayerId(row);
 
     if (!groupCode || !joueurId) return;
 
@@ -1080,11 +1152,7 @@ function buildRankedGroupsFromPreviousRoundRanking() {
       group_code: groupCode,
       players: byGroup[groupCode]
         .slice()
-        .sort((a, b) => {
-          const rankCompare = getRoundRankingRank(a) - getRoundRankingRank(b);
-          if (rankCompare !== 0) return rankCompare;
-          return compareNames(a, b);
-        })
+        .sort(comparePreviousRoundRankingRows)
     }))
     .filter(group => group.players.length >= 4);
 }
@@ -1315,7 +1383,7 @@ function buildPreparationFromPreviousRoundRanking(activePlayers) {
 
   return finalizeGroupsFromSeed(
     seedPlayers,
-    'Slots du round 2 conservés, retours laissés à la fin'
+    'Tri du round 2 par performance, puis retours laissés à la fin'
   );
 }
   
