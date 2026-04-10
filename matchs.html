@@ -1361,16 +1361,18 @@ function cascadeMatchPlayers(refA, refB) {
     }
 
     function orderPlayersInsideNewGroup(players, overallStats, options = {}) {
-      const sorted = [...players].sort((a, b) => comparePlayersForMovement(a, b, overallStats));
+      const ordered = [...players].filter(Boolean);
       const fixedMiddleId = safeText(options.fixedMiddlePlayer?.joueur_id).trim();
 
-      if (fixedMiddleId && sorted.length === 5) {
-        const middlePlayer = sorted.find(player => safeText(player?.joueur_id).trim() === fixedMiddleId) || options.fixedMiddlePlayer;
-        const others = sorted.filter(player => safeText(player?.joueur_id).trim() !== fixedMiddleId);
-        return [others[0], others[1], middlePlayer, others[2], others[3]].filter(Boolean);
+      if (fixedMiddleId && ordered.length === 5) {
+        const middleIndex = ordered.findIndex(player => safeText(player?.joueur_id).trim() === fixedMiddleId);
+        if (middleIndex !== -1 && middleIndex !== 2) {
+          const [middlePlayer] = ordered.splice(middleIndex, 1);
+          ordered.splice(2, 0, middlePlayer);
+        }
       }
 
-      return sorted;
+      return ordered;
     }
 
     function isStageComplete(stageNo) {
