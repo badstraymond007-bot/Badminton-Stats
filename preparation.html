@@ -1405,23 +1405,33 @@ function buildPreparationFromPreviousRoundRanking(activePlayers) {
     return buildFallbackPreparation(activePlayers, 'Classement round 2 précédent vide');
   }
 
-  const movedGroups = buildMovedGroupsFromRoundRanking(rankedGroups);
-  const seedPlayers = buildSeedOrderFromPreviousRoundRanking(activePlayers, movedGroups);
-  const prepared = finalizeGroupsFromSeed(
-    seedPlayers,
-    'Round 2 précédent avec montées/descentes, présents conservés puis retours ajoutés à la fin'
-  );
+  const presentMap = createPlayerMap(activePlayers);
+  const orderedSeed = [];
+  const seen = new Set();
 
-  if (Array.isArray(prepared.groups) && prepared.groups.length) {
-    return prepared;
-  }
+  rankedGroups
+    .slice()
+    .sort((a, b) => getGroupIndex(a.group_code) - getGroupIndex(b.group_code))
+    .forEach(group => {
+      (group.players || []).forEach(player => {
+        const joueurId = safeText(player?.joueur_id).trim();
+        if (!joueurId || seen.has(joueurId) || !presentMap[joueurId]) return;
+        seen.add(joueurId);
+        orderedSeed.push(presentMap[joueurId]);
+      });
+    });
 
-  return buildFallbackPreparation(
-    activePlayers,
-    'Fallback : impossible de reconstruire les groupes déplacés avec les présences du soir'
+  const returningPlayers = getPresentPlayersRankedByCumulative(activePlayers)
+    .filter(player => {
+      const joueurId = safeText(player?.joueur_id).trim();
+      return joueurId && !seen.has(joueurId);
+    });
+
+  return finalizeGroupsFromSeed(
+    [...orderedSeed, ...returningPlayers],
+    'Round 2 précédent gardé en ordre, absents retirés en cascade, puis retours ajoutés à la fin'
   );
 }
-  
   function serializePrepSwapRef(ref) {
     return [
       safeText(ref?.area).trim(),
