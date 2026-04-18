@@ -638,6 +638,11 @@
       return fileId ? `https://drive.google.com/thumbnail?id=${encodeURIComponent(fileId)}&sz=w300` : DEFAULT_AVATAR;
     }
 
+function getCanonicalTagValue(player) {
+  const tag = Number(safeText(player?.canonical_tag).trim());
+  return Number.isFinite(tag) && tag > 0 ? tag : 999;
+}
+    
 function buildStoredPlayerRefFromMatchPlayer(player) {
   const joueurId = safeText(player?.joueur_id).trim();
   const tag = safeText(player?.canonical_tag).trim();
@@ -1321,41 +1326,50 @@ const rotations = [
       });
     }
 
-    function extractGroupsFromSavedStage(savedStage) {
-      if (!savedStage || !Array.isArray(savedStage.matches) || !savedStage.matches.length) return [];
-      const byGroup = {};
+function extractGroupsFromSavedStage(savedStage) {
+  if (!savedStage || !Array.isArray(savedStage.matches) || !savedStage.matches.length) return [];
+  const byGroup = {};
 
-      savedStage.matches.forEach(match => {
-        const code = safeText(match.group_code).trim().toUpperCase();
-        if (!code) return;
-        if (!byGroup[code]) byGroup[code] = [];
-        byGroup[code].push(match);
-      });
+  savedStage.matches.forEach(match => {
+    const code = safeText(match.group_code).trim().toUpperCase();
+    if (!code) return;
+    if (!byGroup[code]) byGroup[code] = [];
 
-      return Object.keys(byGroup)
-        .sort((a, b) => getGroupIndex(a) - getGroupIndex(b))
-        .map(groupCode => {
-          const match = byGroup[groupCode][0];
-          const players = [
-            match.team1_player1,
-            match.team1_player2,
-            match.team2_player1,
-            match.team2_player2,
-            match.waiting_player
-          ].filter(Boolean);
+    const players = [
+      match.team1_player1,
+      match.team1_player2,
+      match.team2_player1,
+      match.team2_player2,
+      match.waiting_player
+    ].filter(Boolean);
 
-          const seen = new Set();
-          const unique = [];
-          players.forEach(player => {
-            const id = safeText(player?.joueur_id).trim();
-            if (!id || seen.has(id)) return;
-            seen.add(id);
-            unique.push(player);
-          });
+    players.forEach(player => {
+      const id = safeText(player?.joueur_id).trim();
+      if (!id) return;
 
-          return { group_code: groupCode, players: unique };
+      if (!byGroup[code].some(item => safeText(item?.joueur_id).trim() === id)) {
+        byGroup[code].push(player);
+      }
+    });
+  });
+
+  return Object.keys(byGroup)
+    .sort((a, b) => getGroupIndex(a) - getGroupIndex(b))
+    .map(groupCode => {
+      const unique = byGroup[groupCode]
+        .slice()
+        .sort((a, b) => {
+          const tagCompare = getCanonicalTagValue(a) - getCanonicalTagValue(b);
+          if (tagCompare !== 0) return tagCompare;
+          return compareNames(a, b);
         });
-    }
+
+      return {
+        group_code: groupCode,
+        players: unique
+      };
+    });
+}
 
     function buildStageStatsByGroup(savedStage, groups) {
       const byGroup = {};
