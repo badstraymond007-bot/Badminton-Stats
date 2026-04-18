@@ -213,6 +213,24 @@
       margin-top: 12px;
     }
 
+    .group-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+      padding: 10px 12px;
+      border: 1px solid var(--soft-line);
+      background: #fff;
+      border-radius: 12px;
+    }
+
+    .group-nav-label {
+      font-weight: bold;
+      color: var(--accent);
+    }
+
     .slot, .waiting-box {
       border: 1px dashed #cbd5e1;
       border-radius: 12px;
@@ -566,6 +584,8 @@
     let stageWithdrawals = {};
     let stageManualOrders = {};
     let openMatchSwapMenuRef = null;
+    let groupViewPositions = {};
+    let renderedMatchMap = {};
 
     function safeText(value) {
       return value == null ? '' : String(value);
@@ -618,13 +638,15 @@
             data-action="withdraw-player"
             data-player-id="${escapeHtml(joueurId)}"
             data-player-name="${escapeHtml(playerName)}"
-            data-group-code="${escapeHtml(safeText(options.groupCode))}">
+            data-group-code="${escapeHtml(safeText(options.groupCode))}"
+            data-stage-no="${escapeHtml(String(options.stageNo ?? ''))}"
+            data-match-no="${escapeHtml(String(options.matchNo ?? ''))}">
             Retirer
           </button>
         `
         : '';
       const swapAttrs = options.canRearrange && Number.isInteger(Number(options.swapIndex))
-        ? ` class="slot-player match-swap-enabled" data-group-code="${escapeHtml(safeText(options.groupCode).trim().toUpperCase())}" data-slot-index="${String(options.swapIndex)}"`
+        ? ` class="slot-player match-swap-enabled" data-group-code="${escapeHtml(safeText(options.groupCode).trim().toUpperCase())}" data-slot-index="${String(options.swapIndex)}" data-stage-no="${escapeHtml(String(options.stageNo ?? ''))}" data-match-no="${escapeHtml(String(options.matchNo ?? ''))}"`
         : ' class="slot-player"';
 
       return `
@@ -671,13 +693,13 @@
       return !sessionLocked && Number(matchNo || 0) === 1 && !hasSavedMatchesInStage(stageNo);
     }
 
-    function canWithdrawFromStage(stageNo) {
-      return Number(stageNo || 0) >= 2 && canEditRoundOpening(stageNo);
+    function canWithdrawFromStage(stageNo, matchNo = currentMatchNo) {
+      return Number(stageNo || 0) >= 2 && canEditRoundOpening(stageNo, matchNo);
     }
 
 
-    function canRearrangeStage(stageNo) {
-      return canEditRoundOpening(stageNo);
+    function canRearrangeStage(stageNo, matchNo = currentMatchNo) {
+      return canEditRoundOpening(stageNo, matchNo);
     }
 
     function cloneGroups(groups) {
@@ -1551,33 +1573,231 @@ function cascadeMatchPlayers(refA, refB) {
       return { stage_no: stageNo, match_no: matchNo };
     }
 
-    function buildGroupCard(match) {
+    function getMatchStateKey(stageNo, matchNo, groupCode) {
+      return [
+        Number(stageNo || 0),
+        Number(matchNo || 0),
+        safeText(groupCode).trim().toUpperCase()
+      ].join('|');
+    }
+
+    function isSameStageMatchPosition(a, b) {
+      return Number(a?.stage_no || 0) === Number(b?.stage_no || 0)
+        && Number(a?.match_no || 0) === Number(b?.match_no || 0);
+    }
+
+    function cloneStageMatchPosition(position) {
+      return {
+        stage_no: Number(position?.stage_no || 1),
+        match_no: Number(position?.match_no || 1)
+      };
+    }
+
+    function getStageOneGroupCodes() {
+      return (buildStageStructure(1).groups || [])
+        .map(group => safeText(group?.group_code).trim().toUpperCase())
+        .filter(Boolean);
+    }
+
+    function getAvailablePositionsForGroup(groupCode) {
+      const cleanGroupCode = safeText(groupCode).trim().toUpperCase();
+      if (!cleanGroupCode) return [];
+
+      const positions = [];
+      for (let stageNo = 1; stageNo <= MAX_ROUNDS; stageNo += 1) {
+        const groups = buildStageStructure(stageNo).groups || [];
+        const group = groups.find(item => safeText(item?.group_code).trim().toUpperCase() === cleanGroupCode);
+        if (!group) continue;
+
+        const maxMatches = getRequiredAppearances(group);
+        for (let matchNo = 1; matchNo <= maxMatches; matchNo += 1) {
+          positions.push({ stage_no: stageNo, match_no: matchNo });
+        }
+      }
+
+      return positions;
+    }
+
+    function getSavedMatchForGroupPosition(groupCode, stageNo, matchNo) {
+      const cleanGroupCode = safeText(groupCode).trim().toUpperCase();
+      return getSavedMatchesForStageAndMatch(stageNo, matchNo).find(match =>
+        safeText(match?.group_code).trim().toUpperCase() === cleanGroupCode
+      ) || null;
+    }
+
+    function getNextPlayablePositionForGroup(groupCode) {
+      const positions = getAvailablePositionsForGroup(groupCode);
+      if (!positions.length) return null;
+
+      for (const position of positions) {
+        const savedMatch = getSavedMatchForGroupPosition(groupCode, position.stage_no, position.match_no);
+        const isSaved = !!(
+          savedMatch &&
+          safeText(savedMatch.match_id).trim() &&
+          safeText(savedMatch.team1_score).trim() !== '' &&
+          safeText(savedMatch.team2_score).trim() !== ''
+        );
+
+        if (!isSaved) return cloneStageMatchPosition(position);
+      }
+
+      return cloneStageMatchPosition(positions[positions.length - 1]);
+    }
+
+    function ensureGroupViewPositions() {
+      const nextPositions = {};
+      getStageOneGroupCodes().forEach(groupCode => {
+        const available = getAvailablePositionsForGroup(groupCode);
+        if (!available.length) return;
+
+        const current = groupViewPositions[groupCode];
+        const matched = current
+          ? available.find(position => isSameStageMatchPosition(position, current))
+          : null;
+
+        nextPositions[groupCode] = cloneStageMatchPosition(
+          matched || getNextPlayablePositionForGroup(groupCode) || available[0]
+        );
+      });
+
+      groupViewPositions = nextPositions;
+    }
+
+    function getGroupViewPosition(groupCode) {
+      const cleanGroupCode = safeText(groupCode).trim().toUpperCase();
+      ensureGroupViewPositions();
+      return groupViewPositions[cleanGroupCode]
+        ? cloneStageMatchPosition(groupViewPositions[cleanGroupCode])
+        : null;
+    }
+
+    function setGroupViewPosition(groupCode, position) {
+      const cleanGroupCode = safeText(groupCode).trim().toUpperCase();
+      const available = getAvailablePositionsForGroup(cleanGroupCode);
+      if (!cleanGroupCode || !available.length) return null;
+
+      const target = available.find(item => isSameStageMatchPosition(item, position)) || available[0];
+      groupViewPositions[cleanGroupCode] = cloneStageMatchPosition(target);
+      return cloneStageMatchPosition(groupViewPositions[cleanGroupCode]);
+    }
+
+    function getPreviousPositionForGroup(groupCode) {
+      const current = getGroupViewPosition(groupCode);
+      const available = getAvailablePositionsForGroup(groupCode);
+      const index = available.findIndex(position => isSameStageMatchPosition(position, current));
+      if (index <= 0) return available[0] ? cloneStageMatchPosition(available[0]) : null;
+      return cloneStageMatchPosition(available[index - 1]);
+    }
+
+    function getNextPositionForGroup(groupCode) {
+      const current = getGroupViewPosition(groupCode);
+      const available = getAvailablePositionsForGroup(groupCode);
+      const index = available.findIndex(position => isSameStageMatchPosition(position, current));
+      if (index === -1) return available[0] ? cloneStageMatchPosition(available[0]) : null;
+      if (index >= available.length - 1) return cloneStageMatchPosition(available[index]);
+      return cloneStageMatchPosition(available[index + 1]);
+    }
+
+    function getRenderedMatchForPosition(stageNo, matchNo, groupCode) {
+      const cleanGroupCode = safeText(groupCode).trim().toUpperCase();
+      const key = getMatchStateKey(stageNo, matchNo, cleanGroupCode);
+      if (renderedMatchMap[key]) return renderedMatchMap[key];
+
+      const plan = buildRoundPlan(stageNo, matchNo);
+      const match = plan.matches.find(item =>
+        safeText(item?.group_code).trim().toUpperCase() === cleanGroupCode
+      );
+
+      if (!match) return null;
+
+      renderedMatchMap[key] = {
+        ...match,
+        round_no: stageNo,
+        match_no: matchNo
+      };
+
+      return renderedMatchMap[key];
+    }
+
+    function buildGroupCard(groupCode) {
+      const cleanGroupCode = safeText(groupCode).trim().toUpperCase();
+      const position = getGroupViewPosition(cleanGroupCode);
+
+      if (!position) {
+        return `
+          <article class="group-card empty-card" data-group-card="${escapeHtml(cleanGroupCode)}">
+            <div class="group-top">
+              <div>
+                <h3 class="group-title">Groupe ${escapeHtml(cleanGroupCode)}</h3>
+                <div class="group-badge">En attente</div>
+                <div class="group-meta">Aucun match disponible pour ce groupe.</div>
+              </div>
+            </div>
+          </article>
+        `;
+      }
+
+      const stageNo = Number(position.stage_no || 1);
+      const matchNo = Number(position.match_no || 1);
+      const roundPlan = buildRoundPlan(stageNo, matchNo);
+      const match = getRenderedMatchForPosition(stageNo, matchNo, cleanGroupCode);
+
+      if (!match) {
+        return `
+          <article class="group-card empty-card" data-group-card="${escapeHtml(cleanGroupCode)}">
+            <div class="group-top">
+              <div>
+                <h3 class="group-title">Groupe ${escapeHtml(cleanGroupCode)}</h3>
+                <div class="group-badge">Indisponible</div>
+                <div class="group-meta">Ce match n’est pas disponible pour le moment.</div>
+              </div>
+            </div>
+          </article>
+        `;
+      }
+
       const saved = safeText(match.match_id).trim() && safeText(match.team1_score).trim() !== '' && safeText(match.team2_score).trim() !== '';
-      const groupCode = safeText(match.group_code).trim().toUpperCase();
-      const groupModel = (currentRoundPlan?.groups || []).find(group => safeText(group.group_code).trim().toUpperCase() === groupCode) || null;
+      const groupModel = (roundPlan.groups || []).find(group => safeText(group.group_code).trim().toUpperCase() === cleanGroupCode) || null;
       const positionMap = getGroupPositionMap(groupModel);
-      const canWithdraw = canWithdrawFromStage(currentStageNo) && !saved;
-      const canRearrange = canRearrangeStage(currentStageNo) && !saved;
+      const canWithdraw = canWithdrawFromStage(stageNo, matchNo) && !saved;
+      const canRearrange = canRearrangeStage(stageNo, matchNo) && !saved;
+      const availablePositions = getAvailablePositionsForGroup(cleanGroupCode);
+      const positionIndex = availablePositions.findIndex(item => isSameStageMatchPosition(item, position));
+      const hasPrev = positionIndex > 0;
+      const hasNext = positionIndex !== -1 && positionIndex < availablePositions.length - 1;
+
       const renderOptions = player => {
-        const position = positionMap[safeText(player?.joueur_id).trim()] || '';
+        const playerPosition = positionMap[safeText(player?.joueur_id).trim()] || '';
         return {
-          position,
+          position: playerPosition,
           canWithdraw,
           canRearrange,
-          groupCode,
-          swapIndex: position ? Number(position) - 1 : null
+          groupCode: cleanGroupCode,
+          swapIndex: playerPosition ? Number(playerPosition) - 1 : null,
+          stageNo,
+          matchNo
         };
       };
 
       return `
-        <article class="group-card" data-group-card="${escapeHtml(groupCode)}">
+        <article class="group-card" data-group-card="${escapeHtml(cleanGroupCode)}" data-stage-no="${escapeHtml(String(stageNo))}" data-match-no="${escapeHtml(String(matchNo))}">
           <div class="group-top">
             <div>
-              <h3 class="group-title">Groupe ${escapeHtml(groupCode)}</h3>
+              <h3 class="group-title">Groupe ${escapeHtml(cleanGroupCode)}</h3>
               <div class="group-badge ${saved ? 'saved' : ''}">${saved ? 'Sauvegardé' : 'À jouer'}</div>
-              <div class="group-meta">Sauvegarde indépendante du groupe.</div>
+              <div class="group-meta">Navigation indépendante pour ce groupe.</div>
               <div class="round-note">Clique sur un joueur pour faire un switch ou une cascade sur le match 1 du round. #1 = plus fort, puis cascade vers le bas si retrait.</div>
             </div>
+          </div>
+
+          <div class="group-nav">
+            <button type="button" class="btn ghost" data-action="group-prev" data-group-code="${escapeHtml(cleanGroupCode)}" ${hasPrev ? '' : 'disabled'}>
+              Tour précédent
+            </button>
+            <div class="group-nav-label">Round ${stageNo} • Match ${matchNo}</div>
+            <button type="button" class="btn ghost" data-action="group-next" data-group-code="${escapeHtml(cleanGroupCode)}" ${hasNext ? '' : 'disabled'}>
+              Tour suivant
+            </button>
           </div>
 
           <div class="group-players">
@@ -1606,18 +1826,18 @@ function cascadeMatchPlayers(refA, refB) {
 
           <div class="score-row">
             <div class="score-box">
-              <label class="score-label team1" for="score-${escapeHtml(groupCode)}-1">Score équipe 1</label>
-              <input id="score-${escapeHtml(groupCode)}-1" type="number" min="0" data-score-field="team1_score" data-group-code="${escapeHtml(groupCode)}" value="${escapeHtml(safeText(match.team1_score))}">
+              <label class="score-label team1" for="score-${escapeHtml(cleanGroupCode)}-${stageNo}-${matchNo}-1">Score équipe 1</label>
+              <input id="score-${escapeHtml(cleanGroupCode)}-${stageNo}-${matchNo}-1" type="number" min="0" data-score-field="team1_score" data-group-code="${escapeHtml(cleanGroupCode)}" data-stage-no="${escapeHtml(String(stageNo))}" data-match-no="${escapeHtml(String(matchNo))}" value="${escapeHtml(safeText(match.team1_score))}">
             </div>
             <div class="score-box">
-              <label class="score-label team2" for="score-${escapeHtml(groupCode)}-2">Score équipe 2</label>
-              <input id="score-${escapeHtml(groupCode)}-2" type="number" min="0" data-score-field="team2_score" data-group-code="${escapeHtml(groupCode)}" value="${escapeHtml(safeText(match.team2_score))}">
+              <label class="score-label team2" for="score-${escapeHtml(cleanGroupCode)}-${stageNo}-${matchNo}-2">Score équipe 2</label>
+              <input id="score-${escapeHtml(cleanGroupCode)}-${stageNo}-${matchNo}-2" type="number" min="0" data-score-field="team2_score" data-group-code="${escapeHtml(cleanGroupCode)}" data-stage-no="${escapeHtml(String(stageNo))}" data-match-no="${escapeHtml(String(matchNo))}" value="${escapeHtml(safeText(match.team2_score))}">
             </div>
           </div>
 
           <div class="group-save-wrap">
-            <button type="button" class="btn" data-action="save-group-scores" data-group-code="${escapeHtml(groupCode)}">
-              Sauvegarder le groupe ${escapeHtml(groupCode)}
+            <button type="button" class="btn" data-action="save-group-scores" data-group-code="${escapeHtml(cleanGroupCode)}" data-stage-no="${escapeHtml(String(stageNo))}" data-match-no="${escapeHtml(String(matchNo))}">
+              Sauvegarder le groupe ${escapeHtml(cleanGroupCode)}
             </button>
           </div>
         </article>
@@ -1643,29 +1863,24 @@ function cascadeMatchPlayers(refA, refB) {
       const season = getSelectedSeason();
       const seasonName = season ? (season.nom_saison || season.saison_id) : '—';
 
+      prevRoundBtn.style.display = 'none';
+      nextRoundBtn.style.display = 'none';
       clearWithdrawalsBtn.style.display = currentStageNo >= 2 ? 'inline-block' : 'none';
       clearWithdrawalsBtn.disabled = true;
       clearMatchSwapPickerUI();
       openMatchSwapMenuRef = null;
 
-      roundTitleEl.textContent = `Round ${currentStageNo} • Match ${currentMatchNo}`;
+      roundTitleEl.textContent = `Navigation indépendante • Focus round ${currentStageNo} • match ${currentMatchNo}`;
       sumSeasonEl.textContent = seasonName;
       sumDateEl.textContent = matchDateEl.value || '—';
       sumRoundEl.textContent = String(currentStageNo);
       sumMatchEl.textContent = String(currentMatchNo);
       sumPresentCountEl.textContent = String(attendanceCache.length);
 
-      const structure = buildStageStructure(currentStageNo);
-      const stageGroups = structure.groups || [];
-      const roundPlan = buildRoundPlan(currentStageNo, currentMatchNo);
-      currentRoundPlan = roundPlan;
-      const cascadeCount = Number(structure.cascade_count || 0);
-
-      sumGroupCountEl.textContent = String(stageGroups.length);
-      sumVisibleGroupCountEl.textContent = String(roundPlan.matches.length);
-
       if (!safeText(matchSessionEl.value).trim()) {
         sumStateEl.textContent = 'Choisir une session';
+        sumGroupCountEl.textContent = '0';
+        sumVisibleGroupCountEl.textContent = '0';
         hintBoxEl.textContent = 'Sélectionne une session pour charger les groupes.';
         resetGroups('Choisis une session pour afficher les groupes.');
         setMatchControlsDisabled(true);
@@ -1674,59 +1889,70 @@ function cascadeMatchPlayers(refA, refB) {
 
       if (!getSavedStage(1)) {
         sumStateEl.textContent = 'Préparation manquante';
+        sumGroupCountEl.textContent = '0';
+        sumVisibleGroupCountEl.textContent = '0';
         hintBoxEl.textContent = 'Le round 1 n’existe pas encore. Prépare et sauvegarde les groupes depuis la page Présence.';
         resetGroups('Le round 1 doit être préparé depuis la page Présence.');
         setMatchControlsDisabled(true);
         return;
       }
 
-      if (!stageGroups.length) {
-        sumStateEl.textContent = currentStageNo === 1 ? 'Aucun groupe' : 'Round précédent incomplet';
-        hintBoxEl.textContent = currentStageNo === 1
-          ? 'Aucun groupe trouvé pour cette session.'
-          : `Le round ${currentStageNo - 1} doit être complété avant de générer le round ${currentStageNo}.`;
-        resetGroups(currentStageNo === 1
-          ? 'Aucun groupe trouvé pour cette session.'
-          : `Complète d’abord le round ${currentStageNo - 1}.`);
-        setMatchControlsDisabled(false);
-        return;
+      ensureGroupViewPositions();
+
+      let structure = buildStageStructure(currentStageNo);
+      let stageGroups = structure.groups || [];
+      let roundPlan = buildRoundPlan(currentStageNo, currentMatchNo);
+
+      if (!stageGroups.length || !roundPlan.matches.length) {
+        const nextPlayable = getNextPlayablePosition();
+        currentStageNo = Number(nextPlayable.stage_no || 1);
+        currentMatchNo = Number(nextPlayable.match_no || 1);
+        structure = buildStageStructure(currentStageNo);
+        stageGroups = structure.groups || [];
+        roundPlan = buildRoundPlan(currentStageNo, currentMatchNo);
       }
 
-      if (!roundPlan.matches.length) {
-        sumStateEl.textContent = 'Aucun match';
-        hintBoxEl.textContent = 'Ce match n’existe pas pour les groupes de ce round.';
-        resetGroups('Aucun match à afficher pour cette position.');
-        setMatchControlsDisabled(false);
+      currentRoundPlan = roundPlan;
+      const cascadeCount = Number(structure.cascade_count || 0);
+      const displayGroupCodes = Object.keys(groupViewPositions).sort((a, b) => getGroupIndex(a) - getGroupIndex(b));
+
+      sumGroupCountEl.textContent = String(stageGroups.length);
+      sumVisibleGroupCountEl.textContent = String(displayGroupCodes.length);
+
+      if (!displayGroupCodes.length) {
+        sumStateEl.textContent = 'Aucun groupe';
+        hintBoxEl.textContent = 'Aucun groupe trouvé pour cette session.';
+        resetGroups('Aucun groupe trouvé pour cette session.');
+        setMatchControlsDisabled(true);
         return;
       }
 
       sumStateEl.textContent = sessionLocked ? 'Barrée' : 'Active';
       if (currentStageNo >= 2) {
-        if (canWithdrawFromStage(currentStageNo)) {
+        if (canWithdrawFromStage(currentStageNo, currentMatchNo)) {
           hintBoxEl.textContent = cascadeCount
-            ? `Cascade active : ${cascadeCount} retrait(s). Tu peux encore cliquer sur un joueur pour switch/cascade sur le match 1, avant la première sauvegarde de ce round.`
-            : 'Round recalculé. Tu peux cliquer sur un joueur pour switch/cascade sur le match 1, avant la première sauvegarde de ce round.';
+            ? `Navigation indépendante active. Focus actuel : round ${currentStageNo}, match ${currentMatchNo}. Cascade active : ${cascadeCount} retrait(s).`
+            : `Navigation indépendante active. Focus actuel : round ${currentStageNo}, match ${currentMatchNo}.`;
         } else if (hasSavedMatchesInStage(currentStageNo)) {
-          hintBoxEl.textContent = 'Retrait bloqué pour ce round : au moins un match a déjà été sauvegardé.';
+          hintBoxEl.textContent = `Navigation indépendante active. Focus actuel : round ${currentStageNo}, match ${currentMatchNo}. Retrait bloqué pour ce round : au moins un match est déjà sauvegardé.`;
         } else if (currentMatchNo !== 1) {
-          hintBoxEl.textContent = 'Retrait et switch/cascade disponibles seulement sur le match 1 de ce round.';
+          hintBoxEl.textContent = `Navigation indépendante active. Focus actuel : round ${currentStageNo}, match ${currentMatchNo}. Retrait et switch/cascade disponibles seulement sur le match 1 de ce round.`;
         } else {
-          hintBoxEl.textContent = 'Retrait indisponible pour ce round.';
+          hintBoxEl.textContent = `Navigation indépendante active. Focus actuel : round ${currentStageNo}, match ${currentMatchNo}.`;
         }
       } else {
-        hintBoxEl.textContent = `Les groupes A à E sont indépendants. Sauvegarde chaque groupe quand sa partie est terminée.`;
+        hintBoxEl.textContent = `Les boutons Tour précédent / Tour suivant sont maintenant dans chaque bloc. Chaque groupe avance indépendamment.`;
       }
 
-      groupsGridEl.innerHTML = roundPlan.matches
-        .sort((a, b) => getGroupIndex(a.group_code) - getGroupIndex(b.group_code))
-        .map(buildGroupCard)
-        .join('');
+      groupsGridEl.innerHTML = displayGroupCodes.map(buildGroupCard).join('');
 
       groupsGridEl.querySelectorAll('[data-score-field]').forEach(input => {
         input.addEventListener('input', event => {
           const groupCode = safeText(event.target.dataset.groupCode).trim().toUpperCase();
           const scoreField = safeText(event.target.dataset.scoreField).trim();
-          const match = currentRoundPlan.matches.find(item => safeText(item.group_code).trim().toUpperCase() === groupCode);
+          const stageNo = Number(event.target.dataset.stageNo || 0);
+          const matchNo = Number(event.target.dataset.matchNo || 0);
+          const match = getRenderedMatchForPosition(stageNo, matchNo, groupCode);
           if (!match || !scoreField) return;
           match[scoreField] = event.target.value;
           match.winner_team = '';
@@ -1735,7 +1961,7 @@ function cascadeMatchPlayers(refA, refB) {
 
       setMatchControlsDisabled(false);
       clearWithdrawalsBtn.style.display = currentStageNo >= 2 ? 'inline-block' : 'none';
-      clearWithdrawalsBtn.disabled = !getStageWithdrawalIds(currentStageNo).size || !canWithdrawFromStage(currentStageNo);
+      clearWithdrawalsBtn.disabled = !getStageWithdrawalIds(currentStageNo).size || !canWithdrawFromStage(currentStageNo, currentMatchNo);
     }
 
     function upsertSavedMatchInCache(savedMatch) {
@@ -1775,7 +2001,7 @@ function cascadeMatchPlayers(refA, refB) {
       sessionMatchesCache.sort((a, b) => compareNumericLike(a.round_no, b.round_no));
     }
 
-    function buildSaveScoresPayload(groupCode) {
+    function buildSaveScoresPayload(groupCode, stageNo = currentStageNo, matchNo = currentMatchNo) {
       const season = getSelectedSeason();
       const saisonId = safeText(season?.saison_id).trim();
       const noSession = safeText(matchSessionEl.value || matchSessionNoEl.value).trim();
@@ -1784,11 +2010,8 @@ function cascadeMatchPlayers(refA, refB) {
       if (!saisonId) throw new Error('Saison manquante.');
       if (!noSession) throw new Error('Session manquante.');
       if (!cleanGroupCode) throw new Error('Groupe manquant.');
-      if (!currentRoundPlan || !Array.isArray(currentRoundPlan.matches) || !currentRoundPlan.matches.length) {
-        throw new Error('Aucun match actif à sauvegarder pour cet écran.');
-      }
 
-      const match = currentRoundPlan.matches.find(item => safeText(item?.group_code).trim().toUpperCase() === cleanGroupCode);
+      const match = getRenderedMatchForPosition(stageNo, matchNo, cleanGroupCode);
       if (!match) throw new Error(`Groupe ${cleanGroupCode} introuvable pour cet écran.`);
       if (safeText(match.team1_score).trim() === '' || safeText(match.team2_score).trim() === '') {
         throw new Error(`Entre les deux scores du groupe ${cleanGroupCode} avant de sauvegarder.`);
@@ -1797,8 +2020,8 @@ function cascadeMatchPlayers(refA, refB) {
       return {
         saison_id: saisonId,
         no_session: noSession,
-        round_no: currentStageNo,
-        match_no: currentMatchNo,
+        round_no: stageNo,
+        match_no: matchNo,
         group_code: cleanGroupCode,
         team1_player1_id: safeText(match.team1_player1?.joueur_id).trim(),
         team1_player2_id: safeText(match.team1_player2?.joueur_id).trim(),
@@ -1811,14 +2034,17 @@ function cascadeMatchPlayers(refA, refB) {
       };
     }
 
-    async function saveCurrentScores(groupCode) {
+    async function saveCurrentScores(groupCode, stageNo = currentStageNo, matchNo = currentMatchNo) {
       if (sessionLocked) {
         alert('Cette session est barrée. Décoche-la pour pouvoir modifier les scores.');
         return;
       }
 
+      currentStageNo = Number(stageNo || 1);
+      currentMatchNo = Number(matchNo || 1);
+
       try {
-        const payload = buildSaveScoresPayload(groupCode);
+        const payload = buildSaveScoresPayload(groupCode, currentStageNo, currentMatchNo);
         const response = await fetch(API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -1831,7 +2057,7 @@ function cascadeMatchPlayers(refA, refB) {
         const result = await response.json();
         if (!result.ok) throw new Error(result.error || 'Erreur API inconnue');
 
-        const liveMatch = currentRoundPlan.matches.find(match => safeText(match?.group_code).trim().toUpperCase() === safeText(groupCode).trim().toUpperCase());
+        const liveMatch = getRenderedMatchForPosition(currentStageNo, currentMatchNo, groupCode);
         if (liveMatch) {
           liveMatch.match_id = safeText(result.match_id || result.saved_match?.match_id).trim() || liveMatch.match_id || '';
           liveMatch.winner_team = safeText(result.winner_team || result.saved_match?.winner_team).trim() || liveMatch.winner_team || '';
@@ -1948,6 +2174,8 @@ function cascadeMatchPlayers(refA, refB) {
       currentRoundPlan = null;
       currentStageNo = 1;
       currentMatchNo = 1;
+      groupViewPositions = {};
+      renderedMatchMap = {};
       resetStageWithdrawals();
       resetStageManualOrders();
       setMatchControlsDisabled(true);
@@ -2053,6 +2281,8 @@ function cascadeMatchPlayers(refA, refB) {
       rankingSeasonId = '';
       currentStageNo = 1;
       currentMatchNo = 1;
+      groupViewPositions = {};
+      renderedMatchMap = {};
       resetStageWithdrawals();
       resetStageManualOrders();
 
@@ -2150,8 +2380,11 @@ function cascadeMatchPlayers(refA, refB) {
       renderRound();
     });
 
-    function withdrawPlayerFromCurrentStage(joueurId, playerName) {
-      if (!canWithdrawFromStage(currentStageNo)) {
+    function withdrawPlayerFromCurrentStage(joueurId, playerName, stageNo = currentStageNo, matchNo = currentMatchNo) {
+      currentStageNo = Number(stageNo || 1);
+      currentMatchNo = Number(matchNo || 1);
+
+      if (!canWithdrawFromStage(currentStageNo, currentMatchNo)) {
         alert('Le retrait est permis seulement à partir du round 2, sur le match 1, avant la première sauvegarde du round.');
         return;
       }
@@ -2167,21 +2400,60 @@ function cascadeMatchPlayers(refA, refB) {
     }
 
     groupsGridEl.addEventListener('click', event => {
+      const prevButton = event.target.closest('[data-action="group-prev"]');
+      if (prevButton) {
+        const groupCode = prevButton.dataset.groupCode || '';
+        const previous = getPreviousPositionForGroup(groupCode);
+        if (!previous) return;
+        setGroupViewPosition(groupCode, previous);
+        currentStageNo = previous.stage_no;
+        currentMatchNo = previous.match_no;
+        renderRound();
+        return;
+      }
+
+      const nextButton = event.target.closest('[data-action="group-next"]');
+      if (nextButton) {
+        const groupCode = nextButton.dataset.groupCode || '';
+        const next = getNextPositionForGroup(groupCode);
+        if (!next) return;
+        setGroupViewPosition(groupCode, next);
+        currentStageNo = next.stage_no;
+        currentMatchNo = next.match_no;
+        renderRound();
+        return;
+      }
+
       const withdrawButton = event.target.closest('[data-action="withdraw-player"]');
       if (withdrawButton) {
-        withdrawPlayerFromCurrentStage(withdrawButton.dataset.playerId || '', withdrawButton.dataset.playerName || '');
+        withdrawPlayerFromCurrentStage(
+          withdrawButton.dataset.playerId || '',
+          withdrawButton.dataset.playerName || '',
+          Number(withdrawButton.dataset.stageNo || currentStageNo),
+          Number(withdrawButton.dataset.matchNo || currentMatchNo)
+        );
         return;
       }
 
       const saveButton = event.target.closest('[data-action="save-group-scores"]');
       if (saveButton) {
-        saveCurrentScores(saveButton.dataset.groupCode || saveButton.closest('[data-group-card]')?.dataset.groupCard || '');
+        saveCurrentScores(
+          saveButton.dataset.groupCode || saveButton.closest('[data-group-card]')?.dataset.groupCard || '',
+          Number(saveButton.dataset.stageNo || currentStageNo),
+          Number(saveButton.dataset.matchNo || currentMatchNo)
+        );
         return;
       }
 
       const swapCard = event.target.closest('.match-swap-enabled');
       if (swapCard) {
-        if (!canRearrangeStage(currentStageNo)) return;
+        const stageNo = Number(swapCard.dataset.stageNo || currentStageNo);
+        const matchNo = Number(swapCard.dataset.matchNo || currentMatchNo);
+        currentStageNo = stageNo;
+        currentMatchNo = matchNo;
+        currentRoundPlan = buildRoundPlan(stageNo, matchNo);
+
+        if (!canRearrangeStage(stageNo, matchNo)) return;
 
         const ref = {
           group_code: safeText(swapCard.dataset.groupCode).trim().toUpperCase(),
