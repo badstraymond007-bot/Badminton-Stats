@@ -2477,10 +2477,10 @@ waiting_player_id: buildStoredPlayerRefFromDisplayedGroup(match.waiting_player, 
       currentStageNo = Number(stageNo || 1);
       currentMatchNo = Number(matchNo || 1);
 
-      if (!canWithdrawFromStage(currentStageNo, currentMatchNo)) {
-        alert('Le retrait est permis seulement à partir du round 2, sur le match 1, avant la première sauvegarde du round.');
-        return;
-      }
+if (!canWithdrawFromStage(currentStageNo, currentMatchNo)) {
+  alert('Le retrait est permis seulement à partir du round 2, tant que la session n’est pas barrée.');
+  return;
+}
 
       const cleanJoueurId = safeText(joueurId).trim();
       if (!cleanJoueurId) return;
