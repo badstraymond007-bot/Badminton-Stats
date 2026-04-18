@@ -730,14 +730,14 @@ function buildStoredPlayerRefFromMatchPlayer(player) {
       return !sessionLocked && Number(matchNo || 0) === 1 && !hasSavedMatchesInStage(stageNo);
     }
 
-    function canWithdrawFromStage(stageNo, matchNo = currentMatchNo) {
-      return Number(stageNo || 0) >= 2 && canEditRoundOpening(stageNo, matchNo);
-    }
+function canWithdrawFromStage(stageNo, matchNo = currentMatchNo) {
+  return !sessionLocked && Number(stageNo || 0) >= 2;
+}
 
 
-    function canRearrangeStage(stageNo, matchNo = currentMatchNo) {
-      return canEditRoundOpening(stageNo, matchNo);
-    }
+function canRearrangeStage(stageNo, matchNo = currentMatchNo) {
+  return !sessionLocked && Number(stageNo || 0) >= 2;
+}
 
     function cloneGroups(groups) {
       return (Array.isArray(groups) ? groups : []).map(group => ({
