@@ -1406,11 +1406,10 @@ function buildPreparationFromPreviousRoundRanking(activePlayers) {
   }
 
   const movedGroups = buildMovedGroupsFromRoundRanking(rankedGroups);
-  const slotGroups = buildFilledSlotGroupsFromMovedGroups(movedGroups, activePlayers);
-  const prepared = buildPreparationFromSlotGroups(
-    slotGroups,
-    'Round 2 précédent avec montées/descentes, absents retirés et trous remplis par les retours',
-    activePlayers.length
+  const seedPlayers = buildSeedOrderFromPreviousRoundRanking(activePlayers, movedGroups);
+  const prepared = finalizeGroupsFromSeed(
+    seedPlayers,
+    'Round 2 précédent avec montées/descentes, présents conservés puis retours ajoutés à la fin'
   );
 
   if (Array.isArray(prepared.groups) && prepared.groups.length) {
