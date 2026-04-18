@@ -2465,37 +2465,41 @@ waiting_player_id: buildStoredPlayerRefFromDisplayedGroup(match.waiting_player, 
     });
 
 
-    clearWithdrawalsBtn.addEventListener('click', () => {
-      if (!getStageWithdrawalIds(currentStageNo).size) return;
-      if (hasSavedMatchesInStage(currentStageNo)) {
-        alert('Impossible d’annuler les retraits : au moins un match de ce round est déjà sauvegardé.');
-        return;
-      }
-clearWithdrawalsForStage(currentStageNo);
-renderedMatchMap = {};
-currentRoundPlan = null;
-renderRound();
+clearWithdrawalsBtn.addEventListener('click', () => {
+  if (!getStageWithdrawalIds(currentStageNo).size) return;
+  if (hasSavedMatchesInStage(currentStageNo)) {
+    alert('Impossible d’annuler les retraits : au moins un match de ce round est déjà sauvegardé.');
+    return;
+  }
 
-    function withdrawPlayerFromCurrentStage(joueurId, playerName, stageNo = currentStageNo, matchNo = currentMatchNo) {
-      currentStageNo = Number(stageNo || 1);
-      currentMatchNo = Number(matchNo || 1);
+  clearWithdrawalsForStage(currentStageNo);
+  renderedMatchMap = {};
+  currentRoundPlan = null;
+  renderRound();
+});
 
-if (!canWithdrawFromStage(currentStageNo, currentMatchNo)) {
-  alert('Le retrait est permis seulement à partir du round 2, tant que la session n’est pas barrée.');
-  return;
+function withdrawPlayerFromCurrentStage(joueurId, playerName, stageNo = currentStageNo, matchNo = currentMatchNo) {
+  currentStageNo = Number(stageNo || 1);
+  currentMatchNo = Number(matchNo || 1);
+
+  if (!canWithdrawFromStage(currentStageNo, currentMatchNo)) {
+    alert('Le retrait est permis seulement à partir du round 2, tant que la session n’est pas barrée.');
+    return;
+  }
+
+  const cleanJoueurId = safeText(joueurId).trim();
+  if (!cleanJoueurId) return;
+
+  const confirmation = window.confirm(
+    `Retirer ${safeText(playerName).trim() || 'ce joueur'} et lancer la cascade pour le round ${currentStageNo} ?`
+  );
+  if (!confirmation) return;
+
+  setPlayerWithdrawal(currentStageNo, cleanJoueurId, true);
+  renderedMatchMap = {};
+  currentRoundPlan = null;
+  renderRound();
 }
-
-      const cleanJoueurId = safeText(joueurId).trim();
-      if (!cleanJoueurId) return;
-
-      const confirmation = window.confirm(`Retirer ${safeText(playerName).trim() || 'ce joueur'} et lancer la cascade pour le round ${currentStageNo} ?`);
-      if (!confirmation) return;
-
-setPlayerWithdrawal(currentStageNo, cleanJoueurId, true);
-renderedMatchMap = {};
-currentRoundPlan = null;
-renderRound();
-
     groupsGridEl.addEventListener('click', event => {
       const prevButton = event.target.closest('[data-action="group-prev"]');
       if (prevButton) {
