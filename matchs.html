@@ -1497,34 +1497,46 @@ const rotations = [
       };
     }
 
-    function buildRoundPlan(stageNo, matchNo) {
-      const structure = buildStageStructure(stageNo);
-      const groups = Array.isArray(structure.groups) ? structure.groups : [];
-      const maxMatches = Math.max(0, ...groups.map(group => getRequiredAppearances(group)));
+ <script>
+function buildRoundPlan(stageNo, matchNo) {
+  const structure = buildStageStructure(stageNo);
+  const groups = Array.isArray(structure.groups) ? structure.groups : [];
+  const maxMatches = Math.max(0, ...groups.map(group => getRequiredAppearances(group)));
 
-      const savedMatches = getSavedMatchesForStageAndMatch(stageNo, matchNo);
-      const savedByGroup = {};
-      savedMatches.forEach(match => {
-        const code = safeText(match.group_code).trim().toUpperCase();
-        if (code) savedByGroup[code] = { ...match };
-      });
+  const savedMatches = getSavedMatchesForStageAndMatch(stageNo, matchNo);
+  const savedByGroup = {};
+  savedMatches.forEach(match => {
+    const code = safeText(match.group_code).trim().toUpperCase();
+    if (code) savedByGroup[code] = { ...match };
+  });
 
-      const matches = groups
-        .filter(group => Number(matchNo || 0) <= getRequiredAppearances(group))
-        .map(group => {
-          const code = safeText(group.group_code).trim().toUpperCase();
-          return savedByGroup[code] || buildGeneratedMatchFromGroup(group, matchNo);
-        })
-        .filter(Boolean);
+  const matches = groups
+    .filter(group => Number(matchNo || 0) <= getRequiredAppearances(group))
+    .map(group => {
+      const code = safeText(group.group_code).trim().toUpperCase();
+      const savedMatch = savedByGroup[code];
+      const hasSavedScores =
+        savedMatch &&
+        safeText(savedMatch.team1_score).trim() !== '' &&
+        safeText(savedMatch.team2_score).trim() !== '';
 
-      return {
-        stage_no: stageNo,
-        match_no: matchNo,
-        groups,
-        matches,
-        max_matches: maxMatches
-      };
-    }
+      if (hasSavedScores) {
+        return savedMatch;
+      }
+
+      return buildGeneratedMatchFromGroup(group, matchNo);
+    })
+    .filter(Boolean);
+
+  return {
+    stage_no: stageNo,
+    match_no: matchNo,
+    groups,
+    matches,
+    max_matches: maxMatches
+  };
+}
+</script>
 
     function getNextPlayablePosition() {
       for (let stageNo = 1; stageNo <= MAX_ROUNDS; stageNo += 1) {
