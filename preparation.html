@@ -1405,11 +1405,21 @@ function buildPreparationFromPreviousRoundRanking(activePlayers) {
     return buildFallbackPreparation(activePlayers, 'Classement round 2 précédent vide');
   }
 
-  const seedPlayers = buildCompressedSeedOrderFromPreviousRoundRanking(activePlayers, rankedGroups);
+  const movedGroups = buildMovedGroupsFromRoundRanking(rankedGroups);
+  const slotGroups = buildFilledSlotGroupsFromMovedGroups(movedGroups, activePlayers);
+  const prepared = buildPreparationFromSlotGroups(
+    slotGroups,
+    'Round 2 précédent avec montées/descentes, absents retirés et trous remplis par les retours',
+    activePlayers.length
+  );
 
-  return finalizeGroupsFromSeed(
-    seedPlayers,
-    'Round 2 précédent compacté, puis retours ajoutés à la fin'
+  if (Array.isArray(prepared.groups) && prepared.groups.length) {
+    return prepared;
+  }
+
+  return buildFallbackPreparation(
+    activePlayers,
+    'Fallback : impossible de reconstruire les groupes déplacés avec les présences du soir'
   );
 }
   
