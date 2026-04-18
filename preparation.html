@@ -1167,7 +1167,7 @@ function buildMovedGroupsFromRoundRanking(rankedGroups) {
     let players = [];
 
     if (index === 0) {
-      players = [...bucket.top, ...bucket.middle, ...fromBelow];
+      players = [...bucket.top, ...fromBelow, ...bucket.middle];
     } else if (index === buckets.length - 1) {
       players = [...fromAbove, ...bucket.middle, ...bucket.bottom];
     } else {
@@ -1405,11 +1405,12 @@ function buildPreparationFromPreviousRoundRanking(activePlayers) {
     return buildFallbackPreparation(activePlayers, 'Classement round 2 précédent vide');
   }
 
+  const movedGroups = buildMovedGroupsFromRoundRanking(rankedGroups);
   const presentMap = createPlayerMap(activePlayers);
   const orderedSeed = [];
   const seen = new Set();
 
-  rankedGroups
+  movedGroups
     .slice()
     .sort((a, b) => getGroupIndex(a.group_code) - getGroupIndex(b.group_code))
     .forEach(group => {
@@ -1429,7 +1430,7 @@ function buildPreparationFromPreviousRoundRanking(activePlayers) {
 
   return finalizeGroupsFromSeed(
     [...orderedSeed, ...returningPlayers],
-    'Round 2 précédent gardé en ordre, absents retirés en cascade, puis retours ajoutés à la fin'
+    'Round 2 précédent déplacé comme un round suivant, absents retirés en cascade, puis retours ajoutés à la fin'
   );
 }
   function serializePrepSwapRef(ref) {
