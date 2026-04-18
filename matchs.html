@@ -1235,23 +1235,23 @@ function cascadeMatchPlayers(refA, refB) {
 
       if (size === 4) {
         const p = groupPlayers;
-       const rotations = [
-  { team1: [p[1], p[2]], team2: [p[0], p[4]], waiting: p[3] }, // 2-3 vs 1-5
-  { team1: [p[1], p[3]], team2: [p[0], p[2]], waiting: p[4] }, // 2-4 vs 1-3
-  { team1: [p[1], p[4]], team2: [p[2], p[3]], waiting: p[0] }, // 2-5 vs 3-4
-  { team1: [p[0], p[3]], team2: [p[2], p[4]], waiting: p[1] }  // 1-4 vs 3-5
-];
+        const rotations = [
+          { team1: [p[0], p[1]], team2: [p[2], p[3]], waiting: null },
+          { team1: [p[0], p[2]], team2: [p[1], p[3]], waiting: null },
+          { team1: [p[0], p[3]], team2: [p[1], p[2]], waiting: null }
+        ];
         return rotations[(appearanceNo - 1) % rotations.length];
       }
 
       if (size === 5) {
         const p = groupPlayers;
         const rotations = [
-          { team1: [p[0], p[2]], team2: [p[1], p[3]], waiting: p[4] },
-          { team1: [p[0], p[3]], team2: [p[2], p[4]], waiting: p[1] },
-          { team1: [p[0], p[4]], team2: [p[1], p[2]], waiting: p[3] },
-          { team1: [p[1], p[4]], team2: [p[2], p[3]], waiting: p[0] }
-        ];
+const rotations = [
+  { team1: [p[1], p[2]], team2: [p[0], p[4]], waiting: p[3] }, // 2-3 vs 1-5
+  { team1: [p[1], p[3]], team2: [p[0], p[2]], waiting: p[4] }, // 2-4 vs 1-3
+  { team1: [p[1], p[4]], team2: [p[2], p[3]], waiting: p[0] }, // 2-5 vs 3-4
+  { team1: [p[0], p[3]], team2: [p[2], p[4]], waiting: p[1] }  // 1-4 vs 3-5
+];
         return rotations[(appearanceNo - 1) % rotations.length];
       }
 
