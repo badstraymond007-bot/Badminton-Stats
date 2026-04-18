@@ -1970,7 +1970,17 @@ cumulativeRankingCache = Array.isArray(cumulativeRankingResult.rows) ? cumulativ
     }
   }
 
-  function buildRound1MatchesFromProposalGroups(groups) {
+function buildStoredPlayerRef(player, tag) {
+  const joueurId = safeText(player?.joueur_id).trim();
+  if (!joueurId) return '';
+
+  return JSON.stringify({
+    joueur_id: joueurId,
+    tag: String(tag)
+  });
+}
+  
+function buildRound1MatchesFromProposalGroups(groups) {
   return (Array.isArray(groups) ? groups : [])
     .filter(group => Array.isArray(group.players) && group.players.length >= 4)
     .map(group => {
@@ -1979,11 +1989,13 @@ cumulativeRankingCache = Array.isArray(cumulativeRankingResult.rows) ? cumulativ
       return {
         group_code: safeText(group.group_code).trim().toUpperCase(),
         court_no: String(getGroupIndex(group.group_code) + 1),
-        team1_player1_id: safeText(players[0]?.joueur_id).trim(),
-team1_player2_id: safeText(players[1]?.joueur_id).trim(),
-team2_player1_id: safeText(players[2]?.joueur_id).trim(),
-team2_player2_id: safeText(players[3]?.joueur_id).trim(),
-waiting_player_id: safeText(players[4]?.joueur_id).trim(),
+
+        team1_player1_id: buildStoredPlayerRef(players[0], 1),
+        team1_player2_id: buildStoredPlayerRef(players[1], 2),
+        team2_player1_id: buildStoredPlayerRef(players[2], 3),
+        team2_player2_id: buildStoredPlayerRef(players[3], 4),
+        waiting_player_id: buildStoredPlayerRef(players[4], 5),
+
         team1_score: '',
         team2_score: '',
         winner_team: '',
