@@ -1315,7 +1315,7 @@ function getRotationForGroup(groupPlayers, appearanceNo, stageNo = 1) {
       { team1: [p[2], p[4]], team2: [p[1], p[3]], waiting: p[0] }, // 3-5 vs 2-4
       { team1: [p[0], p[4]], team2: [p[2], p[3]], waiting: p[1] }, // 1-5 vs 3-4
       { team1: [p[0], p[2]], team2: [p[1], p[4]], waiting: p[3] }, // 1-3 vs 2-5
-      { team1: [p[0], p[1]], team2: [p[2], p[3]], waiting: p[4] }  // 1-2 vs 3-4
+      { team1: [p[1], p[2]], team2: [p[0], p[3]], waiting: p[4] }  // 2-3 vs 1-4
     ];
 
     const useSerie2 = Number(stageNo || 1) === 2;
