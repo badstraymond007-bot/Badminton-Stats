@@ -1016,11 +1016,13 @@ function setOpenMatchSwapMenu(ref) {
     swapMatchPlayers(openMatchSwapMenuRef, targetRef);
   });
 }
-    function applyVisibleMatchGroups(groups) {
-      setStageManualOrderFromGroups(currentStageNo, groups);
-      openMatchSwapMenuRef = null;
-      renderRound();
-    }
+function applyVisibleMatchGroups(groups) {
+  setStageManualOrderFromGroups(currentStageNo, groups);
+  openMatchSwapMenuRef = null;
+  renderedMatchMap = {};
+  currentRoundPlan = null;
+  renderRound();
+}
 
 function swapMatchPlayers(refA, refB) {
   const groups = cloneGroups(currentRoundPlan?.groups || []);
@@ -2469,9 +2471,10 @@ waiting_player_id: buildStoredPlayerRefFromDisplayedGroup(match.waiting_player, 
         alert('Impossible d’annuler les retraits : au moins un match de ce round est déjà sauvegardé.');
         return;
       }
-      clearWithdrawalsForStage(currentStageNo);
-      renderRound();
-    });
+clearWithdrawalsForStage(currentStageNo);
+renderedMatchMap = {};
+currentRoundPlan = null;
+renderRound();
 
     function withdrawPlayerFromCurrentStage(joueurId, playerName, stageNo = currentStageNo, matchNo = currentMatchNo) {
       currentStageNo = Number(stageNo || 1);
@@ -2488,9 +2491,10 @@ if (!canWithdrawFromStage(currentStageNo, currentMatchNo)) {
       const confirmation = window.confirm(`Retirer ${safeText(playerName).trim() || 'ce joueur'} et lancer la cascade pour le round ${currentStageNo} ?`);
       if (!confirmation) return;
 
-      setPlayerWithdrawal(currentStageNo, cleanJoueurId, true);
-      renderRound();
-    }
+setPlayerWithdrawal(currentStageNo, cleanJoueurId, true);
+renderedMatchMap = {};
+currentRoundPlan = null;
+renderRound();
 
     groupsGridEl.addEventListener('click', event => {
       const prevButton = event.target.closest('[data-action="group-prev"]');
