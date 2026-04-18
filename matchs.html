@@ -1184,6 +1184,27 @@ function cascadeMatchPlayers(refA, refB) {
       return map;
     }
 
+function buildStoredPlayerRefFromDisplayedGroup(player, groupModel) {
+  const joueurId = safeText(player?.joueur_id).trim();
+  if (!joueurId) return '';
+
+  const players = Array.isArray(groupModel?.players) ? groupModel.players : [];
+  const index = players.findIndex(item =>
+    safeText(item?.joueur_id).trim() === joueurId
+  );
+
+  if (index === -1) {
+    return JSON.stringify({
+      joueur_id: joueurId
+    });
+  }
+
+  return JSON.stringify({
+    joueur_id: joueurId,
+    tag: String(index + 1)
+  });
+}
+    
 
     function getSelectedSeason() {
       const saisonId = safeText(matchSeasonEl.value).trim();
@@ -2068,6 +2089,10 @@ function buildRoundPlan(stageNo, matchNo) {
       if (!cleanGroupCode) throw new Error('Groupe manquant.');
 
       const match = getRenderedMatchForPosition(stageNo, matchNo, cleanGroupCode);
+      const roundPlan = buildRoundPlan(stageNo, matchNo);
+const groupModel = (roundPlan.groups || []).find(group =>
+  safeText(group.group_code).trim().toUpperCase() === cleanGroupCode
+) || null;
       if (!match) throw new Error(`Groupe ${cleanGroupCode} introuvable pour cet écran.`);
       if (safeText(match.team1_score).trim() === '' || safeText(match.team2_score).trim() === '') {
         throw new Error(`Entre les deux scores du groupe ${cleanGroupCode} avant de sauvegarder.`);
