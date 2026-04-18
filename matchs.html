@@ -638,6 +638,22 @@
       return fileId ? `https://drive.google.com/thumbnail?id=${encodeURIComponent(fileId)}&sz=w300` : DEFAULT_AVATAR;
     }
 
+function buildStoredPlayerRefFromMatchPlayer(player) {
+  const joueurId = safeText(player?.joueur_id).trim();
+  const tag = safeText(player?.canonical_tag).trim();
+
+  if (!joueurId) return '';
+
+  if (tag) {
+    return JSON.stringify({
+      joueur_id: joueurId,
+      tag: tag
+    });
+  }
+
+  return joueurId;
+}
+    
     function renderPlayerCard(player, options = {}) {
       if (!player) return '<div class="slot-empty">—</div>';
 
@@ -2049,11 +2065,11 @@ function buildRoundPlan(stageNo, matchNo) {
         round_no: stageNo,
         match_no: matchNo,
         group_code: cleanGroupCode,
-        team1_player1_id: safeText(match.team1_player1?.joueur_id).trim(),
-        team1_player2_id: safeText(match.team1_player2?.joueur_id).trim(),
-        team2_player1_id: safeText(match.team2_player1?.joueur_id).trim(),
-        team2_player2_id: safeText(match.team2_player2?.joueur_id).trim(),
-        waiting_player_id: safeText(match.waiting_player?.joueur_id).trim(),
+team1_player1_id: buildStoredPlayerRefFromMatchPlayer(match.team1_player1),
+team1_player2_id: buildStoredPlayerRefFromMatchPlayer(match.team1_player2),
+team2_player1_id: buildStoredPlayerRefFromMatchPlayer(match.team2_player1),
+team2_player2_id: buildStoredPlayerRefFromMatchPlayer(match.team2_player2),
+waiting_player_id: buildStoredPlayerRefFromMatchPlayer(match.waiting_player),
         team1_score: safeText(match.team1_score).trim(),
         team2_score: safeText(match.team2_score).trim(),
         winner_team: ''
