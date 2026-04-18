@@ -213,23 +213,39 @@
       margin-top: 12px;
     }
 
-    .group-nav {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-top: 12px;
-      padding: 10px 12px;
-      border: 1px solid var(--soft-line);
-      background: #fff;
-      border-radius: 12px;
-    }
+.group-nav {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-areas:
+    "title title"
+    "prev next";
+  gap: 12px;
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid var(--soft-line);
+  background: #fff;
+  border-radius: 12px;
+}
 
-    .group-nav-label {
-      font-weight: bold;
-      color: var(--accent);
-    }
+.group-nav-label {
+  grid-area: title;
+  text-align: center;
+  font-weight: bold;
+  color: var(--accent);
+  font-size: 24px;
+}
+
+.group-nav [data-action="group-prev"] {
+  grid-area: prev;
+  justify-self: start;
+  min-width: 140px;
+}
+
+.group-nav [data-action="group-next"] {
+  grid-area: next;
+  justify-self: end;
+  min-width: 140px;
+}
 
     .slot, .waiting-box {
       border: 1px dashed #cbd5e1;
