@@ -410,7 +410,7 @@
     <div class="topbar">
       <div>
         <h1>Préparation équipe</h1>
-        <p>Cette page charge les présences du soir et prépare les groupes à partir du round 2 de la session précédente.</p>
+        <p>Cette page charge les présences du soir et prépare les groupes à partir du classement courant. Les joueurs absents à la session précédente passent simplement à la fin.</p>
       </div>
       <a class="btn secondary" href="index.html">← Retour à l'accueil</a>
     </div>
@@ -687,16 +687,43 @@
     return safeSessionNo(ordered[index - 1].no_session);
   }
 
+  function getPreviousSessionMeta(noSession) {
+    const season = getSelectedSeason();
+    if (!season || !Array.isArray(season.sessions)) return null;
+
+    const ordered = [...season.sessions].sort((a, b) =>
+      compareNumericLike(a.no_session, b.no_session)
+    );
+
+    const index = ordered.findIndex(session =>
+      safeSessionNo(session.no_session) === safeSessionNo(noSession)
+    );
+
+    if (index <= 0) return null;
+    return ordered[index - 1] || null;
+  }
+
   function populateSeasonSelect() {
     const currentValue = safeText(prepSeasonEl.value).trim();
 
     prepSeasonEl.innerHTML =
       '<option value="">Choisir une saison</option>' +
-      seasonsCache.map(season => `
-        <option value="${escapeHtml(safeText(season.saison_id))}">
-          ${escapeHtml(safeText(season.nom_saison || season.saison_id))}
-        </option>
-      `).join('');
+      seasonsCache.map(season => {
+        const status = safeText(season?.statut).trim().toLowerCase();
+        const closed = status === 'terminee' || status === 'terminée';
+
+        return `
+          <option
+            value="${escapeHtml(safeText(season.saison_id))}"
+            ${closed ? 'disabled' : ''}
+          >
+            ${escapeHtml(
+              safeText(season.nom_saison || season.saison_id) +
+              (closed ? ' — terminée' : '')
+            )}
+          </option>
+        `;
+      }).join('');
 
     if (
       currentValue &&
@@ -1394,43 +1421,43 @@ function buildCompressedSeedOrderFromPreviousRoundRanking(activePlayers, rankedG
   return [...ordered, ...returningPlayers];
 }
 
-function buildPreparationFromPreviousRoundRanking(activePlayers) {
-  if (!Array.isArray(previousRoundRankingCache) || !previousRoundRankingCache.length) {
-    return buildFallbackPreparation(activePlayers, 'Aucun classement round 2 précédent disponible');
+function buildPreparationFromPreviousAttendance(activePlayers, previousAttendancePlayers) {
+  const rankedPresent = getPresentPlayersRankedByCumulative(activePlayers);
+
+  // Première session de la saison :
+  // aucun historique de présence précédent, donc classement courant seulement.
+  if (!previousSessionNoCache) {
+    return finalizeGroupsFromSeed(
+      rankedPresent,
+      'Classement courant • première session de la saison'
+    );
   }
 
-  const rankedGroups = buildRankedGroupsFromPreviousRoundRanking();
+  const previousIds = new Set(
+    (Array.isArray(previousAttendancePlayers) ? previousAttendancePlayers : [])
+      .map(player => safeText(player?.joueur_id).trim())
+      .filter(Boolean)
+  );
 
-  if (!rankedGroups.length) {
-    return buildFallbackPreparation(activePlayers, 'Classement round 2 précédent vide');
-  }
+  const presentLastSession = [];
+  const returningAfterAbsence = [];
 
-  const movedGroups = buildMovedGroupsFromRoundRanking(rankedGroups);
-  const presentMap = createPlayerMap(activePlayers);
-  const orderedSeed = [];
-  const seen = new Set();
+  rankedPresent.forEach(player => {
+    const joueurId = safeText(player?.joueur_id).trim();
+    if (!joueurId) return;
 
-  movedGroups
-    .slice()
-    .sort((a, b) => getGroupIndex(a.group_code) - getGroupIndex(b.group_code))
-    .forEach(group => {
-      (group.players || []).forEach(player => {
-        const joueurId = safeText(player?.joueur_id).trim();
-        if (!joueurId || seen.has(joueurId) || !presentMap[joueurId]) return;
-        seen.add(joueurId);
-        orderedSeed.push(presentMap[joueurId]);
-      });
-    });
-
-  const returningPlayers = getPresentPlayersRankedByCumulative(activePlayers)
-    .filter(player => {
-      const joueurId = safeText(player?.joueur_id).trim();
-      return joueurId && !seen.has(joueurId);
-    });
+    if (previousIds.has(joueurId)) {
+      presentLastSession.push(player);
+    } else {
+      returningAfterAbsence.push(player);
+    }
+  });
 
   return finalizeGroupsFromSeed(
-    [...orderedSeed, ...returningPlayers],
-    'Round 2 précédent déplacé comme un round suivant, absents retirés en cascade, puis retours ajoutés à la fin'
+    [...presentLastSession, ...returningAfterAbsence],
+    returningAfterAbsence.length
+      ? `Classement courant • ${presentLastSession.length} présents la session précédente • ${returningAfterAbsence.length} retour(s) d'absence à la fin`
+      : 'Classement courant • tous les joueurs présents étaient aussi présents à la session précédente'
   );
 }
   function serializePrepSwapRef(ref) {
@@ -1824,6 +1851,18 @@ function cascadePreparationPlayers(refA, refB) {
 
       seasonsCache = Array.isArray(result.data) ? result.data : [];
       populateSeasonSelect();
+
+      if (!safeText(prepSeasonEl.value).trim()) {
+        const activeSeason = seasonsCache.find(season =>
+          safeText(season?.statut).trim().toLowerCase() === 'active'
+        );
+
+        if (activeSeason) {
+          prepSeasonEl.value = safeText(activeSeason.saison_id).trim();
+          populateSessionSelect();
+          updateSessionFields();
+        }
+      }
     } catch (error) {
       console.error(error);
       resetPreparation('Erreur lors du chargement des saisons : ' + (error.message || error), 'danger');
@@ -1856,6 +1895,7 @@ function cascadePreparationPlayers(refA, refB) {
 
     prepTitleEl.textContent = 'Round 1 • Groupes de départ';
     previousSessionNoCache = getPreviousSessionNo(noSession);
+    const previousSessionMeta = getPreviousSessionMeta(noSession);
 
     try {
       const attendanceParams = new URLSearchParams({
@@ -1871,22 +1911,15 @@ function cascadePreparationPlayers(refA, refB) {
         no_session: noSession
       });
 
-const previousMatchesPromise = previousSessionNoCache
-  ? fetchJson(new URLSearchParams({
-      action: 'getSessionMatches',
-      saison_id: saisonId,
-      no_session: previousSessionNoCache
-    }))
-  : Promise.resolve({ ok: true, rounds: [] });
-
-const previousRoundRankingPromise = previousSessionNoCache
-  ? fetchJson(new URLSearchParams({
-      action: 'getRoundRanking',
-      saison_id: saisonId,
-      no_session: previousSessionNoCache,
-      round_no: '2'
-    }))
-  : Promise.resolve({ ok: true, rows: [] });
+const previousAttendancePromise =
+  previousSessionNoCache && previousSessionMeta
+    ? fetchJson(new URLSearchParams({
+        action: 'getAttendanceForSession',
+        saison_id: saisonId,
+        date_session: safeText(previousSessionMeta.date).trim(),
+        no_session: previousSessionNoCache
+      }))
+    : Promise.resolve({ ok: true, joueurs: [] });
 
 const cumulativeRankingPromise = fetchJson(new URLSearchParams({
   action: 'getRanking',
@@ -1896,32 +1929,49 @@ const cumulativeRankingPromise = fetchJson(new URLSearchParams({
 const [
   attendanceResult,
   currentMatchesResult,
-  previousMatchesResult,
-  previousRoundRankingResult,
+  previousAttendanceResult,
   cumulativeRankingResult
 ] = await Promise.all([
   fetchJson(attendanceParams),
   fetchJson(currentMatchesParams),
-  previousMatchesPromise,
-  previousRoundRankingPromise,
+  previousAttendancePromise,
   cumulativeRankingPromise
 ]);
 
-if (!attendanceResult.ok) throw new Error(attendanceResult.error || 'Erreur de présence.');
-if (!currentMatchesResult.ok) throw new Error(currentMatchesResult.error || 'Erreur de matchs courants.');
-if (!previousMatchesResult.ok) throw new Error(previousMatchesResult.error || 'Erreur de matchs précédents.');
-if (!previousRoundRankingResult.ok) {
-  throw new Error(previousRoundRankingResult.error || 'Erreur de classement round.');
+if (!attendanceResult.ok) {
+  throw new Error(attendanceResult.error || 'Erreur de présence.');
 }
+
+if (!currentMatchesResult.ok) {
+  throw new Error(currentMatchesResult.error || 'Erreur de matchs courants.');
+}
+
+if (!previousAttendanceResult.ok) {
+  throw new Error(previousAttendanceResult.error || 'Erreur de présence précédente.');
+}
+
 if (!cumulativeRankingResult.ok) {
   throw new Error(cumulativeRankingResult.error || 'Erreur de classement cumulatif.');
 }
 
-attendanceCache = Array.isArray(attendanceResult.joueurs) ? attendanceResult.joueurs : [];
-currentSessionRoundsCache = Array.isArray(currentMatchesResult.rounds) ? currentMatchesResult.rounds : [];
-previousSessionRoundsCache = Array.isArray(previousMatchesResult.rounds) ? previousMatchesResult.rounds : [];
-previousRoundRankingCache = Array.isArray(previousRoundRankingResult.rows) ? previousRoundRankingResult.rows : [];
-cumulativeRankingCache = Array.isArray(cumulativeRankingResult.rows) ? cumulativeRankingResult.rows : [];
+attendanceCache = Array.isArray(attendanceResult.joueurs)
+  ? attendanceResult.joueurs
+  : [];
+
+currentSessionRoundsCache = Array.isArray(currentMatchesResult.rounds)
+  ? currentMatchesResult.rounds
+  : [];
+
+const previousAttendanceCache = Array.isArray(previousAttendanceResult.joueurs)
+  ? previousAttendanceResult.joueurs
+  : [];
+
+previousSessionRoundsCache = [];
+previousRoundRankingCache = [];
+
+cumulativeRankingCache = Array.isArray(cumulativeRankingResult.rows)
+  ? cumulativeRankingResult.rows
+  : [];
       
       if (attendanceCache.length < 4) {
         setHint('Pas assez de joueurs présents. Il faut au moins 4 joueurs pour préparer la soirée.', 'danger');
@@ -1934,7 +1984,10 @@ cumulativeRankingCache = Array.isArray(cumulativeRankingResult.rows) ? cumulativ
       const existingRound1 = currentSessionRoundsCache.find(round => Number(round?.round_no || 0) === 1);
       currentRound1AlreadyExists = !!(existingRound1 && Array.isArray(existingRound1.matches) && existingRound1.matches.length);
 
-      const built = buildPreparationFromPreviousRoundRanking(attendanceCache);
+      const built = buildPreparationFromPreviousAttendance(
+        attendanceCache,
+        previousAttendanceCache
+      );
       proposalGroups = Array.isArray(built.groups) ? built.groups : [];
       benchPlayers = Array.isArray(built.bench) ? built.bench : [];
       preparationSource = safeText(built.source).trim();
@@ -1943,7 +1996,7 @@ cumulativeRankingCache = Array.isArray(cumulativeRankingResult.rows) ? cumulativ
         if (currentRound1AlreadyExists) {
           setHint(
             previousSessionNoCache
-              ? `Round 1 existe déjà en base pour cette session. La page affiche quand même le recalcul théorique à partir du round 2 de la session ${previousSessionNoCache}.`
+              ? `Round 1 existe déjà en base pour cette session. La page affiche quand même le recalcul théorique à partir du classement courant et des présences de la session ${previousSessionNoCache}.`
               : 'Round 1 existe déjà en base pour cette session. La page affiche quand même le recalcul théorique.',
             'warn'
           );
