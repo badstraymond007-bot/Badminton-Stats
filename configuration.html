@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -246,6 +245,103 @@
       margin-top: 18px;
     }
 
+    .season-management {
+      margin-bottom: 20px;
+    }
+
+    .active-season-card {
+      border: 1px solid #a7f3d0;
+      background: #ecfdf5;
+      border-radius: 14px;
+      padding: 16px;
+      margin-top: 14px;
+    }
+
+    .active-season-card.empty {
+      border-color: var(--line);
+      background: #fafafa;
+    }
+
+    .season-history {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .history-item {
+      border: 1px solid var(--line);
+      background: #fafafa;
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .history-main {
+      min-width: 0;
+    }
+
+    .history-name {
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+
+    .history-meta {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .status-pill {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    .status-pill.active {
+      color: #047857;
+      background: #d1fae5;
+      border: 1px solid #a7f3d0;
+    }
+
+    .status-pill.closed {
+      color: #92400e;
+      background: #fef3c7;
+      border: 1px solid #fde68a;
+    }
+
+    .btn.danger {
+      background: #fff;
+      color: #b91c1c;
+      border-color: #fecaca;
+    }
+
+    .btn.danger:hover {
+      background: #fef2f2;
+    }
+
+    .creation-locked {
+      opacity: 0.58;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .config-message {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: var(--soft);
+      border: 1px solid var(--soft-line);
+      color: #1e3a8a;
+      line-height: 1.45;
+    }
+
     @media (max-width: 860px) {
       .layout {
         grid-template-columns: 1fr;
@@ -266,8 +362,35 @@
       <a class="btn secondary" href="index.html">← Retour à l'accueil</a>
     </div>
 
+    <section class="card season-management">
+      <h2>Gestion des saisons</h2>
+      <p>La saison active est modifiable. Les saisons terminées restent consultables, mais elles sont verrouillées en lecture seule.</p>
+
+      <div class="active-season-card empty" id="activeSeasonCard">
+        <div class="history-name" id="activeSeasonName">Chargement de la saison active...</div>
+        <div class="history-meta" id="activeSeasonMeta">Connexion à la base en cours.</div>
+
+        <div class="actions" id="activeSeasonActions" style="display:none;">
+          <button type="button" class="btn danger" id="closeSeasonBtn">Clôturer la saison active</button>
+        </div>
+      </div>
+
+      <div class="config-message" id="creationMessage">
+        Vérification de la saison active...
+      </div>
+
+      <div class="section-title">Historique</div>
+      <div class="season-history" id="seasonHistory">
+        <div class="history-item">
+          <div class="history-main">
+            <div class="history-name">Chargement des saisons...</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <div class="layout">
-      <section class="card">
+      <section class="card" id="newSeasonSection">
         <h2>Préparer une nouvelle saison</h2>
 
         <form id="seasonSetupForm">
@@ -365,10 +488,9 @@
           </div>
         </div>
 
-        <div class="section-title">Étapes prévues</div>
+        <div class="section-title">Fonctionnement</div>
         <p>
-          1. Décider des dates.<br />
-          2. Par la suite, tous les mardis entre ces deux dates, on crée une session automatique.
+          Une seule saison peut être active à la fois. Lorsqu’une saison est clôturée, son classement final est archivé et toutes ses données deviennent en lecture seule. Une nouvelle saison peut ensuite être préparée ici.
         </p>
       </aside>
     </div>
@@ -391,11 +513,23 @@
     const removePlayerBtn = document.getElementById('removePlayerBtn');
     const resetSeasonBtn = document.getElementById('resetSeasonBtn');
 
+    const activeSeasonCardEl = document.getElementById('activeSeasonCard');
+    const activeSeasonNameEl = document.getElementById('activeSeasonName');
+    const activeSeasonMetaEl = document.getElementById('activeSeasonMeta');
+    const activeSeasonActionsEl = document.getElementById('activeSeasonActions');
+    const closeSeasonBtn = document.getElementById('closeSeasonBtn');
+    const creationMessageEl = document.getElementById('creationMessage');
+    const seasonHistoryEl = document.getElementById('seasonHistory');
+    const newSeasonSectionEl = document.getElementById('newSeasonSection');
+
     const summaryNameEl = document.getElementById('summaryName');
     const summaryStartEl = document.getElementById('summaryStart');
     const summaryEndEl = document.getElementById('summaryEnd');
     const summaryTuesdaysEl = document.getElementById('summaryTuesdays');
     const summaryPlayersEl = document.getElementById('summaryPlayers');
+
+    let seasonsCache = [];
+    let activeSeason = null;
 
     function escapeHtml(value) {
       return String(value ?? '')
@@ -523,6 +657,176 @@
       });
     }
 
+    function normalizeStatus(value) {
+      return String(value || '').trim().toLowerCase();
+    }
+
+    function formatShortDate(value) {
+      if (!value) return '—';
+
+      const date = new Date(String(value).slice(0, 10) + 'T00:00:00');
+      if (Number.isNaN(date.getTime())) return String(value);
+
+      return date.toLocaleDateString('fr-CA', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    }
+
+    function isActiveSeason(season) {
+      return normalizeStatus(season?.statut) === 'active';
+    }
+
+    function isClosedSeason(season) {
+      const status = normalizeStatus(season?.statut);
+      return status === 'terminee' || status === 'terminée';
+    }
+
+    function renderSeasonManagement() {
+      activeSeason = seasonsCache.find(isActiveSeason) || null;
+
+      if (activeSeason) {
+        activeSeasonCardEl.classList.remove('empty');
+        activeSeasonNameEl.textContent =
+          activeSeason.nom_saison || activeSeason.saison_id || 'Saison active';
+
+        activeSeasonMetaEl.textContent =
+          `${formatShortDate(activeSeason.date_debut)} → ${formatShortDate(activeSeason.date_fin)} • ` +
+          `${Array.isArray(activeSeason.sessions) ? activeSeason.sessions.length : 0} sessions`;
+
+        activeSeasonActionsEl.style.display = 'flex';
+
+        creationMessageEl.textContent =
+          'Une saison est déjà active. La création d’une nouvelle saison est désactivée pour éviter d’avoir deux saisons actives en même temps.';
+
+        newSeasonSectionEl.classList.add('creation-locked');
+        createSeasonBtn.disabled = true;
+      } else {
+        activeSeasonCardEl.classList.add('empty');
+        activeSeasonNameEl.textContent = 'Aucune saison active';
+        activeSeasonMetaEl.textContent =
+          'Tu peux préparer et créer une nouvelle saison avec le formulaire ci-dessous.';
+
+        activeSeasonActionsEl.style.display = 'none';
+
+        creationMessageEl.textContent =
+          'Aucune saison active : le formulaire de création est disponible.';
+
+        newSeasonSectionEl.classList.remove('creation-locked');
+        createSeasonBtn.disabled = false;
+      }
+
+      const history = seasonsCache.filter(season => !isActiveSeason(season));
+
+      if (!history.length) {
+        seasonHistoryEl.innerHTML = `
+          <div class="history-item">
+            <div class="history-main">
+              <div class="history-name">Aucune saison terminée</div>
+              <div class="history-meta">L’historique apparaîtra ici après la première clôture.</div>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      seasonHistoryEl.innerHTML = history.map(season => {
+        const status = isClosedSeason(season) ? 'Terminée' : (season.statut || 'Historique');
+
+        return `
+          <div class="history-item">
+            <div class="history-main">
+              <div class="history-name">${escapeHtml(season.nom_saison || season.saison_id)}</div>
+              <div class="history-meta">
+                ${escapeHtml(formatShortDate(season.date_debut))}
+                →
+                ${escapeHtml(formatShortDate(season.date_fin))}
+                •
+                ${escapeHtml(Array.isArray(season.sessions) ? season.sessions.length : 0)} sessions
+              </div>
+            </div>
+            <span class="status-pill closed">${escapeHtml(status)}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function loadSeasons() {
+      try {
+        const response = await fetch(`${API_URL}?action=getSeasons`);
+        const result = await response.json();
+
+        if (!result.ok || !Array.isArray(result.data)) {
+          throw new Error(result.error || 'Réponse API invalide');
+        }
+
+        seasonsCache = result.data;
+        renderSeasonManagement();
+      } catch (error) {
+        console.error('Erreur loadSeasons:', error);
+
+        activeSeasonCardEl.classList.add('empty');
+        activeSeasonNameEl.textContent = 'Erreur de chargement';
+        activeSeasonMetaEl.textContent = error.message || String(error);
+
+        creationMessageEl.textContent =
+          'Impossible de déterminer la saison active. La création est bloquée par sécurité.';
+
+        newSeasonSectionEl.classList.add('creation-locked');
+        createSeasonBtn.disabled = true;
+      }
+    }
+
+    async function closeActiveSeason() {
+      if (!activeSeason || !activeSeason.saison_id) {
+        alert('Aucune saison active à clôturer.');
+        return;
+      }
+
+      const seasonName = activeSeason.nom_saison || activeSeason.saison_id;
+
+      const confirmed = confirm(
+        `Clôturer définitivement "${seasonName}" ?\n\n` +
+        `Le classement final sera archivé et cette saison deviendra en lecture seule.`
+      );
+
+      if (!confirmed) {
+        return;
+      }
+
+      closeSeasonBtn.disabled = true;
+      closeSeasonBtn.textContent = 'Clôture...';
+
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'text/plain;charset=utf-8'
+          },
+          body: JSON.stringify({
+            action: 'closeSeason',
+            saison_id: activeSeason.saison_id
+          })
+        });
+
+        const result = await response.json();
+
+        if (!result.ok) {
+          throw new Error(result.error || 'Erreur API inconnue');
+        }
+
+        alert(`Saison clôturée : ${seasonName}`);
+        await loadSeasons();
+      } catch (error) {
+        console.error(error);
+        alert('Erreur lors de la clôture : ' + (error.message || error));
+      } finally {
+        closeSeasonBtn.disabled = false;
+        closeSeasonBtn.textContent = 'Clôturer la saison active';
+      }
+    }
+
     async function loadPlayers() {
       try {
         const response = await fetch(`${API_URL}?action=getPlayers`);
@@ -586,6 +890,8 @@ console.log('ids joueurs =', players.map(p => p.player_id));
         `;
       }
     }
+
+    closeSeasonBtn.addEventListener('click', closeActiveSeason);
 
     nomSaisonEl.addEventListener('input', updateSummaryName);
     dateDebutEl.addEventListener('change', renderTuesdays);
@@ -754,6 +1060,7 @@ seasonSetupForm.addEventListener('submit', async (e) => {
 
     alert('Saison sauvegardée avec succès.');
     console.log('Résultat createSeason :', result);
+    await loadSeasons();
   } catch (error) {
     console.error(error);
     alert('Erreur lors de la sauvegarde : ' + (error.message || error));
@@ -765,6 +1072,7 @@ seasonSetupForm.addEventListener('submit', async (e) => {
     updateSummaryName();
     renderTuesdays();
     loadPlayers();
+    loadSeasons();
   </script>
 </body>
 </html>
