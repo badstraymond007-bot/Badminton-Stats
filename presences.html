@@ -291,10 +291,10 @@
           <button type="button" class="btn secondary" id="uncheckAllPlayers">Tout décocher</button>
         </div>
 
-        <div class="players-list-title">Liste complète des joueurs</div>
+        <div class="players-list-title">Joueurs de la saison</div>
         <p class="players-list-sub">
-          Affichage simple et complet pour tablette : on voit tous les joueurs un à la suite de l’autre,
-          puis on coche seulement les présences du jour.
+          Seuls les joueurs inscrits à la saison sélectionnée apparaissent ici.
+          Coche simplement ceux qui sont présents aujourd’hui.
         </p>
 
         <div class="players-list" id="playersList">
@@ -312,7 +312,7 @@
         </div>
 
         <div class="note">
-          Structure visuelle pensée d’abord pour la tablette : liste complète, gros clic facile, puis sauvegarde branchée ensuite.
+          Enregistrer remplace complètement les présences déjà sauvegardées pour cette session. Tu peux donc corriger une erreur sans créer de doublon.
         </div>
       </section>
 
@@ -344,12 +344,9 @@
   </div>
 </div>
 
-<h2 style="margin-top: 18px;">Étapes prévues</h2>
+<h2 style="margin-top: 18px;">Fonctionnement</h2>
 <p>
-  1. Charger la liste des joueurs depuis l’API.<br />
-  2. Choisir la saison et la session depuis la saison active.<br />
-  3. Cocher / décocher facilement les présences.<br />
-  4. Enregistrer les lignes dans <strong>presences</strong>.
+  La liste provient du roster de la saison sélectionnée. Une sauvegarde remplace les présences de la session choisie, ce qui permet de corriger les absences au besoin.
 </p>
       </aside>
     </div>
@@ -369,6 +366,7 @@ const sessionSeasonEl = document.getElementById('sessionSeason');
 const sessionPickerEl = document.getElementById('sessionPicker');
 
 let seasonsCache = [];
+let allPlayersCache = [];
 
     function escapeHtml(value) {
       return String(value ?? '')
@@ -384,28 +382,93 @@ let seasonsCache = [];
       selectedCountEl.textContent = checked;
     }
 
-    function bindAttendanceEvents() {
-      const checkboxes = document.querySelectorAll('input[name="attendanceSelection"]');
+function updateRosterCheckboxEvents() {
+  document
+    .querySelectorAll('input[name="attendanceSelection"]')
+    .forEach(box => {
+      box.addEventListener('change', updateSelectedCount);
+    });
+}
 
-      checkboxes.forEach(box => {
-        box.addEventListener('change', updateSelectedCount);
-      });
+function getSeasonRosterIds(season) {
+  if (!season || !Array.isArray(season.joueurs)) {
+    return [];
+  }
 
-      checkAllBtn.addEventListener('click', () => {
-        checkboxes.forEach(box => {
-          box.checked = true;
-        });
-        updateSelectedCount();
-      });
+  return Array.from(
+    new Set(
+      season.joueurs
+        .map(value => String(value || '').trim())
+        .filter(Boolean)
+    )
+  );
+}
 
-      uncheckAllBtn.addEventListener('click', () => {
-        checkboxes.forEach(box => {
-          box.checked = false;
-        });
-        updateSelectedCount();
-      });
-    }
-    
+function renderPlayersForSelectedSeason() {
+  const season = getSelectedSeason();
+
+  if (!season) {
+    playersListEl.innerHTML = `
+      <div class="player-item">
+        <div class="player-text">
+          <div class="player-name">Choisis une saison</div>
+          <div class="player-code">La liste des joueurs apparaîtra ensuite.</div>
+        </div>
+      </div>
+    `;
+    updateSelectedCount();
+    return;
+  }
+
+  const rosterIds = getSeasonRosterIds(season);
+  const rosterSet = new Set(rosterIds);
+
+  const players = allPlayersCache
+    .filter(player =>
+      rosterSet.has(String(player.joueur_id || player.player_id || '').trim())
+    )
+    .sort((a, b) =>
+      String(a.nom || '').localeCompare(String(b.nom || ''), 'fr', {
+        sensitivity: 'base'
+      })
+    );
+
+  if (!players.length) {
+    playersListEl.innerHTML = `
+      <div class="player-item">
+        <div class="player-text">
+          <div class="player-name">Aucun joueur dans cette saison</div>
+          <div class="player-code">Ajoute des joueurs depuis Gestion des saisons.</div>
+        </div>
+      </div>
+    `;
+    updateSelectedCount();
+    return;
+  }
+
+  playersListEl.innerHTML = players.map(player => {
+    const playerId = escapeHtml(player.joueur_id || player.player_id || '');
+    const playerName = escapeHtml(player.nom || 'Sans nom');
+
+    return `
+      <label class="player-item">
+        <input
+          type="checkbox"
+          name="attendanceSelection"
+          value="${playerId}"
+        />
+        <div class="player-text">
+          <div class="player-name">${playerName}</div>
+          <div class="player-code">${playerId}</div>
+        </div>
+      </label>
+    `;
+  }).join('');
+
+  updateRosterCheckboxEvents();
+  updateSelectedCount();
+}
+
 function buildAttendancePayload() {
   const selectedPlayers = Array.from(
     document.querySelectorAll('input[name="attendanceSelection"]:checked')
@@ -515,71 +578,58 @@ async function loadExistingAttendance() {
   }
 }
     
-    async function loadPlayers() {
-      try {
-        const response = await fetch(`${API_URL}?action=getPlayers`);
-        const result = await response.json();
+async function loadPlayers() {
+  try {
+    const response = await fetch(`${API_URL}?action=getPlayers&includeInactive=1`);
+    const result = await response.json();
 
-        if (!result.ok || !Array.isArray(result.data)) {
-          playersListEl.innerHTML = `
-            <div class="player-item">
-              <div class="player-text">
-                <div class="player-name">Erreur de chargement</div>
-                <div class="player-code">${escapeHtml(result.error || 'Réponse API invalide')}</div>
-              </div>
-            </div>
-          `;
-          return;
-        }
-
-        const players = result.data;
-
-        if (players.length === 0) {
-          playersListEl.innerHTML = `
-            <div class="player-item">
-              <div class="player-text">
-                <div class="player-name">Aucun joueur trouvé</div>
-                <div class="player-code">La base ne contient aucun joueur pour l'instant</div>
-              </div>
-            </div>
-          `;
-          return;
-        }
-
-        playersListEl.innerHTML = players.map(player => {
-          const playerId = escapeHtml(player.joueur_id || player.player_id || '');
-          const playerName = escapeHtml(player.nom || 'Sans nom');
-
-          return `
-            <label class="player-item">
-              <input type="checkbox" name="attendanceSelection" value="${playerId}" />
-              <div class="player-text">
-                <div class="player-name">${playerName}</div>
-                <div class="player-code">${playerId}</div>
-              </div>
-            </label>
-          `;
-        }).join('');
-
-        bindAttendanceEvents();
-        updateSelectedCount();
-      } catch (error) {
-        playersListEl.innerHTML = `
-          <div class="player-item">
-            <div class="player-text">
-              <div class="player-name">Erreur fetch</div>
-              <div class="player-code">${escapeHtml(error.message || error)}</div>
-            </div>
-          </div>
-        `;
-      }
+    if (!result.ok || !Array.isArray(result.data)) {
+      throw new Error(result.error || 'Réponse API invalide');
     }
+
+    allPlayersCache = result.data;
+    renderPlayersForSelectedSeason();
+  } catch (error) {
+    console.error('Erreur loadPlayers:', error);
+    allPlayersCache = [];
+
+    playersListEl.innerHTML = `
+      <div class="player-item">
+        <div class="player-text">
+          <div class="player-name">Erreur de chargement</div>
+          <div class="player-code">${escapeHtml(error.message || error)}</div>
+        </div>
+      </div>
+    `;
+  }
+}
 
     if (sessionDateEl) {
       sessionDateEl.value = new Date().toISOString().split('T')[0];
     }
+checkAllBtn.addEventListener('click', () => {
+  document
+    .querySelectorAll('input[name="attendanceSelection"]')
+    .forEach(box => {
+      box.checked = true;
+    });
+
+  updateSelectedCount();
+});
+
+uncheckAllBtn.addEventListener('click', () => {
+  document
+    .querySelectorAll('input[name="attendanceSelection"]')
+    .forEach(box => {
+      box.checked = false;
+    });
+
+  updateSelectedCount();
+});
+
 sessionSeasonEl.addEventListener('change', async () => {
   populateSessions();
+  renderPlayersForSelectedSeason();
   await loadExistingAttendance();
 });
 
@@ -589,8 +639,9 @@ sessionPickerEl.addEventListener('change', async () => {
 });
 
 (async () => {
-  await loadPlayers();
   await loadSeasons();
+  await loadPlayers();
+  renderPlayersForSelectedSeason();
   await loadExistingAttendance();
 })();
 
@@ -680,15 +731,31 @@ async function loadSeasons() {
     seasonsCache.forEach(season => {
       const option = document.createElement('option');
       option.value = season.saison_id;
-      option.textContent = season.nom_saison || season.saison_id;
+
+      const status = String(season.statut || '').trim().toLowerCase();
+      const isClosed = status === 'terminee' || status === 'terminée';
+
+      option.textContent =
+        (season.nom_saison || season.saison_id) +
+        (isClosed ? ' — terminée' : '');
+
+      option.disabled = isClosed;
+
       sessionSeasonEl.appendChild(option);
     });
 
     if (seasonsCache.length > 0) {
-      sessionSeasonEl.value = seasonsCache[0].saison_id;
+      const activeSeason =
+        seasonsCache.find(season =>
+          String(season.statut || '').trim().toLowerCase() === 'active'
+        ) || seasonsCache[0];
+
+      sessionSeasonEl.value = activeSeason.saison_id;
       populateSessions();
+      renderPlayersForSelectedSeason();
     } else {
       clearSessionFields();
+      renderPlayersForSelectedSeason();
     }
   } catch (error) {
     console.error('Erreur loadSeasons:', error);
