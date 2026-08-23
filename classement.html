@@ -314,10 +314,10 @@
           <div class="field sort-field">
             <label for="rankingSort">Trier par</label>
             <select id="rankingSort" name="rankingSort">
-              <option value="points" selected>Points pour / contre</option>
+              <option value="points">Points pour / contre</option>
               <option value="wins">Victoires</option>
               <option value="losses">Défaites (moins en premier)</option>
-              <option value="diff">Différentiel</option>
+              <option value="diff" selected>Différentiel</option>
               <option value="matches">Matchs joués</option>
               <option value="winpct">% de victoires</option>
             </select>
@@ -348,7 +348,7 @@
         </div>
 
         <div class="note">
-          Par défaut, le classement respecte la méthode historique du club : points pour (PF) décroissants, puis points contre (PC) croissants. Le menu « Trier par » permet de regarder le même classement selon d’autres critères sans modifier les résultats enregistrés.
+          Par défaut, le classement est trié par différentiel (PF - PC), du plus élevé au plus bas. Le menu « Trier par » permet de regarder le même classement selon d’autres critères sans modifier les résultats enregistrés.
         </div>
       </section>
 
@@ -371,7 +371,7 @@
 
           <div class="summary-row">
             <div class="summary-label">Tri</div>
-            <div class="summary-value" id="summarySort">PF / PC</div>
+            <div class="summary-value" id="summarySort">Différentiel</div>
           </div>
 
           <div class="summary-row">
@@ -558,7 +558,7 @@
   }
 
   function sortRankingRows(rows) {
-    const mode = String(rankingSortEl.value || 'points');
+    const mode = String(rankingSortEl.value || 'diff');
 
     return [...rows].sort((a, b) => {
       const pfA = Number(a.points_pour || 0);
@@ -611,12 +611,10 @@
         return compareByName(a, b);
       }
 
-      // Méthode historique du club :
-      // 1) Points pour (plus haut en premier)
-      // 2) Points contre (plus bas en premier)
+      // Tri par défaut : différentiel (PF - PC), du plus élevé au plus bas.
+      if (diffB !== diffA) return diffB - diffA;
       if (pfB !== pfA) return pfB - pfA;
       if (pcA !== pcB) return pcA - pcB;
-      if (diffB !== diffA) return diffB - diffA;
       if (winsB !== winsA) return winsB - winsA;
 
       return compareByName(a, b);
@@ -633,7 +631,7 @@
       winpct: '% victoires'
     };
 
-    return labels[rankingSortEl.value] || 'PF / PC';
+    return labels[rankingSortEl.value] || 'Différentiel';
   }
 
   function renderTable() {
