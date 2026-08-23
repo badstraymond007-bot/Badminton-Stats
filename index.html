@@ -205,6 +205,18 @@
       text-align: right;
     }
 
+    .season-status-active {
+      color: #047857;
+    }
+
+    .season-status-closed {
+      color: #92400e;
+    }
+
+    .season-status-empty {
+      color: var(--muted);
+    }
+
     .section-title {
       margin: 0 0 14px;
       font-size: 24px;
@@ -392,7 +404,7 @@
     <div class="nav-icon">👤</div>
     <h3>Classement</h3>
     <p>Consulter le classement général, les résultats cumulés et l’évolution des joueurs dans la saison.</p>
-    <div class="nav-status">À construire</div>
+    <div class="nav-status">Prêt</div>
   </a>
 </div>
     </section>
@@ -405,11 +417,11 @@
   <a
     class="season-config-btn"
     href="configuration.html"
-    title="Configurer la saison"
-    aria-label="Configurer la saison"
+    title="Gestion des saisons"
+    aria-label="Gestion des saisons"
   >
     <span class="season-config-icon">⚙️</span>
-    <span>Configurer la saison</span>
+    <span>Gestion des saisons</span>
   </a>
 
   <script>
@@ -439,6 +451,25 @@
       setText('dashSeasonStatus', data.display?.saison_statut || 'À configurer');
       setText('dashSeasonPlayers', data.display?.saison_joueurs || '0 sélectionné');
       setText('dashSeasonSessions', data.display?.saison_sessions || '0');
+
+      const statusEl = document.getElementById('dashSeasonStatus');
+      if (statusEl) {
+        statusEl.classList.remove(
+          'season-status-active',
+          'season-status-closed',
+          'season-status-empty'
+        );
+
+        const cleanStatus = String(data.display?.saison_statut || '').toLowerCase();
+
+        if (cleanStatus.includes('active')) {
+          statusEl.classList.add('season-status-active');
+        } else if (cleanStatus.includes('termin')) {
+          statusEl.classList.add('season-status-closed');
+        } else {
+          statusEl.classList.add('season-status-empty');
+        }
+      }
     } catch (error) {
       console.error('Erreur dashboard:', error);
 
