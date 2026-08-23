@@ -739,11 +739,40 @@ function canRearrangeStage(stageNo, matchNo = currentMatchNo) {
   return !sessionLocked && Number(stageNo || 0) >= 2;
 }
 
-    function cloneGroups(groups) {
-      return (Array.isArray(groups) ? groups : []).map(group => ({
+    function normalizePlayerForPosition(player, position) {
+      if (!player) return null;
+
+      return {
+        ...player,
+        canonical_tag: String(position)
+      };
+    }
+
+    function normalizeGroupPositions(group) {
+      const players = (Array.isArray(group?.players) ? group.players : [])
+        .filter(Boolean)
+        .map((player, index) => normalizePlayerForPosition(player, index + 1));
+
+      return {
         group_code: safeText(group?.group_code).trim().toUpperCase(),
-        players: Array.isArray(group?.players) ? [...group.players] : []
-      }));
+        players
+      };
+    }
+
+    function normalizeGroupsPositions(groups) {
+      return (Array.isArray(groups) ? groups : [])
+        .map(normalizeGroupPositions);
+    }
+
+    function cloneGroups(groups) {
+      return normalizeGroupsPositions(
+        (Array.isArray(groups) ? groups : []).map(group => ({
+          group_code: safeText(group?.group_code).trim().toUpperCase(),
+          players: (Array.isArray(group?.players) ? group.players : [])
+            .filter(Boolean)
+            .map(player => ({ ...player }))
+        }))
+      );
     }
 
     function getLinearPlayersFromGroups(groups) {
@@ -816,7 +845,7 @@ function canRearrangeStage(stageNo, matchNo = currentMatchNo) {
       });
 
       let cursor = 0;
-      return clonedGroups.map(group => {
+      const rebuiltGroups = clonedGroups.map(group => {
         const size = Array.isArray(group.players) ? group.players.length : 0;
         const players = orderedPlayers.slice(cursor, cursor + size);
         cursor += size;
@@ -825,6 +854,8 @@ function canRearrangeStage(stageNo, matchNo = currentMatchNo) {
           players
         };
       });
+
+      return normalizeGroupsPositions(rebuiltGroups);
     }
 
 function serializeMatchSwapRef(ref) {
@@ -1017,7 +1048,10 @@ function setOpenMatchSwapMenu(ref) {
   });
 }
 function applyVisibleMatchGroups(groups) {
-  setStageManualOrderFromGroups(currentStageNo, groups);
+  const normalizedGroups = normalizeGroupsPositions(groups);
+
+  setStageManualOrderFromGroups(currentStageNo, normalizedGroups);
+
   openMatchSwapMenuRef = null;
   renderedMatchMap = {};
   currentRoundPlan = null;
@@ -1173,7 +1207,12 @@ function cascadeMatchPlayers(refA, refB) {
         };
       });
 
-      return { groups: cascadedGroups.filter(group => group.players.length >= 4), cascade_count: withdrawalIds.size };
+      return {
+        groups: normalizeGroupsPositions(
+          cascadedGroups.filter(group => group.players.length >= 4)
+        ),
+        cascade_count: withdrawalIds.size
+      };
     }
 
     function getGroupPositionMap(group) {
@@ -1190,15 +1229,15 @@ function buildStoredPlayerRefFromDisplayedGroup(player, groupModel) {
   const joueurId = safeText(player?.joueur_id).trim();
   if (!joueurId) return '';
 
-  const players = Array.isArray(groupModel?.players) ? groupModel.players : [];
-  const index = players.findIndex(item =>
+  const normalizedGroup = normalizeGroupPositions(groupModel || {});
+  const index = (normalizedGroup.players || []).findIndex(item =>
     safeText(item?.joueur_id).trim() === joueurId
   );
 
   if (index === -1) {
-    return JSON.stringify({
-      joueur_id: joueurId
-    });
+    throw new Error(
+      `Position canonique introuvable pour le joueur ${joueurId}.`
+    );
   }
 
   return JSON.stringify({
@@ -1206,9 +1245,8 @@ function buildStoredPlayerRefFromDisplayedGroup(player, groupModel) {
     tag: String(index + 1)
   });
 }
-    
 
-    function getSelectedSeason() {
+function getSelectedSeason() {
       const saisonId = safeText(matchSeasonEl.value).trim();
       return seasonsCache.find(season => safeText(season.saison_id).trim() === saisonId) || null;
     }
@@ -1399,10 +1437,10 @@ function extractGroupsFromSavedStage(savedStage) {
           return compareNames(a, b);
         });
 
-      return {
+      return normalizeGroupPositions({
         group_code: groupCode,
         players: unique
-      };
+      });
     });
 }
 
@@ -1561,11 +1599,16 @@ function extractGroupsFromSavedStage(savedStage) {
     }
 
     function buildGeneratedMatchFromGroup(group, matchNo) {
-      const rotation = getRotationForGroup(group.players, matchNo, currentStageNo);
+      const normalizedGroup = normalizeGroupPositions(group);
+      const rotation = getRotationForGroup(
+        normalizedGroup.players,
+        matchNo,
+        currentStageNo
+      );
       if (!rotation) return null;
 
       return {
-        group_code: group.group_code,
+        group_code: normalizedGroup.group_code,
         team1_player1: rotation.team1[0] || null,
         team1_player2: rotation.team1[1] || null,
         team2_player1: rotation.team2[0] || null,
@@ -2129,6 +2172,52 @@ waiting_player_id: buildStoredPlayerRefFromDisplayedGroup(match.waiting_player, 
       };
     }
 
+    function normalizeSavedMatchFromServer(savedMatch, fallbackMatch, groupModel) {
+      const normalizedGroup = normalizeGroupPositions(groupModel || {});
+      const byId = {};
+
+      (normalizedGroup.players || []).forEach(player => {
+        const id = safeText(player?.joueur_id).trim();
+        if (id) byId[id] = player;
+      });
+
+      function resolvePlayer(serverPlayer, fallbackPlayer) {
+        const serverId = safeText(
+          serverPlayer?.joueur_id ||
+          serverPlayer?.player_id ||
+          serverPlayer ||
+          ''
+        ).trim();
+
+        if (serverId && byId[serverId]) {
+          return { ...byId[serverId] };
+        }
+
+        const fallbackId = safeText(fallbackPlayer?.joueur_id).trim();
+        return fallbackId && byId[fallbackId]
+          ? { ...byId[fallbackId] }
+          : (fallbackPlayer ? { ...fallbackPlayer } : null);
+      }
+
+      return {
+        match_id: safeText(savedMatch?.match_id || fallbackMatch?.match_id).trim(),
+        round_no: safeText(savedMatch?.round_no).trim(),
+        match_no: safeText(savedMatch?.match_no).trim(),
+        group_code: safeText(
+          savedMatch?.group_code ||
+          fallbackMatch?.group_code
+        ).trim().toUpperCase(),
+        team1_player1: resolvePlayer(savedMatch?.team1_player1, fallbackMatch?.team1_player1),
+        team1_player2: resolvePlayer(savedMatch?.team1_player2, fallbackMatch?.team1_player2),
+        team2_player1: resolvePlayer(savedMatch?.team2_player1, fallbackMatch?.team2_player1),
+        team2_player2: resolvePlayer(savedMatch?.team2_player2, fallbackMatch?.team2_player2),
+        waiting_player: resolvePlayer(savedMatch?.waiting_player, fallbackMatch?.waiting_player),
+        team1_score: safeText(savedMatch?.team1_score ?? fallbackMatch?.team1_score).trim(),
+        team2_score: safeText(savedMatch?.team2_score ?? fallbackMatch?.team2_score).trim(),
+        winner_team: safeText(savedMatch?.winner_team ?? fallbackMatch?.winner_team).trim()
+      };
+    }
+
     async function saveCurrentScores(groupCode, stageNo = currentStageNo, matchNo = currentMatchNo) {
       if (sessionLocked) {
         alert('Cette session est barrée. Décoche-la pour pouvoir modifier les scores.');
@@ -2152,25 +2241,38 @@ waiting_player_id: buildStoredPlayerRefFromDisplayedGroup(match.waiting_player, 
         const result = await response.json();
         if (!result.ok) throw new Error(result.error || 'Erreur API inconnue');
 
-        const liveMatch = getRenderedMatchForPosition(currentStageNo, currentMatchNo, groupCode);
-        if (liveMatch) {
-          liveMatch.match_id = safeText(result.match_id || result.saved_match?.match_id).trim() || liveMatch.match_id || '';
-          liveMatch.winner_team = safeText(result.winner_team || result.saved_match?.winner_team).trim() || liveMatch.winner_team || '';
+        const liveMatch = getRenderedMatchForPosition(
+          currentStageNo,
+          currentMatchNo,
+          groupCode
+        );
 
-          upsertSavedMatchInCache({
-            match_id: liveMatch.match_id || '',
-            round_no: safeText(payload.round_no).trim(),
-            match_no: safeText(payload.match_no).trim(),
-            group_code: safeText(liveMatch.group_code).trim().toUpperCase(),
-            team1_player1: liveMatch.team1_player1 || null,
-            team1_player2: liveMatch.team1_player2 || null,
-            team2_player1: liveMatch.team2_player1 || null,
-            team2_player2: liveMatch.team2_player2 || null,
-            waiting_player: liveMatch.waiting_player || null,
-            team1_score: safeText(payload.team1_score).trim(),
-            team2_score: safeText(payload.team2_score).trim(),
-            winner_team: liveMatch.winner_team || ''
-          });
+        const freshPlan = buildRoundPlan(currentStageNo, currentMatchNo);
+        const groupModel = (freshPlan.groups || []).find(group =>
+          safeText(group.group_code).trim().toUpperCase() ===
+          safeText(groupCode).trim().toUpperCase()
+        ) || null;
+
+        if (liveMatch && groupModel) {
+          const normalizedSavedMatch = normalizeSavedMatchFromServer(
+            result.saved_match || {},
+            {
+              ...liveMatch,
+              match_id: safeText(result.match_id || liveMatch.match_id).trim(),
+              round_no: safeText(payload.round_no).trim(),
+              match_no: safeText(payload.match_no).trim(),
+              team1_score: safeText(payload.team1_score).trim(),
+              team2_score: safeText(payload.team2_score).trim(),
+              winner_team: safeText(
+                result.winner_team ||
+                result.saved_match?.winner_team ||
+                liveMatch.winner_team
+              ).trim()
+            },
+            groupModel
+          );
+
+          upsertSavedMatchInCache(normalizedSavedMatch);
         }
 
         renderRound();
@@ -2589,4 +2691,3 @@ function withdrawPlayerFromCurrentStage(joueurId, playerName, stageNo = currentS
   </script>
 </body>
 </html>
-
