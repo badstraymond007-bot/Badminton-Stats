@@ -126,11 +126,24 @@
       background: #fff;
     }
 
+    .ranking-controls {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin: 18px 0 14px;
+    }
+
     .tabs {
       display: flex;
       gap: 10px;
       flex-wrap: wrap;
-      margin: 18px 0 14px;
+      margin: 0;
+    }
+
+    .sort-field {
+      min-width: 235px;
     }
 
     .tab-btn {
@@ -281,7 +294,7 @@
 
           <div class="field">
             <label for="rankingSession">Session</label>
-            <select id="rankingSession" name="rankingSession">
+            <select id="rankingSession" name="rankingSession" disabled>
               <option value="">Toutes les sessions</option>
             </select>
           </div>
@@ -292,9 +305,23 @@
           </div>
         </div>
 
-        <div class="tabs">
-          <button type="button" class="tab-btn active" id="tabCumulatif">Classement cumulatif</button>
-          <button type="button" class="tab-btn" id="tabSession">Classement par session</button>
+        <div class="ranking-controls">
+          <div class="tabs">
+            <button type="button" class="tab-btn active" id="tabCumulatif">Cumulatif</button>
+            <button type="button" class="tab-btn" id="tabSession">Par session</button>
+          </div>
+
+          <div class="field sort-field">
+            <label for="rankingSort">Trier par</label>
+            <select id="rankingSort" name="rankingSort">
+              <option value="points" selected>Points pour / contre</option>
+              <option value="wins">Victoires</option>
+              <option value="losses">Défaites (moins en premier)</option>
+              <option value="diff">Différentiel</option>
+              <option value="matches">Matchs joués</option>
+              <option value="winpct">% de victoires</option>
+            </select>
+          </div>
         </div>
 
         <div class="table-wrap">
@@ -321,11 +348,9 @@
         </div>
 
         <div class="note">
-          Classement visuel temporaire du club : trié par PF décroissant, puis PC croissant. La colonne affichée à droite montre la différence (PF - PC). Les points de classement restent en code, mais sont masqués visuellement pour l’instant.
+          Par défaut, le classement respecte la méthode historique du club : points pour (PF) décroissants, puis points contre (PC) croissants. Le menu « Trier par » permet de regarder le même classement selon d’autres critères sans modifier les résultats enregistrés.
         </div>
       </section>
-
-      <!-- TODO TEMPORAIRE CLUB : le classement visuel est trié côté HTML par points pour (desc), puis points contre (asc), puis différence. Les points de classement (row.total_points) sont conservés en code mais cachés visuellement jusqu’à la décision finale sur la vraie règle officielle. -->
 
       <aside class="card">
         <h2>Résumé</h2>
@@ -345,6 +370,11 @@
           </div>
 
           <div class="summary-row">
+            <div class="summary-label">Tri</div>
+            <div class="summary-value" id="summarySort">PF / PC</div>
+          </div>
+
+          <div class="summary-row">
             <div class="summary-label">Joueurs classés</div>
             <div class="summary-value" id="summaryCount">0</div>
           </div>
@@ -355,12 +385,9 @@
           </div>
         </div>
 
-        <h2 style="margin-top: 18px;">Étapes prévues</h2>
+        <h2 style="margin-top: 18px;">Options du classement</h2>
         <p>
-          1. Lire le classement cumulatif par saison.<br />
-          2. Lire le classement d’une session précise.<br />
-          3. Permettre la recherche d’un joueur.<br />
-          4. Mettre à jour le tableau automatiquement après les matchs.
+          La vue cumulée additionne les matchs de la saison. La vue par session isole une soirée précise. Le tri peut ensuite être changé sans toucher aux données enregistrées.
         </p>
       </aside>
     </div>
@@ -371,6 +398,7 @@
   const rankingSeasonEl = document.getElementById('rankingSeason');
   const rankingSessionEl = document.getElementById('rankingSession');
   const rankingSearchEl = document.getElementById('rankingSearch');
+  const rankingSortEl = document.getElementById('rankingSort');
   const rankingTableBodyEl = document.getElementById('rankingTableBody');
 
   const tabCumulatifEl = document.getElementById('tabCumulatif');
@@ -378,6 +406,7 @@
 
   const summarySeasonEl = document.getElementById('summarySeason');
   const summaryModeEl = document.getElementById('summaryMode');
+  const summarySortEl = document.getElementById('summarySort');
   const summaryCountEl = document.getElementById('summaryCount');
   const summaryUpdatedEl = document.getElementById('summaryUpdated');
 
@@ -401,9 +430,20 @@
 
   function setMode(mode) {
     currentMode = mode === 'session' ? 'session' : 'cumulatif';
+
     tabCumulatifEl.classList.toggle('active', currentMode === 'cumulatif');
     tabSessionEl.classList.toggle('active', currentMode === 'session');
     rankingSessionEl.disabled = currentMode !== 'session';
+
+    if (currentMode === 'session' && !rankingSessionEl.value) {
+      const firstSessionOption = Array.from(rankingSessionEl.options)
+        .find(option => option.value);
+
+      if (firstSessionOption) {
+        rankingSessionEl.value = firstSessionOption.value;
+      }
+    }
+
     loadRanking();
   }
 
@@ -500,17 +540,119 @@
     }
   }
 
+  function getWinPercentage(row) {
+    const matchs = Number(row.matchs_joues || 0);
+    const victoires = Number(row.victoires || 0);
+
+    if (matchs <= 0) {
+      return 0;
+    }
+
+    return (victoires / matchs) * 100;
+  }
+
+  function compareByName(a, b) {
+    return String(a.nom || '').localeCompare(String(b.nom || ''), 'fr', {
+      sensitivity: 'base'
+    });
+  }
+
+  function sortRankingRows(rows) {
+    const mode = String(rankingSortEl.value || 'points');
+
+    return [...rows].sort((a, b) => {
+      const pfA = Number(a.points_pour || 0);
+      const pfB = Number(b.points_pour || 0);
+      const pcA = Number(a.points_contre || 0);
+      const pcB = Number(b.points_contre || 0);
+      const diffA = Number(a.plus_moins || 0);
+      const diffB = Number(b.plus_moins || 0);
+      const winsA = Number(a.victoires || 0);
+      const winsB = Number(b.victoires || 0);
+      const lossesA = Number(a.defaites || 0);
+      const lossesB = Number(b.defaites || 0);
+      const matchesA = Number(a.matchs_joues || 0);
+      const matchesB = Number(b.matchs_joues || 0);
+      const winPctA = getWinPercentage(a);
+      const winPctB = getWinPercentage(b);
+
+      if (mode === 'wins') {
+        if (winsB !== winsA) return winsB - winsA;
+        if (winPctB !== winPctA) return winPctB - winPctA;
+        if (diffB !== diffA) return diffB - diffA;
+        return compareByName(a, b);
+      }
+
+      if (mode === 'losses') {
+        if (lossesA !== lossesB) return lossesA - lossesB;
+        if (winPctB !== winPctA) return winPctB - winPctA;
+        if (winsB !== winsA) return winsB - winsA;
+        return compareByName(a, b);
+      }
+
+      if (mode === 'diff') {
+        if (diffB !== diffA) return diffB - diffA;
+        if (pfB !== pfA) return pfB - pfA;
+        if (pcA !== pcB) return pcA - pcB;
+        return compareByName(a, b);
+      }
+
+      if (mode === 'matches') {
+        if (matchesB !== matchesA) return matchesB - matchesA;
+        if (winsB !== winsA) return winsB - winsA;
+        if (diffB !== diffA) return diffB - diffA;
+        return compareByName(a, b);
+      }
+
+      if (mode === 'winpct') {
+        if (winPctB !== winPctA) return winPctB - winPctA;
+        if (winsB !== winsA) return winsB - winsA;
+        if (matchesB !== matchesA) return matchesB - matchesA;
+        return compareByName(a, b);
+      }
+
+      // Méthode historique du club :
+      // 1) Points pour (plus haut en premier)
+      // 2) Points contre (plus bas en premier)
+      if (pfB !== pfA) return pfB - pfA;
+      if (pcA !== pcB) return pcA - pcB;
+      if (diffB !== diffA) return diffB - diffA;
+      if (winsB !== winsA) return winsB - winsA;
+
+      return compareByName(a, b);
+    });
+  }
+
+  function getSortLabel() {
+    const labels = {
+      points: 'PF / PC',
+      wins: 'Victoires',
+      losses: 'Défaites',
+      diff: 'Différentiel',
+      matches: 'Matchs joués',
+      winpct: '% victoires'
+    };
+
+    return labels[rankingSortEl.value] || 'PF / PC';
+  }
+
   function renderTable() {
     const season = getSelectedSeason();
     const search = String(rankingSearchEl.value || '').trim().toLowerCase();
 
-    const filtered = rankingCache.filter(row => {
+    // On trie d'abord le classement COMPLET afin que le rang reste le vrai rang
+    // même lorsqu'on recherche seulement un joueur.
+    const sortedRanking = sortRankingRows(rankingCache).map((row, index) => ({
+      ...row,
+      visual_rank: index + 1
+    }));
+
+    const rowsToDisplay = sortedRanking.filter(row => {
       if (!search) return true;
+
       const text = `${row.nom || ''} ${row.joueur_id || ''}`.toLowerCase();
       return text.includes(search);
     });
-
-const rowsToDisplay = [...filtered];
 
     if (!rowsToDisplay.length) {
       rankingTableBodyEl.innerHTML = `
@@ -519,17 +661,17 @@ const rowsToDisplay = [...filtered];
         </tr>
       `;
     } else {
-      rankingTableBodyEl.innerHTML = rowsToDisplay.map((row, index) => `
+      rankingTableBodyEl.innerHTML = rowsToDisplay.map(row => `
         <tr>
-          <td class="rank-cell">${escapeHtml(row.rang ?? row.rank ?? (index + 1))}</td>
+          <td class="rank-cell">${escapeHtml(row.visual_rank)}</td>
           <td class="player-cell">
-  <a
-    href="joueurs.html?joueur_id=${encodeURIComponent(row.joueur_id || '')}"
-    class="player-link"
-  >
-    ${escapeHtml(row.nom || row.joueur_id)}
-  </a>
-</td>
+            <a
+              href="joueurs.html?joueur_id=${encodeURIComponent(row.joueur_id || '')}"
+              class="player-link"
+            >
+              ${escapeHtml(row.nom || row.joueur_id)}
+            </a>
+          </td>
           <td>${escapeHtml(row.matchs_joues)}</td>
           <td>${escapeHtml(row.victoires)}</td>
           <td>${escapeHtml(row.defaites)}</td>
@@ -545,6 +687,7 @@ const rowsToDisplay = [...filtered];
     summaryModeEl.textContent = currentMode === 'session'
       ? `Session ${rankingSessionEl.value || '—'}`
       : 'Cumulatif';
+    summarySortEl.textContent = getSortLabel();
     summaryCountEl.textContent = String(rowsToDisplay.length);
   }
 
@@ -555,6 +698,7 @@ const rowsToDisplay = [...filtered];
 
   rankingSessionEl.addEventListener('change', loadRanking);
   rankingSearchEl.addEventListener('input', renderTable);
+  rankingSortEl.addEventListener('change', renderTable);
   tabCumulatifEl.addEventListener('click', () => setMode('cumulatif'));
   tabSessionEl.addEventListener('click', () => setMode('session'));
 
