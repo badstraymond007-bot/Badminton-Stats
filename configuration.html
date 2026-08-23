@@ -477,6 +477,7 @@
           </div>
 
           <div class="roster-actions">
+            <button type="button" class="btn secondary" id="addActivePlayerBtn">+ Ajouter un joueur</button>
             <button type="button" class="btn secondary" id="selectAllRosterBtn">Tout sélectionner</button>
             <button type="button" class="btn secondary" id="clearRosterBtn">Tout décocher</button>
             <button type="button" class="btn primary" id="saveRosterBtn">Enregistrer les joueurs</button>
@@ -635,6 +636,7 @@
     const activeRosterCountEl = document.getElementById('activeRosterCount');
     const activeRosterSearchEl = document.getElementById('activeRosterSearch');
     const activeRosterListEl = document.getElementById('activeRosterList');
+    const addActivePlayerBtn = document.getElementById('addActivePlayerBtn');
     const selectAllRosterBtn = document.getElementById('selectAllRosterBtn');
     const clearRosterBtn = document.getElementById('clearRosterBtn');
     const saveRosterBtn = document.getElementById('saveRosterBtn');
@@ -887,6 +889,91 @@
       const count = activeRosterIds.size;
       activeRosterCountEl.textContent =
         `${count} joueur${count === 1 ? '' : 's'}`;
+    }
+
+    async function addPlayerToActiveSeason() {
+      if (!activeSeason || !activeSeason.saison_id) {
+        alert('Aucune saison active.');
+        return;
+      }
+
+      const nom = prompt('Nom du nouveau joueur :');
+
+      if (!nom || !nom.trim()) {
+        return;
+      }
+
+      addActivePlayerBtn.disabled = true;
+      addActivePlayerBtn.textContent = 'Ajout...';
+
+      try {
+        // Étape 1 : créer le joueur dans la base générale
+        const addResponse = await fetch(API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'text/plain;charset=utf-8'
+          },
+          body: JSON.stringify({
+            action: 'addPlayer',
+            nom: nom.trim()
+          })
+        });
+
+        const addResult = await addResponse.json();
+
+        if (!addResult.ok) {
+          throw new Error(addResult.error || 'Erreur lors de la création du joueur.');
+        }
+
+        const newPlayerId = String(
+          addResult.joueur?.joueur_id ||
+          addResult.joueur_id ||
+          ''
+        ).trim();
+
+        if (!newPlayerId) {
+          throw new Error('Le nouveau joueur a été créé, mais son identifiant est introuvable.');
+        }
+
+        // Étape 2 : ajouter immédiatement le joueur au roster de la saison active
+        const nextRoster = new Set(activeRosterIds);
+        nextRoster.add(newPlayerId);
+
+        const rosterResponse = await fetch(API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'text/plain;charset=utf-8'
+          },
+          body: JSON.stringify({
+            action: 'updateSeasonPlayers',
+            saison_id: activeSeason.saison_id,
+            joueurs: [...nextRoster]
+          })
+        });
+
+        const rosterResult = await rosterResponse.json();
+
+        if (!rosterResult.ok) {
+          throw new Error(
+            rosterResult.error ||
+            'Le joueur a été créé, mais impossible de l’ajouter à la saison.'
+          );
+        }
+
+        activeRosterIds = nextRoster;
+
+        // Recharge les joueurs et la saison pour refléter la nouvelle donnée
+        await loadPlayers();
+        await loadSeasons();
+
+        alert(`Joueur ajouté à la saison : ${nom.trim()}`);
+      } catch (error) {
+        console.error(error);
+        alert('Erreur lors de l’ajout du joueur : ' + (error.message || error));
+      } finally {
+        addActivePlayerBtn.disabled = false;
+        addActivePlayerBtn.textContent = '+ Ajouter un joueur';
+      }
     }
 
     async function saveActiveRoster() {
@@ -1186,6 +1273,7 @@ console.log('ids joueurs =', players.map(p => p.player_id));
     }
 
     closeSeasonBtn.addEventListener('click', closeActiveSeason);
+    addActivePlayerBtn.addEventListener('click', addPlayerToActiveSeason);
     saveRosterBtn.addEventListener('click', saveActiveRoster);
 
     activeRosterSearchEl.addEventListener('input', () => {
