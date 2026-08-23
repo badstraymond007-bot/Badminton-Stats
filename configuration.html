@@ -342,6 +342,94 @@
       line-height: 1.45;
     }
 
+    .season-roster {
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+    }
+
+    .season-roster-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .season-roster-head h3 {
+      margin: 0 0 4px;
+    }
+
+    .season-roster-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .roster-count {
+      font-weight: bold;
+      color: var(--accent);
+    }
+
+    .roster-list {
+      max-height: 360px;
+      overflow-y: auto;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .roster-player {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      cursor: pointer;
+    }
+
+    .roster-player:last-child {
+      border-bottom: none;
+    }
+
+    .roster-player:hover {
+      background: #f8fafc;
+    }
+
+    .roster-player input {
+      width: 18px;
+      height: 18px;
+      flex: 0 0 auto;
+    }
+
+    .roster-player-main {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .roster-player-name {
+      font-weight: bold;
+    }
+
+    .roster-player-id {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    .roster-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .roster-empty {
+      padding: 16px;
+      color: var(--muted);
+    }
+
     @media (max-width: 860px) {
       .layout {
         grid-template-columns: 1fr;
@@ -369,6 +457,31 @@
       <div class="active-season-card empty" id="activeSeasonCard">
         <div class="history-name" id="activeSeasonName">Chargement de la saison active...</div>
         <div class="history-meta" id="activeSeasonMeta">Connexion à la base en cours.</div>
+
+        <div class="season-roster" id="activeSeasonRoster" style="display:none;">
+          <div class="season-roster-head">
+            <div>
+              <h3>Joueurs de la saison active</h3>
+              <p>Décoche un joueur pour le retirer des prochaines présences. Son historique reste intact.</p>
+            </div>
+            <div class="roster-count" id="activeRosterCount">0 joueur</div>
+          </div>
+
+          <div class="field" style="margin-bottom:10px;">
+            <label for="activeRosterSearch">Rechercher un joueur</label>
+            <input id="activeRosterSearch" type="search" placeholder="Nom ou identifiant" />
+          </div>
+
+          <div class="roster-list" id="activeRosterList">
+            <div class="roster-empty">Chargement des joueurs...</div>
+          </div>
+
+          <div class="roster-actions">
+            <button type="button" class="btn secondary" id="selectAllRosterBtn">Tout sélectionner</button>
+            <button type="button" class="btn secondary" id="clearRosterBtn">Tout décocher</button>
+            <button type="button" class="btn primary" id="saveRosterBtn">Enregistrer les joueurs</button>
+          </div>
+        </div>
 
         <div class="actions" id="activeSeasonActions" style="display:none;">
           <button type="button" class="btn danger" id="closeSeasonBtn">Clôturer la saison active</button>
@@ -518,6 +631,13 @@
     const activeSeasonMetaEl = document.getElementById('activeSeasonMeta');
     const activeSeasonActionsEl = document.getElementById('activeSeasonActions');
     const closeSeasonBtn = document.getElementById('closeSeasonBtn');
+    const activeSeasonRosterEl = document.getElementById('activeSeasonRoster');
+    const activeRosterCountEl = document.getElementById('activeRosterCount');
+    const activeRosterSearchEl = document.getElementById('activeRosterSearch');
+    const activeRosterListEl = document.getElementById('activeRosterList');
+    const selectAllRosterBtn = document.getElementById('selectAllRosterBtn');
+    const clearRosterBtn = document.getElementById('clearRosterBtn');
+    const saveRosterBtn = document.getElementById('saveRosterBtn');
     const creationMessageEl = document.getElementById('creationMessage');
     const seasonHistoryEl = document.getElementById('seasonHistory');
     const newSeasonSectionEl = document.getElementById('newSeasonSection');
@@ -530,6 +650,8 @@
 
     let seasonsCache = [];
     let activeSeason = null;
+    let allPlayersCache = [];
+    let activeRosterIds = new Set();
 
     function escapeHtml(value) {
       return String(value ?? '')
@@ -683,10 +805,177 @@
       return status === 'terminee' || status === 'terminée';
     }
 
+    function getPlayerId(player) {
+      return String(player?.joueur_id || player?.id || '').trim();
+    }
+
+    function getPlayerName(player) {
+      return String(player?.nom || player?.name || getPlayerId(player)).trim();
+    }
+
+    function renderActiveRoster() {
+      if (!activeSeason) {
+        activeSeasonRosterEl.style.display = 'none';
+        return;
+      }
+
+      activeSeasonRosterEl.style.display = 'block';
+
+      const search = String(activeRosterSearchEl.value || '').trim().toLowerCase();
+
+      const players = allPlayersCache
+        .filter(player => {
+          const id = getPlayerId(player);
+          const name = getPlayerName(player);
+          if (!id) return false;
+
+          if (!search) return true;
+
+          return `${name} ${id}`.toLowerCase().includes(search);
+        })
+        .sort((a, b) =>
+          getPlayerName(a).localeCompare(getPlayerName(b), 'fr', {
+            sensitivity: 'base'
+          })
+        );
+
+      if (!players.length) {
+        activeRosterListEl.innerHTML =
+          '<div class="roster-empty">Aucun joueur trouvé.</div>';
+      } else {
+        activeRosterListEl.innerHTML = players.map(player => {
+          const id = getPlayerId(player);
+          const name = getPlayerName(player);
+          const checked = activeRosterIds.has(id) ? 'checked' : '';
+
+          return `
+            <label class="roster-player">
+              <input
+                type="checkbox"
+                class="active-roster-checkbox"
+                value="${escapeHtml(id)}"
+                ${checked}
+              />
+              <div class="roster-player-main">
+                <div class="roster-player-name">${escapeHtml(name)}</div>
+                <div class="roster-player-id">${escapeHtml(id)}</div>
+              </div>
+            </label>
+          `;
+        }).join('');
+      }
+
+      const count = activeRosterIds.size;
+      activeRosterCountEl.textContent =
+        `${count} joueur${count === 1 ? '' : 's'}`;
+    }
+
+    function syncRosterFromVisibleCheckboxes() {
+      document
+        .querySelectorAll('.active-roster-checkbox')
+        .forEach(input => {
+          const id = String(input.value || '').trim();
+          if (!id) return;
+
+          if (input.checked) {
+            activeRosterIds.add(id);
+          } else {
+            activeRosterIds.delete(id);
+          }
+        });
+
+      const count = activeRosterIds.size;
+      activeRosterCountEl.textContent =
+        `${count} joueur${count === 1 ? '' : 's'}`;
+    }
+
+    async function saveActiveRoster() {
+      if (!activeSeason || !activeSeason.saison_id) {
+        alert('Aucune saison active.');
+        return;
+      }
+
+      syncRosterFromVisibleCheckboxes();
+
+      const previousIds = new Set(
+        Array.isArray(activeSeason.joueurs)
+          ? activeSeason.joueurs.map(value => String(value || '').trim()).filter(Boolean)
+          : []
+      );
+
+      const removed = [...previousIds].filter(id => !activeRosterIds.has(id));
+
+      if (removed.length) {
+        const removedNames = removed
+          .map(id => {
+            const player = allPlayersCache.find(item => getPlayerId(item) === id);
+            return player ? getPlayerName(player) : id;
+          })
+          .join(', ');
+
+        const confirmed = confirm(
+          `Retirer ${removed.length} joueur(s) de la saison active ?\n\n` +
+          `${removedNames}\n\n` +
+          `Leur historique et leurs matchs déjà joués seront conservés. ` +
+          `Ils ne feront simplement plus partie des prochaines présences.`
+        );
+
+        if (!confirmed) {
+          return;
+        }
+      }
+
+      saveRosterBtn.disabled = true;
+      saveRosterBtn.textContent = 'Enregistrement...';
+
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'text/plain;charset=utf-8'
+          },
+          body: JSON.stringify({
+            action: 'updateSeasonPlayers',
+            saison_id: activeSeason.saison_id,
+            joueurs: [...activeRosterIds]
+          })
+        });
+
+        const result = await response.json();
+
+        if (!result.ok) {
+          throw new Error(result.error || 'Erreur API inconnue');
+        }
+
+        alert(
+          `${result.nb_joueurs} joueur(s) enregistré(s) dans la saison active.`
+        );
+
+        await loadSeasons();
+      } catch (error) {
+        console.error(error);
+        alert(
+          'Erreur lors de la mise à jour des joueurs : ' +
+          (error.message || error)
+        );
+      } finally {
+        saveRosterBtn.disabled = false;
+        saveRosterBtn.textContent = 'Enregistrer les joueurs';
+      }
+    }
+
     function renderSeasonManagement() {
       activeSeason = seasonsCache.find(isActiveSeason) || null;
 
       if (activeSeason) {
+        activeRosterIds = new Set(
+          Array.isArray(activeSeason.joueurs)
+            ? activeSeason.joueurs
+                .map(value => String(value || '').trim())
+                .filter(Boolean)
+            : []
+        );
+
         activeSeasonCardEl.classList.remove('empty');
         activeSeasonNameEl.textContent =
           activeSeason.nom_saison || activeSeason.saison_id || 'Saison active';
@@ -696,6 +985,7 @@
           `${Array.isArray(activeSeason.sessions) ? activeSeason.sessions.length : 0} sessions`;
 
         activeSeasonActionsEl.style.display = 'flex';
+        renderActiveRoster();
 
         creationMessageEl.textContent =
           'Une saison est déjà active. La création d’une nouvelle saison est désactivée pour éviter d’avoir deux saisons actives en même temps.';
@@ -709,6 +999,8 @@
           'Tu peux préparer et créer une nouvelle saison avec le formulaire ci-dessous.';
 
         activeSeasonActionsEl.style.display = 'none';
+        activeSeasonRosterEl.style.display = 'none';
+        activeRosterIds = new Set();
 
         creationMessageEl.textContent =
           'Aucune saison active : le formulaire de création est disponible.';
@@ -845,6 +1137,8 @@
         }
 
         const players = result.data;
+      allPlayersCache = Array.isArray(players) ? players : [];
+      renderActiveRoster();
 
 console.log('players API =', players);
 console.log('premier joueur =', players[0]);
@@ -892,6 +1186,44 @@ console.log('ids joueurs =', players.map(p => p.player_id));
     }
 
     closeSeasonBtn.addEventListener('click', closeActiveSeason);
+    saveRosterBtn.addEventListener('click', saveActiveRoster);
+
+    activeRosterSearchEl.addEventListener('input', () => {
+      syncRosterFromVisibleCheckboxes();
+      renderActiveRoster();
+    });
+
+    activeRosterListEl.addEventListener('change', event => {
+      if (!event.target.classList.contains('active-roster-checkbox')) {
+        return;
+      }
+
+      const id = String(event.target.value || '').trim();
+      if (!id) return;
+
+      if (event.target.checked) {
+        activeRosterIds.add(id);
+      } else {
+        activeRosterIds.delete(id);
+      }
+
+      const count = activeRosterIds.size;
+      activeRosterCountEl.textContent =
+        `${count} joueur${count === 1 ? '' : 's'}`;
+    });
+
+    selectAllRosterBtn.addEventListener('click', () => {
+      allPlayersCache.forEach(player => {
+        const id = getPlayerId(player);
+        if (id) activeRosterIds.add(id);
+      });
+      renderActiveRoster();
+    });
+
+    clearRosterBtn.addEventListener('click', () => {
+      activeRosterIds = new Set();
+      renderActiveRoster();
+    });
 
     nomSaisonEl.addEventListener('input', updateSummaryName);
     dateDebutEl.addEventListener('change', renderTuesdays);
