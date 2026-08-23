@@ -262,6 +262,39 @@
       font-size: 14px;
     }
 
+    .season-config-btn {
+      position: fixed;
+      right: 22px;
+      bottom: 22px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid #cbd5e1;
+      background: rgba(255,255,255,0.94);
+      color: #475569;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: bold;
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.10);
+      backdrop-filter: blur(6px);
+      transition: transform 0.16s ease, border-color 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
+      z-index: 20;
+    }
+
+    .season-config-btn:hover {
+      transform: translateY(-1px);
+      border-color: var(--accent);
+      color: var(--accent);
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.14);
+    }
+
+    .season-config-icon {
+      font-size: 16px;
+      line-height: 1;
+    }
+
     @media (max-width: 920px) {
       .dashboard {
         grid-template-columns: 1fr;
@@ -269,6 +302,12 @@
 
       .stats-grid {
         grid-template-columns: 1fr;
+      }
+
+      .season-config-btn {
+        right: 14px;
+        bottom: 14px;
+        padding: 9px 12px;
       }
     }
   </style>
@@ -362,6 +401,16 @@
       Base visuelle de l’application badminton • version prototype
     </div>
   </div>
+
+  <a
+    class="season-config-btn"
+    href="saison.html"
+    title="Configurer la saison"
+    aria-label="Configurer la saison"
+  >
+    <span class="season-config-icon">⚙️</span>
+    <span>Configurer la saison</span>
+  </a>
 
   <script>
   const API_BASE = 'https://script.google.com/macros/s/AKfycbwddJ7s8j6uWH2fXP_h7161F_MT5ZU12X15oMx6Xx7icxud1jg9_e3iq28bjfs3X4_y/exec';
