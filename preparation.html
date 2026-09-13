@@ -410,7 +410,7 @@
     <div class="topbar">
       <div>
         <h1>Préparation équipe</h1>
-        <p>Cette page charge les présences du soir et prépare les groupes à partir du classement courant. Les joueurs absents à la session précédente passent simplement à la fin.</p>
+        <p>Cette page charge les présences du soir et prépare les groupes à partir de la position logique globale de chaque joueur. Une absence conserve cette position.</p>
       </div>
       <a class="btn secondary" href="index.html">← Retour à l'accueil</a>
     </div>
@@ -554,6 +554,8 @@
   let previousSessionRoundsCache = [];
   let previousRoundRankingCache = [];
   let cumulativeRankingCache = [];
+  let logicalPositionsCache = [];
+  let logicalPositionsSource = '';
   let proposalGroups = [];
   let benchPlayers = [];
   let preparationSource = '';
@@ -1421,6 +1423,50 @@ function buildCompressedSeedOrderFromPreviousRoundRanking(activePlayers, rankedG
   return [...ordered, ...returningPlayers];
 }
 
+function buildPreparationFromLogicalPositions(activePlayers, logicalPositions) {
+  const positionMap = {};
+
+  (Array.isArray(logicalPositions) ? logicalPositions : []).forEach(item => {
+    const joueurId = safeText(item?.joueur_id).trim();
+    const position = Number(item?.position_logique || 0);
+
+    if (!joueurId || !Number.isFinite(position) || position <= 0) {
+      return;
+    }
+
+    positionMap[joueurId] = {
+      position_logique: position,
+      derniere_session_jouee: safeSessionNo(item?.derniere_session_jouee)
+    };
+  });
+
+  const ordered = (Array.isArray(activePlayers) ? activePlayers : [])
+    .map(player => {
+      const joueurId = safeText(player?.joueur_id).trim();
+      const logical = positionMap[joueurId] || {};
+
+      return {
+        ...player,
+        position_logique: Number(logical.position_logique || 999999),
+        derniere_session_jouee: safeSessionNo(
+          logical.derniere_session_jouee || ''
+        )
+      };
+    })
+    .sort((a, b) => {
+      if (a.position_logique !== b.position_logique) {
+        return a.position_logique - b.position_logique;
+      }
+
+      return compareNames(a, b);
+    });
+
+  return finalizeGroupsFromSeed(
+    ordered,
+    logicalPositionsSource || 'Positions logiques globales'
+  );
+}
+
 function buildPreparationFromPreviousAttendance(activePlayers, previousAttendancePlayers) {
   const rankedPresent = getPresentPlayersRankedByCumulative(activePlayers);
 
@@ -1749,7 +1795,12 @@ function cascadePreparationPlayers(refA, refB) {
           <img class="slot-photo" src="${getPlayerPhoto(player)}" alt="${escapeHtml(safeText(player?.nom || player?.joueur_id || 'Joueur'))}">
           <div class="slot-text">
             <div class="slot-name">${escapeHtml(safeText(player?.nom || player?.joueur_id || '—'))}</div>
-            <div class="slot-meta">${escapeHtml(safeText(player?.joueur_id || ''))}</div>
+            <div class="slot-meta">
+              ${escapeHtml(safeText(player?.joueur_id || ''))}
+              ${Number(player?.position_logique || 0) > 0 && Number(player?.position_logique) < 999999
+                ? ` • Position globale #${escapeHtml(String(player.position_logique))}`
+                : ''}
+            </div>
           </div>
         </div>
       </div>
@@ -1781,7 +1832,7 @@ function cascadePreparationPlayers(refA, refB) {
             </div>
           </div>
           <div class="group-meta">
-            Clique sur un joueur pour le remplacer par un autre joueur présent ce soir.
+            Clique sur un joueur pour faire un Switch ou une Cascade avant de sauvegarder.
           </div>
           <div class="group-players">
             ${group.players.map((player, index) => renderPlayerSlot(player, index, group.group_code)).join('')}
@@ -1835,8 +1886,8 @@ function cascadePreparationPlayers(refA, refB) {
 
     if (!prepSessionEl.value) {
       sumStateEl.textContent = 'Choisir une session';
-    } else if (currentRound1AlreadyExists) {
-      sumStateEl.textContent = 'Déjà préparé';
+ } else if (currentRound1AlreadyExists) {
+  sumStateEl.textContent = 'Sauvegardé';
     } else if (proposalGroups.length) {
       sumStateEl.textContent = 'Prêt à sauvegarder';
     } else {
@@ -1876,6 +1927,8 @@ function cascadePreparationPlayers(refA, refB) {
     const dateSession = safeText(prepDateEl.value).trim();
 
     cumulativeRankingCache = [];
+    logicalPositionsCache = [];
+    logicalPositionsSource = '';
     attendanceCache = [];
     currentSessionRoundsCache = [];
     previousSessionRoundsCache = [];
@@ -1911,31 +1964,19 @@ function cascadePreparationPlayers(refA, refB) {
         no_session: noSession
       });
 
-const previousAttendancePromise =
-  previousSessionNoCache && previousSessionMeta
-    ? fetchJson(new URLSearchParams({
-        action: 'getAttendanceForSession',
-        saison_id: saisonId,
-        date_session: safeText(previousSessionMeta.date).trim(),
-        no_session: previousSessionNoCache
-      }))
-    : Promise.resolve({ ok: true, joueurs: [] });
-
-const cumulativeRankingPromise = fetchJson(new URLSearchParams({
-  action: 'getRanking',
+const logicalPositionsPromise = fetchJson(new URLSearchParams({
+  action: 'getLogicalPositions',
   saison_id: saisonId
 }));
 
 const [
   attendanceResult,
   currentMatchesResult,
-  previousAttendanceResult,
-  cumulativeRankingResult
+  logicalPositionsResult
 ] = await Promise.all([
   fetchJson(attendanceParams),
   fetchJson(currentMatchesParams),
-  previousAttendancePromise,
-  cumulativeRankingPromise
+  logicalPositionsPromise
 ]);
 
 if (!attendanceResult.ok) {
@@ -1946,12 +1987,11 @@ if (!currentMatchesResult.ok) {
   throw new Error(currentMatchesResult.error || 'Erreur de matchs courants.');
 }
 
-if (!previousAttendanceResult.ok) {
-  throw new Error(previousAttendanceResult.error || 'Erreur de présence précédente.');
-}
-
-if (!cumulativeRankingResult.ok) {
-  throw new Error(cumulativeRankingResult.error || 'Erreur de classement cumulatif.');
+if (!logicalPositionsResult.ok) {
+  throw new Error(
+    logicalPositionsResult.error ||
+    'Erreur de classement logique.'
+  );
 }
 
 attendanceCache = Array.isArray(attendanceResult.joueurs)
@@ -1962,16 +2002,18 @@ currentSessionRoundsCache = Array.isArray(currentMatchesResult.rounds)
   ? currentMatchesResult.rounds
   : [];
 
-const previousAttendanceCache = Array.isArray(previousAttendanceResult.joueurs)
-  ? previousAttendanceResult.joueurs
+logicalPositionsCache = Array.isArray(logicalPositionsResult.positions)
+  ? logicalPositionsResult.positions
   : [];
+
+logicalPositionsSource = safeText(
+  logicalPositionsResult.source ||
+  'Positions logiques globales'
+).trim();
 
 previousSessionRoundsCache = [];
 previousRoundRankingCache = [];
-
-cumulativeRankingCache = Array.isArray(cumulativeRankingResult.rows)
-  ? cumulativeRankingResult.rows
-  : [];
+cumulativeRankingCache = [];
       
       if (attendanceCache.length < 4) {
         setHint('Pas assez de joueurs présents. Il faut au moins 4 joueurs pour préparer la soirée.', 'danger');
@@ -1984,29 +2026,27 @@ cumulativeRankingCache = Array.isArray(cumulativeRankingResult.rows)
       const existingRound1 = currentSessionRoundsCache.find(round => Number(round?.round_no || 0) === 1);
       currentRound1AlreadyExists = !!(existingRound1 && Array.isArray(existingRound1.matches) && existingRound1.matches.length);
 
-      const built = buildPreparationFromPreviousAttendance(
+      const built = buildPreparationFromLogicalPositions(
         attendanceCache,
-        previousAttendanceCache
+        logicalPositionsCache
       );
       proposalGroups = Array.isArray(built.groups) ? built.groups : [];
       benchPlayers = Array.isArray(built.bench) ? built.bench : [];
       preparationSource = safeText(built.source).trim();
 
       if (proposalGroups.length) {
-        if (currentRound1AlreadyExists) {
-          setHint(
-            previousSessionNoCache
-              ? `Round 1 existe déjà en base pour cette session. La page affiche quand même le recalcul théorique à partir du classement courant et des présences de la session ${previousSessionNoCache}.`
-              : 'Round 1 existe déjà en base pour cette session. La page affiche quand même le recalcul théorique.',
-            'warn'
-          );
-          savePrepBtn.disabled = true;
+if (currentRound1AlreadyExists) {
+  setHint(
+    `Round 1 sauvegardé. Cette session est maintenant prête pour la page Matchs.`,
+    'ok'
+  );
+  savePrepBtn.disabled = true;
         } else {
           setHint(
             previousSessionNoCache
-              ? `Préparation générée à partir du round 2 de la session ${previousSessionNoCache}, en compactant les présents puis en ajoutant les retours à la fin.`
-              : 'Aucune session précédente trouvée. Répartition de secours utilisée.',
-            previousSessionNoCache ? 'ok' : 'warn'
+              ? `Préparation générée avec l’échelle globale. Les absents conservent leur position et reprennent naturellement leur place à leur retour.`
+              : `Première session : ordre de départ basé sur ${logicalPositionsSource || 'la saison précédente'}.`,
+            'ok'
           );
           savePrepBtn.disabled = false;
         }
