@@ -499,7 +499,7 @@ hero {
                     <div id="statSeasonMatches" class="stat-value">—</div>
                   </div>
                   <div class="stat-row">
-                    <div class="stat-label">Victoires global</div>
+                   <div class="stat-label">Présences</div>
                     <div id="statGlobalWins" class="stat-value">—</div>
                   </div>
                   <div class="stat-row">
@@ -736,19 +736,19 @@ hero {
       return null;
     }
 
-    function getSeasonPointsSummary(season, global) {
-      const pointsFor = pickStat(season, ['pointsFor', 'points_pour', 'pf', 'points_for']);
-      const pointsAgainst = pickStat(season, ['pointsAgainst', 'points_contre', 'pc', 'points_against']);
-      const pointDiff = pickStat(season, ['pointDiff', 'plus_moins', 'differentiel', 'diff']);
-      const matches = pickStat(season, ['matches', 'matchs', 'matchs_joues']);
+function getSeasonPointsSummary(season) {
+  const pointsFor = pickStat(season, ['pointsFor', 'points_pour', 'pf', 'points_for']);
+  const pointsAgainst = pickStat(season, ['pointsAgainst', 'points_contre', 'pc', 'points_against']);
+  const pointDiff = pickStat(season, ['pointDiff', 'plus_moins', 'differentiel', 'diff']);
+  const matches = pickStat(season, ['matches', 'matchs', 'matchs_joues']);
 
-      return {
-        pointsFor: pointsFor ?? global.pointsFor ?? 0,
-        pointsAgainst: pointsAgainst ?? global.pointsAgainst ?? 0,
-        pointDiff: pointDiff ?? global.pointDiff ?? 0,
-        matches: matches ?? global.matches ?? 0
-      };
-    }
+  return {
+    pointsFor: pointsFor ?? 0,
+    pointsAgainst: pointsAgainst ?? 0,
+    pointDiff: pointDiff ?? 0,
+    matches: matches ?? 0
+  };
+}
 
     function formatPartnerStat(item, primaryKey, suffix) {
       if (!item || !item.name) return '—';
@@ -834,15 +834,14 @@ hero {
 
         const stats = data.stats;
         const season = stats.season || {};
-        const global = stats.global || {};
         const relations = stats.relationships || {};
         const records = stats.records || {};
-        const seasonPoints = getSeasonPointsSummary(season, global);
+       const seasonPoints = getSeasonPointsSummary(season);
 
         setStatValue('statSeasonWins', season.wins ?? 0);
         setStatValue('statSeasonMatches', season.matches ?? 0);
-        setStatValue('statGlobalWins', global.wins ?? 0);
-        setStatValue('statWinRate', formatPercent(global.winRate ?? 0));
+setStatValue('statGlobalWins', season.presences ?? 0);
+setStatValue('statWinRate', formatPercent(season.winRate ?? 0));
         setStatValue('statPointsFor', seasonPoints.pointsFor);
         setStatValue('statPointsAgainst', seasonPoints.pointsAgainst);
         setStatValue('statPointDiff', formatSigned(seasonPoints.pointDiff));
@@ -859,14 +858,25 @@ hero {
         const intro = document.getElementById('statsIntroText');
         const badge = document.getElementById('statsBadge');
 
-        if (intro) {
-          const seasonName = safeText(stats.seasonName).trim();
-          const globalMatches = Number(global.matches || 0);
-          const presenceCount = Number(season.presences || 0);
-          intro.textContent = seasonName
-            ? (seasonName + ' • ' + globalMatches + ' matchs analysés au total • ' + presenceCount + ' présences cette saison')
-            : (globalMatches + ' matchs analysés au total');
-        }
+if (intro) {
+  const seasonName = safeText(stats.seasonName).trim();
+  const seasonMatches = Number(season.matches || 0);
+  const presenceCount = Number(season.presences || 0);
+
+  intro.textContent = seasonName
+    ? (
+        seasonName +
+        ' • ' +
+        seasonMatches +
+        ' matchs cette saison • ' +
+        presenceCount +
+        ' présences'
+      )
+    : (
+        seasonMatches +
+        ' matchs cette saison'
+      );
+}
 
         if (badge) {
           badge.textContent = stats.seasonName ? ('Saison active • ' + stats.seasonName) : 'Stats à jour';
