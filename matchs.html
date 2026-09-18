@@ -3750,13 +3750,22 @@ function withdrawPlayerFromCurrentStage(joueurId, playerName, stageNo = currentS
 const startButton = event.target.closest('[data-action="start-group-match"]');
 
 if (startButton) {
+  if (startCurrentGroupMatch.pending) return;
+
+  startCurrentGroupMatch.pending = true;
+  startButton.disabled = true;
+  startButton.textContent = 'Démarrage en cours…';
+
   startCurrentGroupMatch(
     startButton.dataset.groupCode ||
       startButton.closest('[data-group-card]')?.dataset.groupCard ||
       '',
     Number(startButton.dataset.stageNo || currentStageNo),
     Number(startButton.dataset.matchNo || currentMatchNo)
-  );
+  ).finally(() => {
+    startCurrentGroupMatch.pending = false;
+    applySessionLockUI();
+  });
 
   return;
 }
