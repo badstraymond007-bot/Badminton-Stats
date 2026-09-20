@@ -3457,7 +3457,10 @@ for (let roundNo = 1; roundNo <= MAX_ROUNDS; roundNo += 1) {
 
     async function loadSeasons() {
       try {
-        const response = await fetch(`${API_URL}?action=getSeasons`);
+       const response = await fetch(
+  `${API_URL}?action=getSeasons&_=${Date.now()}`,
+  { cache: 'no-store' }
+);
         const result = await response.json();
         if (!result.ok) throw new Error(result.error || 'Erreur API inconnue');
 
