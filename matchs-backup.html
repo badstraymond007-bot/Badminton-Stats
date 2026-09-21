@@ -9,481 +9,195 @@
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,select{font:inherit}button{cursor:pointer;border:1px solid var(--line);background:white;color:var(--ink);border-radius:7px;padding:10px 15px;font-weight:650;min-height:44px}button:hover{border-color:var(--green);background:#eff6f0}button:disabled{opacity:.48;cursor:default}button.primary{background:var(--green);color:white;border-color:var(--green)}button.add{background:var(--yellow);border-color:#e5c85c}button.subtle{padding:6px 10px;min-height:36px;font-size:13px}button.danger{color:#9c2c21}input,select{border:1px solid #bdc9c0;border-radius:5px;background:white;padding:9px;min-height:44px;color:var(--ink);max-width:100%}input:focus,select:focus,button:focus-visible{outline:3px solid #9ad2b6;outline-offset:2px}select{width:100%}label{display:block;font-weight:650;font-size:13px;margin-bottom:5px}.shell{max-width:1450px;margin:auto;padding:30px 26px 36px}.masthead{display:flex;justify-content:space-between;gap:24px;align-items:center;margin-bottom:24px}.eyebrow{font-size:12px;font-weight:750;letter-spacing:.13em;color:var(--green);text-transform:uppercase}h1{font-size:32px;line-height:1.2;letter-spacing:-.03em;margin:5px 0 9px}p{margin:0;color:var(--muted)}.local-mark{font-size:13px;max-width:245px;text-align:right}.local-mark b{color:var(--green);display:block}.controls{display:grid;grid-template-columns:1fr 1fr auto;gap:14px;align-items:end;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:15px}.notice{border-left:3px solid var(--green);padding:10px 13px;background:#eaf3ec;font-size:14px;margin:12px 0}.notice.warning{background:#fff1d8;border-color:#b56c07;color:#744000}.notice.error{background:#fdebe8;border-color:#b83727;color:#852719}[hidden]{display:none!important}.toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:22px 0 12px}.actions{display:flex;gap:8px;flex-wrap:wrap}.filters{display:flex;gap:9px;align-items:center}.filters select{width:145px}.stats{display:flex;gap:15px;align-items:baseline;font-size:13px}.stats strong{font-size:22px;margin-right:4px;color:var(--ink)}.table-wrap{overflow:auto;background:white;border:1px solid var(--line);border-radius:9px;max-height:68vh}table{border-collapse:separate;border-spacing:0;width:100%;min-width:1060px}caption{text-align:left;padding:14px 16px;border-bottom:1px solid var(--line);font-weight:650}th{position:sticky;top:0;z-index:1;background:#edf1eb;border-bottom:1px solid #c7d2c8;text-align:left;font-size:12px;color:#45564a;white-space:nowrap;padding:12px 9px}td{border-bottom:1px solid var(--line);padding:11px 9px;vertical-align:middle}tbody tr:last-child td{border-bottom:0}tbody tr:nth-child(even){background:#fafbf8}td:first-child,th:first-child{padding-left:16px}.compact{text-align:center;width:62px}.team{min-width:175px}.team span{display:block;white-space:nowrap;font-size:14px}.score-cell{width:80px;background:#f5f9e9;text-align:center}.score{width:64px;padding:8px 4px;text-align:center;font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}.score::placeholder{font-weight:400;color:#b2bdb2}.score[aria-invalid="true"]{border-color:#b83727;background:#fff0ee}.waiting{max-width:150px;font-size:13px;color:var(--muted)}.status{font-size:12px;max-width:215px;min-width:140px}.pill{display:inline-block;border-radius:4px;padding:3px 7px;background:#edf0ea;color:#546253;font-size:12px;font-weight:600}.pill.pending{background:#fff0c1;color:#7e5207}.pill.synced{background:#def2e6;color:#145d3c}.pill.conflict,.pill.error,.pill.uncertain{background:#fce5df;color:#952b21}.detail{display:block;color:#8c3428;font-size:12px;line-height:1.35;margin-top:5px}.empty{text-align:center;padding:36px;color:var(--muted)}.footer{display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-top:16px;font-size:13px}.footer p{max-width:660px}.help{margin-top:24px;font-size:13px;color:var(--muted)}.help summary{cursor:pointer;font-weight:650}.help p{margin-top:10px;max-width:880px}.syncbar{display:flex;gap:14px;align-items:center;justify-content:space-between;margin-top:20px;background:white;border:1px solid var(--line);padding:16px 18px;border-radius:9px}.syncbar p{font-size:13px}.syncbar strong{display:block;font-size:16px}.sync-actions{display:flex;gap:9px}.progress{margin-top:14px}progress{width:100%;accent-color:var(--green)}.muted{color:var(--muted);font-size:13px}.dialog{border:1px solid var(--line);border-radius:12px;max-width:690px;width:calc(100% - 28px);padding:24px;color:var(--ink);max-height:90vh;overflow:auto}.dialog::backdrop{background:#172b2466}.dialog h2{margin:0 0 16px;font-size:23px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.form-grid .wide{grid-column:1/-1}.form-grid input{width:100%}.dialog-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:22px}.dialog .error-text{color:#9c2c21;margin-top:12px}.review{max-height:38vh;overflow:auto;margin:14px 0}.review ul{margin:0;padding-left:24px}.review li{margin:8px 0}.review-score{font-variant-numeric:tabular-nums;font-weight:700}.mode-note{font-size:13px;color:var(--muted);padding-top:6px}
 @media(max-width:700px){.shell{padding:20px 12px}.masthead{align-items:flex-start;gap:12px}h1{font-size:27px}.local-mark{max-width:120px;font-size:11px}.controls{grid-template-columns:1fr;padding:14px}.controls button{width:100%}.toolbar{align-items:stretch}.toolbar>.actions{width:100%}.toolbar>.actions button{flex:1}.stats{gap:10px;flex-wrap:wrap}.syncbar{display:block;padding:14px}.sync-actions{margin-top:12px}.sync-actions button{flex:1}.footer{display:block}.footer .actions{margin-top:14px}.footer .actions button{flex:1}.table-wrap{max-height:65vh}.filters select{width:135px}.dialog{padding:18px}.form-grid{gap:12px}.help{margin-top:18px}}
 @media print{body{background:white}.shell{padding:0}.controls,.toolbar .actions,.filters,.footer .actions,.syncbar,.help,.progress,.notice,dialog,.row-actions{display:none!important}.masthead{margin-bottom:12px}.local-mark{display:none}.table-wrap{overflow:visible;max-height:none;border:0}table{min-width:0;font-size:10px}th{position:static}td,th{padding:6px}.team{min-width:110px}.team span{white-space:normal;font-size:11px}.score{border:0;font-size:15px;width:36px;min-height:20px;padding:0}.score-cell{width:40px}.waiting,.status{font-size:10px;min-width:0}.status{max-width:110px}h1{font-size:23px}@page{size:landscape;margin:10mm}}
+.row-actions .mini-actions{display:flex;gap:5px;flex-wrap:wrap}.row-actions .mini-actions button{padding:5px 8px;min-height:32px;font-size:12px}.notes-preview{display:block;color:var(--muted);font-size:11px;margin-top:3px;max-width:190px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style>
 </head>
 <body>
 <main class="shell">
- <header class="masthead"><div><div class="eyebrow">Badminton · Plan B</div><h1>Fiche de secours</h1><p>Entre les points. Continue de jouer. Synchronise à la fin.</p></div><div class="local-mark"><b id="saveTitle">Sur cet appareil</b><span id="saveDetail">Saisie enregistrée automatiquement</span></div></header>
- <section class="controls" aria-label="Choix de la session"><div><label for="season">Saison</label><select id="season" data-idle></select></div><div><label for="session">Session</label><select id="session" data-idle></select></div><button id="load" data-idle>Actualiser depuis Google Sheets</button></section>
+ <header class="masthead"><div><div class="eyebrow">Badminton · Plan B</div><h1>Fiche de secours</h1><p>Écris exactement ce qui s’est passé. Rien n’est corrigé automatiquement.</p></div><div class="local-mark"><b id="saveTitle">Sur cet appareil</b><span id="saveDetail">Saisie enregistrée automatiquement</span></div></header>
+ <section class="controls" aria-label="Choix de la session"><div><label for="season">Saison</label><select id="season" data-idle></select></div><div><label for="session">Session</label><select id="session" data-idle></select></div><button id="load" data-idle>Charger du classeur (remplace la fiche)</button></section>
  <div id="storageAlert" class="notice error" role="alert" hidden></div>
- <div id="message" class="notice" role="status">Copie du classeur du 18 septembre 2026. Actualise si tu as une connexion.</div>
- <section class="toolbar"><div class="stats" id="stats"></div><div class="actions"><button id="addGroup" data-idle>Préparer un groupe</button><button id="addRow" class="add" data-idle>+ Ajouter un match</button></div></section>
- <div class="toolbar" style="margin-top:0"><div class="filters"><select id="roundFilter" aria-label="Filtrer par round"><option value="">Tous les rounds</option><option value="1">Round 1</option><option value="2">Round 2</option><option value="3">Round 3</option></select><select id="groupFilter" aria-label="Filtrer par groupe"><option value="">Tous les groupes</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option></select></div><span class="muted">Cases vert pâle = pointages · Tab ou Entrée pour avancer</span></div>
+ <div id="message" class="notice" role="status">Mode contrôle total : toutes les lignes sont modifiables et restent sur cet appareil.</div>
+ <section class="toolbar"><div class="stats" id="stats"></div><div class="actions"><button id="addRow" class="add" data-idle>+ Ajouter un match libre</button></div></section>
+ <div class="toolbar" style="margin-top:0"><div class="filters"><select id="roundFilter" aria-label="Filtrer par round"><option value="">Tous les rounds</option></select><select id="groupFilter" aria-label="Filtrer par groupe"><option value="">Tous les groupes</option></select></div><span class="muted">Aucune validation sportive · Tab ou Entrée pour avancer</span></div>
  <div class="table-wrap" tabindex="0" aria-label="Fiche des matchs, défilement horizontal disponible"><table><caption id="caption"></caption><thead><tr><th class="compact">Round</th><th class="compact">Groupe</th><th class="compact">Match</th><th>Équipe 1</th><th class="score-cell">Points 1</th><th class="score-cell">Points 2</th><th>Équipe 2</th><th>Repos</th><th>État</th><th class="row-actions"><span class="muted">Modifier</span></th></tr></thead><tbody id="rows"></tbody></table></div>
- <section class="syncbar"><div><strong id="syncCount">Aucun pointage à envoyer</strong><p>Les résultats restent ici jusqu’à ton envoi. La saisie fonctionne sans Internet.</p></div><div class="sync-actions"><button id="stop" hidden>Arrêter après ce match</button><button id="sync" class="primary" data-idle>Synchroniser les pointages</button></div></section>
+ <section class="syncbar"><div><strong id="syncCount">Fiche locale</strong><p>La saisie fonctionne sans Internet. L’envoi remplace uniquement les lignes de cette saison/session dans la feuille matchs.</p></div><div class="sync-actions"><button id="sync" class="primary" data-idle>Écrire cette fiche dans le classeur</button></div></section>
  <div class="progress" id="progressBox" hidden><label for="progress" id="progressText"></label><progress id="progress" value="0" max="1"></progress></div>
- <footer class="footer"><p>Conserve ce fichier et utilise le même navigateur. Télécharge aussi une copie pour pouvoir récupérer tes résultats sur un autre appareil.</p><div class="actions"><button id="export">Télécharger une copie</button><button id="import" data-idle>Récupérer une copie</button><button id="csv">Exporter pour Excel</button><button id="print">Imprimer</button></div></footer>
+ <footer class="footer"><p>Tout est sauvegardé localement. Le CSV utilise exactement les 17 colonnes de la feuille <b>matchs</b> du classeur.</p><div class="actions"><button id="export">Télécharger une copie JSON</button><button id="import" data-idle>Récupérer une copie</button><button id="csv">Exporter pour Excel</button><button id="print">Imprimer</button></div></footer>
  <input type="file" id="importFile" accept="application/json,.json" hidden>
- <details class="help"><summary>Comment utiliser cette fiche ?</summary><p>1. Choisis la saison et la session. Actualise quand Internet est disponible. Les équipes déjà présentes dans ton classeur sont affichées; les autres matchs des groupes connus sont proposés avec les rotations de ta page Matchs.</p><p>2. Remplis les deux cases de points, dans l’ordre que tu veux. Pour un autre round, utilise « Préparer un groupe » avec les joueurs dans l’ordre 1 à 5, ou ajoute les matchs manuellement. Aucune montée ou descente de joueurs n’est calculée ici.</p><p>3. À la fin, utilise « Synchroniser les pointages », vérifie la liste puis envoie. Utilise un seul appareil pour l’envoi et attends la confirmation. Un score différent déjà présent sur Google Sheets est signalé; ta copie est conservée.</p><p>Un blocage du serveur peut aussi empêcher cet envoi. Tu peux toujours télécharger tes résultats ou les exporter pour Excel. Quand tous les résultats de la soirée sont synchronisés, termine la session dans ta page Matchs habituelle pour recalculer les classements.</p><p>« Copie Excel » signifie que la valeur vient du fichier du 18 septembre, sans vérification en ligne. « Synchronisé » signifie qu’une relecture de Google Sheets a confirmé le résultat. Un fichier JSON récupéré ajoute les résultats manquants; un conflit reste à vérifier.</p></details>
+ <details class="help"><summary>Comment utiliser cette fiche ?</summary><p>1. Tout est libre : round, groupe, numéro de match, terrain, joueurs, repos, scores, gagnant et notes. Les doublons, scores égaux et compositions inhabituelles sont acceptés.</p><p>2. « Ajouter un match libre » ajoute une ligne vide. « Modifier » permet de changer absolument tous les champs. Les flèches changent l’ordre des lignes; « Dupliquer » copie une ligne sans vérification.</p><p>3. La fiche est enregistrée automatiquement dans le navigateur. « Exporter pour Excel » produit les mêmes 17 colonnes que la feuille matchs, avec les IDs PLY.</p><p>4. « Écrire cette fiche dans le classeur » remplace les lignes de la saison/session choisie par exactement les lignes affichées ici. Aucun classement, rotation, composition officielle ou état de groupe n’est recalculé par cette page.</p></details>
 </main>
 <dialog class="dialog" id="editor"><form id="editForm"><h2 id="editTitle">Ajouter un match</h2><div class="form-grid" id="editFields"></div><p class="error-text" id="editError" role="alert"></p><div class="dialog-actions"><button type="button" id="deleteRow" class="danger" hidden>Retirer cette ligne locale</button><button type="button" id="cancelEdit">Annuler</button><button type="submit" class="primary">Garder sur cet appareil</button></div></form></dialog>
-<dialog class="dialog" id="review"><h2>Envoyer les pointages</h2><p id="reviewSummary"></p><div class="review" id="reviewList"></div><p>Les matchs seront envoyés un à un. Un résultat différent déjà enregistré restera à vérifier.</p><div class="dialog-actions"><button id="cancelSync">Annuler</button><button id="confirmSync" class="primary">Envoyer</button></div></dialog>
+<dialog class="dialog" id="review"><h2>Remplacer la session dans le classeur</h2><p id="reviewSummary"></p><div class="review" id="reviewList"></div><p><b>Important :</b> cette opération efface d’abord les lignes de cette saison/session dans la feuille matchs, puis écrit exactement cette fiche. Aucune règle de badminton n’est appliquée.</p><div class="dialog-actions"><button id="cancelSync">Annuler</button><button id="confirmSync" class="primary">Remplacer la session</button></div></dialog>
 <script>
 'use strict';
-// Autonome : aucune bibliothèque externe et aucun envoi au chargement.
-// API reprise du fichier matchs fourni. Les validations du serveur sont conservées.
+// Mode contrôle total : aucune règle de rotation, composition, score ou ordre n'est imposée.
 const API_URL = 'https://script.google.com/macros/s/AKfycbwddJ7s8j6uWH2fXP_h7161F_MT5ZU12X15oMx6Xx7icxud1jg9_e3iq28bjfs3X4_y/exec';
 const SEED = {"date": "2026-09-18", "players": [{"joueur_id": "PLY-001", "nom": "Sébastien Moisan"}, {"joueur_id": "PLY-002", "nom": "David Fortier"}, {"joueur_id": "PLY-003", "nom": "Cédric Borgia"}, {"joueur_id": "PLY-004", "nom": "Louis Noreau"}, {"joueur_id": "PLY-005", "nom": "Dominic Beaupré"}, {"joueur_id": "PLY-006", "nom": "Pier-Luc Morency"}, {"joueur_id": "PLY-007", "nom": "Étienne Drolet"}, {"joueur_id": "PLY-008", "nom": "Richard Genois"}, {"joueur_id": "PLY-009", "nom": "Mario Bessette"}, {"joueur_id": "PLY-010", "nom": "Yvan Renaud"}, {"joueur_id": "PLY-011", "nom": "Gaétan Borgia"}, {"joueur_id": "PLY-012", "nom": "Sébastien Plamondon"}, {"joueur_id": "PLY-013", "nom": "Julien Auger"}, {"joueur_id": "PLY-014", "nom": "Rémi Ouellet"}, {"joueur_id": "PLY-015", "nom": "Dominic Laroche"}, {"joueur_id": "PLY-016", "nom": "Dave Marcoux"}, {"joueur_id": "PLY-017", "nom": "Mathieu Boyarg"}, {"joueur_id": "PLY-018", "nom": "Steven Moisan"}, {"joueur_id": "PLY-019", "nom": "Olivier Paquet"}, {"joueur_id": "PLY-020", "nom": "Frédéric Boucher"}, {"joueur_id": "PLY-021", "nom": "Joueur Invité"}, {"joueur_id": "PLY-022", "nom": "Charles Gourdeau"}, {"joueur_id": "PLY-023", "nom": "Dominic Marcotte"}], "seasons": [{"saison_id": "SEA-20260328-115921", "nom_saison": "Saison 25-26", "statut": "terminee", "sessions": [{"no_session": "1", "date": "2026-03-24", "barree": true}, {"no_session": "2", "date": "2026-03-31", "barree": true}, {"no_session": "3", "date": "2026-04-07", "barree": true}, {"no_session": "4", "date": "2026-04-14", "barree": true}, {"no_session": "5", "date": "2026-04-21", "barree": true}, {"no_session": "6", "date": "2026-04-28", "barree": true}, {"no_session": 7, "date": "2026-05-05"}, {"no_session": 8, "date": "2026-05-12"}]}, {"saison_id": "SEA-20260913-130039", "nom_saison": "Saison 26-27", "statut": "active", "sessions": [{"no_session": "1", "date": "2026-09-15", "barree": false}, {"no_session": "2", "date": "2026-09-22", "barree": false}, {"no_session": "3", "date": "2026-09-29", "barree": false}, {"no_session": "4", "date": "2026-10-06", "barree": false}, {"no_session": "5", "date": "2026-10-13", "barree": false}, {"no_session": "6", "date": "2026-10-20", "barree": false}, {"no_session": "7", "date": "2026-10-27", "barree": false}, {"no_session": "8", "date": "2026-11-03", "barree": false}, {"no_session": "9", "date": "2026-11-10", "barree": false}, {"no_session": "10", "date": "2026-11-17", "barree": false}, {"no_session": "11", "date": "2026-11-24", "barree": false}, {"no_session": "12", "date": "2026-12-01", "barree": false}, {"no_session": "13", "date": "2026-12-08", "barree": false}, {"no_session": "14", "date": "2026-12-15", "barree": false}, {"no_session": "15", "date": "2026-12-22", "barree": false}, {"no_session": "16", "date": "2026-12-29", "barree": false}, {"no_session": "17", "date": "2027-01-05", "barree": false}, {"no_session": "18", "date": "2027-01-12", "barree": false}, {"no_session": "19", "date": "2027-01-19", "barree": false}, {"no_session": "20", "date": "2027-01-26", "barree": false}, {"no_session": "21", "date": "2027-02-02", "barree": false}, {"no_session": "22", "date": "2027-02-09", "barree": false}, {"no_session": "23", "date": "2027-02-16", "barree": false}, {"no_session": "24", "date": "2027-02-23", "barree": false}, {"no_session": "25", "date": "2027-03-02", "barree": false}, {"no_session": "26", "date": "2027-03-09", "barree": false}, {"no_session": "27", "date": "2027-03-16", "barree": false}, {"no_session": "28", "date": "2027-03-23", "barree": false}, {"no_session": "29", "date": "2027-03-30", "barree": false}, {"no_session": "30", "date": "2027-04-06", "barree": false}, {"no_session": "31", "date": "2027-04-13", "barree": false}, {"no_session": "32", "date": "2027-04-20", "barree": false}, {"no_session": "33", "date": "2027-04-27", "barree": false}]}], "season": "SEA-20260913-130039", "session": "1", "matches": [{"match_id": "MAT-20260915-193858-001", "saison_id": "SEA-20260913-130039", "no_session": 1, "round_no": 1, "match_no": 1, "groupe_code": "A", "court_no": 1, "team1_player1_id": "{\"joueur_id\":\"PLY-002\",\"tag\":\"1\"}", "team1_player2_id": "{\"joueur_id\":\"PLY-003\",\"tag\":\"2\"}", "team2_player1_id": "{\"joueur_id\":\"PLY-004\",\"tag\":\"3\"}", "team2_player2_id": "{\"joueur_id\":\"PLY-011\",\"tag\":\"4\"}", "waiting_player_id": "", "team1_score": "", "team2_score": "", "winner_team": "", "notes": "", "created_at": 46280.81872920139}, {"match_id": "MAT-20260915-193858-002", "saison_id": "SEA-20260913-130039", "no_session": 1, "round_no": 1, "match_no": 1, "groupe_code": "B", "court_no": 2, "team1_player1_id": "{\"joueur_id\":\"PLY-006\",\"tag\":\"1\"}", "team1_player2_id": "{\"joueur_id\":\"PLY-009\",\"tag\":\"2\"}", "team2_player1_id": "{\"joueur_id\":\"PLY-016\",\"tag\":\"3\"}", "team2_player2_id": "{\"joueur_id\":\"PLY-015\",\"tag\":\"4\"}", "waiting_player_id": "{\"joueur_id\":\"PLY-017\",\"tag\":\"5\"}", "team1_score": "", "team2_score": "", "winner_team": "", "notes": "", "created_at": 46280.81872920139}, {"match_id": "MAT-20260915-193858-003", "saison_id": "SEA-20260913-130039", "no_session": 1, "round_no": 1, "match_no": 1, "groupe_code": "C", "court_no": 3, "team1_player1_id": "{\"joueur_id\":\"PLY-019\",\"tag\":\"1\"}", "team1_player2_id": "{\"joueur_id\":\"PLY-008\",\"tag\":\"2\"}", "team2_player1_id": "{\"joueur_id\":\"PLY-018\",\"tag\":\"3\"}", "team2_player2_id": "{\"joueur_id\":\"PLY-012\",\"tag\":\"4\"}", "waiting_player_id": "{\"joueur_id\":\"PLY-014\",\"tag\":\"5\"}", "team1_score": "", "team2_score": "", "winner_team": "", "notes": "", "created_at": 46280.81872920139}, {"match_id": "MAT-20260915-202536-001", "saison_id": "SEA-20260913-130039", "no_session": 1, "round_no": 1, "match_no": 3, "groupe_code": "A", "court_no": 1, "team1_player1_id": "{\"joueur_id\":\"PLY-002\",\"tag\":\"1\"}", "team1_player2_id": "{\"joueur_id\":\"PLY-011\",\"tag\":\"4\"}", "team2_player1_id": "{\"joueur_id\":\"PLY-003\",\"tag\":\"2\"}", "team2_player2_id": "{\"joueur_id\":\"PLY-004\",\"tag\":\"3\"}", "waiting_player_id": "", "team1_score": 17, "team2_score": 21, "winner_team": 2, "notes": "", "created_at": 46280.8511199537}], "groups": [{"saison_id": "SEA-20260913-130039", "no_session": 1, "round_no": 1, "group_code": "C", "composition": [{"joueur_id": "PLY-019", "tag": "1"}, {"joueur_id": "PLY-008", "tag": "2"}, {"joueur_id": "PLY-018", "tag": "3"}, {"joueur_id": "PLY-012", "tag": "4"}, {"joueur_id": "PLY-014", "tag": "5"}]}, {"saison_id": "SEA-20260913-130039", "no_session": 1, "round_no": 1, "group_code": "B", "composition": [{"joueur_id": "PLY-006", "tag": "1"}, {"joueur_id": "PLY-009", "tag": "2"}, {"joueur_id": "PLY-016", "tag": "3"}, {"joueur_id": "PLY-015", "tag": "4"}, {"joueur_id": "PLY-017", "tag": "5"}]}, {"saison_id": "SEA-20260913-130039", "no_session": 1, "round_no": 1, "group_code": "A", "composition": [{"joueur_id": "PLY-002", "tag": "1"}, {"joueur_id": "PLY-003", "tag": "2"}, {"joueur_id": "PLY-004", "tag": "3"}, {"joueur_id": "PLY-011", "tag": "4"}]}]};
 const VERSION=1, PREFIX='badminton.backup.v1.';
 const CATALOG_KEY=PREFIX+API_URL.split('/s/')[1].split('/')[0]+'.catalog';
 const $=id=>document.getElementById(id);
-const str=v=>String(v??'').trim();
-const cleanNumber=v=>str(v).replace(/\.0+$/,'');
+const str=v=>String(v??'');
+const clean=v=>str(v).trim();
 const escapeHtml=v=>str(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const clone=v=>JSON.parse(JSON.stringify(v));
 const uid=()=>globalThis.crypto?.randomUUID?.() || Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
 const slots=['team1_player1_id','team1_player2_id','team2_player1_id','team2_player2_id','waiting_player_id'];
 let seasons=clone(SEED.seasons), players=new Map(SEED.players.map(p=>[p.joueur_id,p.nom]));
-let bucket=null, revision=null, storageOK=true, storageConflict=false, busy=false, stopRequested=false, editMode='', editId='', reviewIds=[];
-const keyOf=r=>[cleanNumber(r.round_no),str(r.group_code||r.groupe_code).toUpperCase(),cleanNumber(r.match_no)].join('|');
-const groupKey=r=>[cleanNumber(r.round_no),str(r.group_code||r.groupe_code).toUpperCase()].join('|');
-const storageKey=()=>PREFIX+API_URL.split('/s/')[1].split('/')[0]+'.'+bucket.saison_id+'.'+bucket.no_session;
-const hasScore=r=>str(r.team1_score)!=='' || str(r.team2_score)!=='';
-const completed=r=>str(r.team1_score)!=='' && str(r.team2_score)!=='';
-const rowSort=(a,b)=>Number(a.round_no)-Number(b.round_no)||Number(a.match_no)-Number(b.match_no)||a.group_code.localeCompare(b.group_code);
+let bucket=null, busy=false, editId='';
+
 function playerRef(value){
  if(!value)return {id:'',tag:''};
- if(typeof value==='string' && value.trim().startsWith('{')){try{return playerRef(JSON.parse(value));}catch{return {id:'',tag:''};}}
- if(typeof value==='object')return {id:str(value.joueur_id||value.player_id),tag:str(value.canonical_tag||value.tag)};
- return {id:str(value),tag:''};
+ if(typeof value==='string' && value.trim().startsWith('{')){try{return playerRef(JSON.parse(value));}catch{return {id:value,tag:''};}}
+ if(typeof value==='object')return {id:clean(value.joueur_id||value.player_id||value.id),tag:clean(value.canonical_tag||value.tag)};
+ return {id:clean(value),tag:''};
 }
 function parseList(value){if(Array.isArray(value))return value;if(typeof value==='string'){try{const v=JSON.parse(value);return Array.isArray(v)?v:[];}catch{}}return [];}
-function normalizeRow(raw,source='excel'){
- const row={id:uid(),round_no:cleanNumber(raw.round_no),match_no:cleanNumber(raw.match_no),group_code:str(raw.group_code||raw.groupe_code).toUpperCase(),team1_score:str(raw.team1_score),team2_score:str(raw.team2_score),match_id:str(raw.match_id),pending:false,status:source,detail:'',updatedAt:'',refs:{}};
- for(const field of slots){const p=playerRef(raw[field]??raw[field.replace(/_id$/,'')]);row[field]=p.id;row.refs[p.id]=p.tag;}
+function rawMatchId(){return 'RAW-'+new Date().toISOString().replace(/[-:.TZ]/g,'').slice(0,14)+'-'+uid().slice(0,8);}
+function normalizeRow(raw,source='local'){
+ const row={
+  id:clean(raw.id)||uid(), match_id:clean(raw.match_id)||rawMatchId(),
+  round_no:str(raw.round_no), match_no:str(raw.match_no), group_code:str(raw.group_code??raw.groupe_code), court_no:str(raw.court_no),
+  team1_score:str(raw.team1_score), team2_score:str(raw.team2_score), winner_team:str(raw.winner_team), notes:str(raw.notes),
+  created_at:raw.created_at??'', source:source, updatedAt:raw.updatedAt||''
+ };
+ for(const f of slots)row[f]=playerRef(raw[f]??raw[f.replace(/_id$/,'')]).id;
  return row;
 }
-function compositionOf(raw){
- const list=parseList(raw.composition??raw.composition_json).map((v,i)=>{const p=playerRef(v);return {joueur_id:p.id,tag:p.tag||String(i+1)};});
- if(list.length && list.every(p=>/^[1-5]$/.test(p.tag)) && new Set(list.map(p=>p.tag)).size===list.length)list.sort((a,b)=>Number(a.tag)-Number(b.tag));
- return list;
-}
-function rotation(ids,round,match){
- const four=[[0,1,2,3,-1],[0,2,1,3,-1],[0,3,1,2,-1]];
- const five1=[[1,2,0,4,3],[1,3,0,2,4],[1,4,2,3,0],[0,3,2,4,1]];
- const five2=[[2,4,1,3,0],[0,4,2,3,1],[0,2,1,4,3],[1,2,0,3,4]];
- const table=ids.length===4?four:ids.length===5?(Number(round)===2?five2:five1):[];
- return table[Number(match)-1]?.map(i=>i<0?'':ids[i]) || null;
-}
-function addGroupRows(round,code,composition,source='local'){
- const ids=composition.map(p=>p.joueur_id);if(![4,5].includes(ids.length) || new Set(ids).size!==ids.length || ids.some(id=>!id))return;
- const gk=round+'|'+code;
- // Une actualisation n'efface jamais une composition préparée localement.
- if(!bucket.groups[gk])bucket.groups[gk]=clone(composition);
- for(let n=1;n<=(ids.length===5?4:3);n++){
-  const raw={round_no:round,group_code:code,match_no:n};
-  if(bucket.rows.some(r=>keyOf(r)===keyOf(raw)))continue;
-  rotation(ids,round,n).forEach((id,i)=>raw[slots[i]]=id);
-  const row=normalizeRow(raw,source);row.refs=Object.fromEntries(composition.map(p=>[p.joueur_id,p.tag]));bucket.rows.push(row);
- }
-}
-function newBucket(season,session){
- return {format:'badminton-backup',version:VERSION,saison_id:season,no_session:session,rows:[],groups:{},players:Object.fromEntries(players),revision:null,updatedAt:''};
-}
+function newBucket(season,session){return {format:'badminton-backup',version:VERSION,saison_id:season,no_session:session,rows:[],groups:{},players:Object.fromEntries(players),updatedAt:''};}
+function storageKey(){return PREFIX+API_URL.split('/s/')[1].split('/')[0]+'.'+bucket.saison_id+'.'+bucket.no_session;}
 function showMessage(text,type=''){ $('message').textContent=text;$('message').className='notice'+(type?' '+type:''); }
-function storageFailure(error,conflict=false){
- storageOK=false;storageConflict=conflict;$('storageAlert').hidden=false;
- $('storageAlert').textContent=conflict?'Cette fiche a changé dans un autre onglet. Télécharge ta copie ici, puis recharge la page avant de continuer.':'La sauvegarde sur cet appareil est indisponible. Garde cette page ouverte et télécharge une copie avant de la fermer.';
- $('saveTitle').textContent='Copie à télécharger';$('saveDetail').textContent='Les données restent dans cette page';
- if(conflict)render();
-}
 function saveLocal(){
+ if(!bucket)return false;
  bucket.players=Object.fromEntries(players);bucket.updatedAt=new Date().toISOString();
- try{
-  const raw=localStorage.getItem(storageKey());
-  const disk=raw?JSON.parse(raw):null;
-  if((disk?.revision??null)!==revision){storageFailure(null,true);return false;}
-  if(storageConflict)return false;
-  const next=uid();bucket.revision=next;localStorage.setItem(storageKey(),JSON.stringify(bucket));revision=next;
-  storageOK=true;$('storageAlert').hidden=true;$('saveTitle').textContent='Enregistré sur cet appareil';
-  try{localStorage.setItem(CATALOG_KEY,JSON.stringify({seasons,players:Object.fromEntries(players)}));}catch{}
-  $('saveDetail').textContent=new Date().toLocaleTimeString('fr-CA',{hour:'2-digit',minute:'2-digit',second:'2-digit'});return true;
- }catch(e){storageFailure(e);return false;}
+ try{localStorage.setItem(storageKey(),JSON.stringify(bucket));localStorage.setItem(CATALOG_KEY,JSON.stringify({seasons,players:Object.fromEntries(players)}));$('storageAlert').hidden=true;$('saveTitle').textContent='Enregistré sur cet appareil';$('saveDetail').textContent=new Date().toLocaleTimeString('fr-CA',{hour:'2-digit',minute:'2-digit',second:'2-digit'});return true;}
+ catch(e){$('storageAlert').hidden=false;$('storageAlert').textContent='La sauvegarde locale est indisponible. Télécharge une copie JSON avant de fermer la page.';$('saveTitle').textContent='Copie à télécharger';$('saveDetail').textContent='Garde cette page ouverte';return false;}
 }
 function selectSeasonOptions(selected){
  $('season').innerHTML=seasons.map(s=>`<option value="${escapeHtml(s.saison_id)}">${escapeHtml(s.nom_saison||s.saison_id)}</option>`).join('');
- $('season').value=selected||SEED.season;
+ if(selected && seasons.some(s=>s.saison_id===selected))$('season').value=selected; else if(SEED.season)$('season').value=SEED.season;
 }
 function selectSessionOptions(selected){
- const season=seasons.find(s=>str(s.saison_id)===$('season').value);
- const list=parseList(season?.sessions??season?.sessions_json).sort((a,b)=>Number(a.no_session)-Number(b.no_session));
- $('session').innerHTML=list.map(s=>`<option value="${escapeHtml(cleanNumber(s.no_session))}">Session ${escapeHtml(cleanNumber(s.no_session))} · ${escapeHtml(s.date)}${s.barree?' · barrée':''}</option>`).join('');
- if(list.some(s=>cleanNumber(s.no_session)===str(selected)))$('session').value=str(selected);
+ const season=seasons.find(s=>clean(s.saison_id)===$('season').value);
+ const list=parseList(season?.sessions??season?.sessions_json);
+ $('session').innerHTML=list.map(s=>`<option value="${escapeHtml(str(s.no_session).replace(/\.0+$/,''))}">Session ${escapeHtml(str(s.no_session).replace(/\.0+$/,''))}${s.date?' · '+escapeHtml(s.date):''}</option>`).join('');
+ if(selected!=null && [...$('session').options].some(o=>o.value===str(selected)))$('session').value=str(selected);
 }
 function openSession(){
- bucket=newBucket($('season').value,$('session').value);revision=null;storageOK=true;storageConflict=false;$('storageAlert').hidden=true;
+ const season=$('season').value, session=$('session').value;
+ bucket=newBucket(season,session);
  try{
   const raw=localStorage.getItem(storageKey());
-  if(raw){const data=JSON.parse(raw);validateBackup(data);bucket=data;revision=data.revision??null;Object.entries(bucket.players||{}).forEach(([id,name])=>players.set(id,str(name)));}
-  else{
-   SEED.matches.filter(r=>str(r.saison_id)===bucket.saison_id&&cleanNumber(r.no_session)===bucket.no_session).forEach(r=>bucket.rows.push(normalizeRow(r)));
-   SEED.groups.filter(r=>str(r.saison_id)===bucket.saison_id&&cleanNumber(r.no_session)===bucket.no_session).forEach(g=>addGroupRows(cleanNumber(g.round_no),g.group_code,g.composition,'excel'));
-  }
- }catch(e){storageFailure(e);if(e instanceof SyntaxError || str(e.message).includes('copie'))storageConflict=true;}
- $('roundFilter').value='';$('groupFilter').value='';
- if(!storageConflict)saveLocal();render();
- showMessage(bucket.lastRead?'Dernière lecture en ligne : '+new Date(bucket.lastRead).toLocaleString('fr-CA')+'. Tes saisies locales sont conservées.':'Copie du classeur du 18 septembre 2026. Actualise si tu as une connexion.');
+  if(raw){const saved=JSON.parse(raw);if(Array.isArray(saved.rows)){bucket={...bucket,...saved,rows:saved.rows.map(r=>normalizeRow(r,r.source||r.status||'local'))};Object.entries(saved.players||{}).forEach(([id,n])=>players.set(id,str(n)));}}
+  else SEED.matches.filter(r=>clean(r.saison_id)===season&&str(r.no_session).replace(/\.0+$/,'')===session).forEach(r=>bucket.rows.push(normalizeRow(r,'classeur')));
+ }catch(e){showMessage('La copie locale n’a pas pu être relue : '+e.message,'error');}
+ saveLocal();render();showMessage('Mode contrôle total : aucune règle ne bloque la saisie.');
 }
-function rowError(row){
- if(!/^[1-3]$/.test(str(row.round_no)))return 'Round attendu : 1 à 3.';
- if(!/^[A-E]$/.test(str(row.group_code)))return 'Groupe attendu : A à E.';
- if(!/^[1-4]$/.test(str(row.match_no)))return 'Numéro de match attendu : 1 à 4.';
- const ids=slots.map(f=>str(row[f])).filter(Boolean);
- if(slots.slice(0,4).some(f=>!str(row[f])))return 'Choisis les quatre joueurs.';
- if(new Set(ids).size!==ids.length)return 'Un joueur apparaît deux fois dans ce match.';
- if(ids.some(id=>!players.has(id)))return 'Un joueur est inconnu : vérifie la composition.';
- if(!row.waiting_player_id&&Number(row.match_no)>3)return 'Un groupe de quatre joueurs a trois matchs.';
- if(!completed(row))return 'Entre les deux pointages.';
- if(![row.team1_score,row.team2_score].every(s=>/^\d{1,2}$/.test(str(s))))return 'Entre des points entiers entre 0 et 99.';
- if(Number(row.team1_score)===Number(row.team2_score))return 'Les deux pointages sont égaux : vérifie le résultat.';
- return '';
+function name(id){return players.get(clean(id))||clean(id)||'—';}
+function filterValues(field){return [...new Set(bucket.rows.map(r=>clean(r[field])).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'fr',{numeric:true,sensitivity:'base'}));}
+function refreshFilters(){
+ const rv=$('roundFilter').value, gv=$('groupFilter').value;
+ $('roundFilter').innerHTML='<option value="">Tous les rounds</option>'+filterValues('round_no').map(v=>`<option value="${escapeHtml(v)}">Round ${escapeHtml(v)}</option>`).join('');
+ $('groupFilter').innerHTML='<option value="">Tous les groupes</option>'+filterValues('group_code').map(v=>`<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+ if([...$('roundFilter').options].some(o=>o.value===rv))$('roundFilter').value=rv;
+ if([...$('groupFilter').options].some(o=>o.value===gv))$('groupFilter').value=gv;
 }
-function duplicateKeys(){const count=new Map();bucket.rows.forEach(r=>count.set(keyOf(r),(count.get(keyOf(r))||0)+1));return new Set([...count].filter(([,v])=>v>1).map(([k])=>k));}
-function name(id){return players.get(id)||id||'—';}
-function setIdleControls(){document.querySelectorAll('[data-idle]').forEach(el=>el.disabled=busy||storageConflict);$('sync').disabled=busy||storageConflict||!bucket.rows.some(r=>r.pending&&completed(r));}
-function updateCounters(){
- const pending=bucket.rows.filter(r=>r.pending&&hasScore(r)).length;
- const synced=bucket.rows.filter(r=>r.status==='synced'&&!r.pending).length;
- $('stats').innerHTML=`<span><strong>${bucket.rows.length}</strong> matchs</span><span><strong>${pending}</strong> à envoyer</span><span><strong>${synced}</strong> confirmés en ligne</span>`;
- $('syncCount').textContent=pending?`${pending} pointage${pending>1?'s':''} à synchroniser`:'Aucun pointage à envoyer';setIdleControls();
-}
-function statusMarkup(row){
- const labels={local:'À remplir',excel:hasScore(row)?'Copie Excel':'À remplir',server:hasScore(row)?'Lu en ligne':'À remplir',pending:completed(row)?'À synchroniser':'À compléter',synced:'Synchronisé',conflict:'À vérifier',error:'Envoi bloqué',uncertain:'À confirmer'};
- return `<span class="pill ${escapeHtml(row.status)}">${escapeHtml(labels[row.status]||'À remplir')}</span>${row.detail?`<span class="detail">${escapeHtml(row.detail)}</span>`:''}`;
-}
+function statusMarkup(r){const label=r.source==='classeur'?'Classeur':r.source==='envoye'?'Écrit':'Local';return `<span class="pill ${r.source==='envoye'?'synced':'pending'}">${label}</span>${r.notes?`<span class="notes-preview" title="${escapeHtml(r.notes)}">${escapeHtml(r.notes)}</span>`:''}`;}
 function render(){
- if(!bucket)return;
- const season=seasons.find(s=>str(s.saison_id)===bucket.saison_id);const session=parseList(season?.sessions).find(s=>cleanNumber(s.no_session)===bucket.no_session);
+ if(!bucket)return;refreshFilters();
+ const season=seasons.find(s=>clean(s.saison_id)===bucket.saison_id);const session=parseList(season?.sessions??season?.sessions_json).find(s=>str(s.no_session).replace(/\.0+$/,'')===bucket.no_session);
  $('caption').textContent=`${season?.nom_saison||bucket.saison_id} · Session ${bucket.no_session}${session?.date?' · '+session.date:''}`;
- const shown=bucket.rows.filter(r=>(!$('roundFilter').value||r.round_no===$('roundFilter').value)&&(!$('groupFilter').value||r.group_code===$('groupFilter').value)).sort(rowSort);
- $('rows').innerHTML=shown.map(r=>`<tr data-row="${escapeHtml(r.id)}"><td class="compact">${escapeHtml(r.round_no)}</td><td class="compact"><b>${escapeHtml(r.group_code)}</b></td><td class="compact">${escapeHtml(r.match_no)}</td><td class="team"><span>${escapeHtml(name(r.team1_player1_id))}</span><span>${escapeHtml(name(r.team1_player2_id))}</span></td>${['team1_score','team2_score'].map((f,i)=>`<td class="score-cell"><input class="score" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off" data-field="${f}" value="${escapeHtml(r[f])}" placeholder="—" aria-label="Round ${escapeHtml(r.round_no)}, groupe ${escapeHtml(r.group_code)}, match ${escapeHtml(r.match_no)}, points équipe ${i+1}" ${busy||storageConflict?'disabled':''}></td>`).join('')}<td class="team"><span>${escapeHtml(name(r.team2_player1_id))}</span><span>${escapeHtml(name(r.team2_player2_id))}</span></td><td class="waiting">${escapeHtml(name(r.waiting_player_id))}</td><td class="status">${statusMarkup(r)}</td><td class="row-actions"><button class="subtle" data-edit="${escapeHtml(r.id)}" ${busy||storageConflict?'disabled':''} aria-label="Modifier le match ${escapeHtml(keyOf(r))}">Modifier</button></td></tr>`).join('')||'<tr><td colspan="10" class="empty">Aucun match dans cette vue. Prépare un groupe ou ajoute un match.</td></tr>';
- updateCounters();
+ const shown=bucket.rows.filter(r=>(!$('roundFilter').value||clean(r.round_no)===$('roundFilter').value)&&(!$('groupFilter').value||clean(r.group_code)===$('groupFilter').value));
+ $('rows').innerHTML=shown.map(r=>`<tr data-row="${escapeHtml(r.id)}"><td class="compact">${escapeHtml(r.round_no)}</td><td class="compact"><b>${escapeHtml(r.group_code)}</b></td><td class="compact">${escapeHtml(r.match_no)}</td><td class="team"><span>${escapeHtml(name(r.team1_player1_id))}</span><span>${escapeHtml(name(r.team1_player2_id))}</span></td><td class="score-cell"><input class="score" type="text" autocomplete="off" data-field="team1_score" value="${escapeHtml(r.team1_score)}" placeholder="—" ${busy?'disabled':''}></td><td class="score-cell"><input class="score" type="text" autocomplete="off" data-field="team2_score" value="${escapeHtml(r.team2_score)}" placeholder="—" ${busy?'disabled':''}></td><td class="team"><span>${escapeHtml(name(r.team2_player1_id))}</span><span>${escapeHtml(name(r.team2_player2_id))}</span></td><td class="waiting">${escapeHtml(name(r.waiting_player_id))}</td><td class="status">${statusMarkup(r)}</td><td class="row-actions"><div class="mini-actions"><button data-move="-1" data-id="${escapeHtml(r.id)}" title="Monter">↑</button><button data-move="1" data-id="${escapeHtml(r.id)}" title="Descendre">↓</button><button data-dup="${escapeHtml(r.id)}">Dupliquer</button><button data-edit="${escapeHtml(r.id)}">Modifier</button><button class="danger" data-del="${escapeHtml(r.id)}">Supprimer</button></div></td></tr>`).join('')||'<tr><td colspan="10" class="empty">Aucune ligne. Ajoute un match libre.</td></tr>';
+ const withScore=bucket.rows.filter(r=>clean(r.team1_score)!==''||clean(r.team2_score)!=='').length;
+ $('stats').innerHTML=`<span><strong>${bucket.rows.length}</strong> lignes</span><span><strong>${withScore}</strong> avec pointage</span>`;
+ $('syncCount').textContent=`${bucket.rows.length} ligne${bucket.rows.length===1?'':'s'} dans la fiche locale`;
+ document.querySelectorAll('[data-idle]').forEach(el=>el.disabled=busy);
+ $('sync').disabled=busy;
 }
-function touch(row){row.pending=hasScore(row);row.localEdited=true;row.importConflict=false;row.status=row.pending?'pending':'local';row.detail='';row.updatedAt=new Date().toISOString();}
-function playerSelect(field,value='',label='Joueur',optional=false){
- return `<div><label for="${field}">${escapeHtml(label)}</label><select name="${field}" id="${field}"><option value="">${optional?'Aucun joueur au repos':'Choisir un joueur'}</option>${[...players].sort((a,b)=>a[1].localeCompare(b[1],'fr')).map(([id,n])=>`<option value="${escapeHtml(id)}"${id===value?' selected':''}>${escapeHtml(n)}</option>`).join('')}</select></div>`;
+function touch(r){r.source='local';r.updatedAt=new Date().toISOString();}
+function inputField(name,label,value=''){return `<div><label for="${name}">${escapeHtml(label)}</label><input id="${name}" name="${name}" type="text" value="${escapeHtml(value)}"></div>`;}
+function playerSelect(field,value='',label='Joueur'){
+ return `<div><label for="${field}">${escapeHtml(label)}</label><select name="${field}" id="${field}"><option value="">— vide —</option>${[...players].sort((a,b)=>a[1].localeCompare(b[1],'fr')).map(([id,n])=>`<option value="${escapeHtml(id)}"${id===clean(value)?' selected':''}>${escapeHtml(n)} · ${escapeHtml(id)}</option>`).join('')}</select></div>`;
 }
-function simpleSelect(field,label,options,value){return `<div><label for="${field}">${label}</label><select id="${field}" name="${field}">${options.map(v=>`<option value="${v}"${str(v)===str(value)?' selected':''}>${v}</option>`).join('')}</select></div>`;}
-function openEditor(mode,rowId=''){
- if(busy||storageConflict)return;editMode=mode;editId=rowId;
- const r=bucket.rows.find(r=>r.id===rowId)||{round_no:$('roundFilter').value||'1',group_code:$('groupFilter').value||'A',match_no:'1'};
- $('editTitle').textContent=mode==='group'?'Préparer un groupe':rowId?'Modifier ce match':'Ajouter un match';
- let fields=simpleSelect('round_no','Round',[1,2,3],r.round_no)+simpleSelect('group_code','Groupe',['A','B','C','D','E'],r.group_code);
- if(mode==='group'){
-  fields+='<p class="wide mode-note">Place les joueurs dans l’ordre des positions 1 à 5. Les trois ou quatre matchs sont ajoutés sans modifier les lignes existantes.</p>';
-  for(let i=1;i<=5;i++)fields+=playerSelect('position'+i,'','Position '+i+(i===5?' (facultatif)':''),i===5);
- }else{
-  fields+=simpleSelect('match_no','Match',[1,2,3,4],r.match_no)+'<div></div>';
-  slots.forEach((f,i)=>fields+=playerSelect(f,r[f],['Équipe 1 · joueur 1','Équipe 1 · joueur 2','Équipe 2 · joueur 1','Équipe 2 · joueur 2','Joueur au repos'][i],i===4));
- }
- $('editFields').innerHTML=fields;$('editError').textContent='';$('deleteRow').hidden=!rowId;$('editor').showModal();
+function openEditor(rowId=''){
+ if(busy)return;editId=rowId;const r=bucket.rows.find(x=>x.id===rowId)||normalizeRow({round_no:'',group_code:'',match_no:'',court_no:''},'local');
+ $('editTitle').textContent=rowId?'Modifier librement ce match':'Ajouter un match libre';
+ let f=inputField('round_no','Round',r.round_no)+inputField('group_code','Groupe',r.group_code)+inputField('match_no','Match',r.match_no)+inputField('court_no','Terrain',r.court_no);
+ f+=playerSelect('team1_player1_id',r.team1_player1_id,'Équipe 1 · joueur 1')+playerSelect('team1_player2_id',r.team1_player2_id,'Équipe 1 · joueur 2')+playerSelect('team2_player1_id',r.team2_player1_id,'Équipe 2 · joueur 1')+playerSelect('team2_player2_id',r.team2_player2_id,'Équipe 2 · joueur 2')+playerSelect('waiting_player_id',r.waiting_player_id,'Repos');
+ f+=inputField('team1_score','Points 1',r.team1_score)+inputField('team2_score','Points 2',r.team2_score)+inputField('winner_team','Gagnant (libre : 1, 2, vide, etc.)',r.winner_team)+inputField('notes','Notes',r.notes);
+ $('editFields').innerHTML=f;$('editError').textContent='';$('deleteRow').hidden=!rowId;$('editor').showModal();
 }
 function submitEditor(event){
- event.preventDefault();if(busy||storageConflict)return;
- const form=Object.fromEntries(new FormData($('editForm')));const gk=form.round_no+'|'+form.group_code;
- try{
-  if(editMode==='group'){
-   const ids=[1,2,3,4,5].map(i=>form['position'+i]).filter(Boolean);
-   if(ids.length<4||new Set(ids).size!==ids.length)throw Error('Choisis quatre ou cinq joueurs différents.');
-   const existing=bucket.groups[gk];
-   if(existing&&existing.map(p=>p.joueur_id).join('|')!==ids.join('|'))throw Error('Ce groupe est déjà préparé avec une autre composition. Modifie les matchs concernés au besoin.');
-   addGroupRows(form.round_no,form.group_code,ids.map((id,i)=>({joueur_id:id,tag:String(i+1)})));
-  }else{
-   const old=bucket.rows.find(r=>r.id===editId);const candidate={...(old||normalizeRow(form,'local')),...form};
-   const ids=slots.map(f=>str(candidate[f])).filter(Boolean);
-   if(ids.length<4||slots.slice(0,4).some(f=>!candidate[f])||new Set(ids).size!==ids.length)throw Error('Choisis quatre joueurs différents, et un joueur distinct au repos si nécessaire.');
-   if(bucket.rows.some(r=>r.id!==editId&&keyOf(r)===keyOf(candidate)))throw Error('Ce round, groupe et match existent déjà dans la fiche.');
-   if(!candidate.waiting_player_id&&candidate.match_no==='4')throw Error('Un groupe de quatre joueurs a trois matchs.');
-   if(old){Object.assign(old,candidate);touch(old);}else bucket.rows.push(candidate);
-  }
-  saveLocal();$('editor').close();render();
- }catch(e){$('editError').textContent=e.message;}
+ event.preventDefault();if(busy)return;const form=Object.fromEntries(new FormData($('editForm')));const old=bucket.rows.find(r=>r.id===editId);
+ if(old){Object.assign(old,form);touch(old);}else{const r=normalizeRow(form,'local');bucket.rows.push(r);}saveLocal();$('editor').close();render();
 }
-function validateBackup(data){
- if(!data||data.format!=='badminton-backup'||data.version!==VERSION||!Array.isArray(data.rows)||data.rows.length>1000||!data.groups||typeof data.groups!=='object'||!data.players||typeof data.players!=='object'||!str(data.saison_id)||!/^\d+$/.test(str(data.no_session)))throw Error('Cette copie de secours est invalide ou utilise une autre version.');
- const ids=new Set();
- for(const r of data.rows){
-  if(!r||typeof r!=='object'||!str(r.id)||ids.has(r.id)||!['1','2','3'].includes(str(r.round_no))||!['1','2','3','4'].includes(str(r.match_no))||!['A','B','C','D','E'].includes(r.group_code))throw Error('Cette copie contient une ligne invalide.');
-  if(slots.some(f=>typeof r[f]!=='string')||['team1_score','team2_score'].some(f=>typeof r[f]!=='string'||r[f].length>20))throw Error('Cette copie contient des valeurs invalides.');
-  ids.add(r.id);
- }
- for(const [k,c] of Object.entries(data.groups)){
-  if(!/^[1-3]\|[A-E]$/.test(k)||!Array.isArray(c)||![4,5].includes(c.length)||c.some(p=>!str(p?.joueur_id))||new Set(c.map(p=>p.joueur_id)).size!==c.length)throw Error('Cette copie contient un groupe invalide.');
- }
-}
-function download(content,filename,type){
- const url=URL.createObjectURL(new Blob([content],{type}));const a=document.createElement('a');a.href=url;a.download=filename;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);
-}
+function deleteRow(id){const i=bucket.rows.findIndex(r=>r.id===id);if(i<0)return;if(!confirm('Supprimer cette ligne de la fiche locale ?'))return;bucket.rows.splice(i,1);saveLocal();render();}
+function duplicateRow(id){const i=bucket.rows.findIndex(r=>r.id===id);if(i<0)return;const c=clone(bucket.rows[i]);c.id=uid();c.match_id=rawMatchId();c.source='local';c.updatedAt=new Date().toISOString();bucket.rows.splice(i+1,0,c);saveLocal();render();}
+function moveRow(id,delta){const i=bucket.rows.findIndex(r=>r.id===id);const j=i+Number(delta);if(i<0||j<0||j>=bucket.rows.length)return;[bucket.rows[i],bucket.rows[j]]=[bucket.rows[j],bucket.rows[i]];saveLocal();render();}
+function validateBackup(data){if(!data||typeof data!=='object'||!Array.isArray(data.rows))throw Error('Cette copie JSON ne contient pas de liste de matchs.');}
+function download(content,filename,type){const url=URL.createObjectURL(new Blob([content],{type}));const a=document.createElement('a');a.href=url;a.download=filename;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);}
 function fileStem(){return 'badminton-backup-'+bucket.saison_id+'-session-'+bucket.no_session+'-'+new Date().toISOString().replace(/[:.]/g,'-');}
-function exportCopy(){
- bucket.players=Object.fromEntries(players);
- download(JSON.stringify({...bucket,exportedAt:new Date().toISOString()},null,2),fileStem()+'.json','application/json;charset=utf-8');
-}
+function exportCopy(){bucket.players=Object.fromEntries(players);download(JSON.stringify({...bucket,exportedAt:new Date().toISOString()},null,2),fileStem()+'.json','application/json;charset=utf-8');}
+function rawForExport(r){return {match_id:r.match_id||rawMatchId(),saison_id:bucket.saison_id,no_session:bucket.no_session,round_no:r.round_no,match_no:r.match_no,groupe_code:r.group_code,court_no:r.court_no,team1_player1_id:r.team1_player1_id,team1_player2_id:r.team1_player2_id,team2_player1_id:r.team2_player1_id,team2_player2_id:r.team2_player2_id,waiting_player_id:r.waiting_player_id,team1_score:r.team1_score,team2_score:r.team2_score,winner_team:r.winner_team,notes:r.notes,created_at:r.created_at||r.updatedAt||new Date().toISOString()};}
 function exportCSV(){
- const headers=['Saison','Session','Round','Groupe','Match','Équipe 1 - Joueur 1','Équipe 1 - Joueur 2','Points 1','Points 2','Équipe 2 - Joueur 1','Équipe 2 - Joueur 2','Repos','État'];
- const rows=bucket.rows.slice().sort(rowSort).map(r=>[bucket.saison_id,bucket.no_session,r.round_no,r.group_code,r.match_no,name(r.team1_player1_id),name(r.team1_player2_id),r.team1_score,r.team2_score,name(r.team2_player1_id),name(r.team2_player2_id),r.waiting_player_id?name(r.waiting_player_id):'',r.pending?'À synchroniser':r.status==='synced'?'Synchronisé':r.status==='excel'?'Copie Excel':'Lu / préparé']);
+ const headers=['match_id','saison_id','no_session','round_no','match_no','groupe_code','court_no','team1_player1_id','team1_player2_id','team2_player1_id','team2_player2_id','waiting_player_id','team1_score','team2_score','winner_team','notes','created_at'];
+ const rows=bucket.rows.map(r=>{const x=rawForExport(r);return headers.map(h=>x[h]);});
  const cell=v=>'"'+(str(v).match(/^[=+@\-\t\r]/)?"'"+str(v):str(v)).replace(/"/g,'""')+'"';
- download('\ufeff'+[headers,...rows].map(r=>r.map(cell).join(';')).join('\r\n'),fileStem()+'.csv','text/csv;charset=utf-8');
+ download('\ufeff'+[headers,...rows].map(r=>r.map(cell).join(';')).join('\r\n'),fileStem()+'-matchs.csv','text/csv;charset=utf-8');
 }
-function sameTeams(a,b){
- const team=(r,n)=>[r['team'+n+'_player1_id'],r['team'+n+'_player2_id']].sort().join('|');
- return team(a,1)===team(b,1)&&team(a,2)===team(b,2)&&a.waiting_player_id===b.waiting_player_id;
-}
-function sameScores(a,b){return completed(a)&&completed(b)&&Number(a.team1_score)===Number(b.team1_score)&&Number(a.team2_score)===Number(b.team2_score);}
 function importBackup(data){
- validateBackup(data);
- if(data.saison_id!==bucket.saison_id||str(data.no_session)!==bucket.no_session)throw Error('Cette copie appartient à '+data.saison_id+', session '+data.no_session+'. Choisis cette saison et cette session avant de la récupérer.');
- Object.entries(data.players).forEach(([id,n])=>{if(!players.has(id))players.set(id,str(n));});
- let added=0,conflicts=0;
- for(const incoming of data.rows){
-  const old=bucket.rows.find(r=>keyOf(r)===keyOf(incoming));
-  if(!old){const r=clone(incoming);r.id=uid();touch(r);bucket.rows.push(r);added++;continue;}
-  if(sameTeams(old,incoming)&&sameScores(old,incoming))continue;
-  if(!hasScore(incoming))continue;
-  if(sameTeams(old,incoming)&&!hasScore(old)){
-   old.team1_score=incoming.team1_score;old.team2_score=incoming.team2_score;touch(old);added++;
-  }else{
-   old.alternatives=old.alternatives||[];
-   const alternative=clone(incoming);delete alternative.alternatives;old.alternatives.push(alternative);
-   old.status='conflict';old.importConflict=true;
-   old.detail=`Autre copie : ${incoming.team1_score||'—'} / ${incoming.team2_score||'—'}${sameTeams(old,incoming)?'':' avec des équipes différentes'}. Compare les copies avant de corriger cette ligne.`;conflicts++;
-  }
- }
- for(const [key,composition] of Object.entries(data.groups))if(!bucket.groups[key])bucket.groups[key]=clone(composition);
- saveLocal();render();showMessage(`${added} ligne(s) récupérée(s). ${conflicts?conflicts+' différence(s) à vérifier; les deux versions restent dans la copie téléchargeable.':'Les résultats devront être confirmés lors de la synchronisation.'}`,conflicts?'warning':'');
+ validateBackup(data);if(!confirm('Remplacer la fiche actuellement ouverte par cette copie JSON ?'))return;
+ const seasonId=clean(data.saison_id)||$('season').value, sessionId=clean(data.no_session)||$('session').value;
+ if(!seasons.some(s=>clean(s.saison_id)===seasonId))seasons.push({saison_id:seasonId,nom_saison:seasonId,sessions:[{no_session:sessionId,date:''}]});
+ const s=seasons.find(s=>clean(s.saison_id)===seasonId);let sl=parseList(s.sessions??s.sessions_json);if(!sl.some(x=>str(x.no_session).replace(/\.0+$/,'')===sessionId)){sl.push({no_session:sessionId,date:''});s.sessions=sl;}
+ Object.entries(data.players||{}).forEach(([id,n])=>players.set(id,str(n)));
+ selectSeasonOptions(seasonId);selectSessionOptions(sessionId);$('session').value=sessionId;
+ bucket=newBucket(seasonId,sessionId);bucket.rows=data.rows.map(r=>normalizeRow(r,r.source||r.status||'local'));saveLocal();render();showMessage('Copie JSON chargée telle quelle.');
 }
 class TransportError extends Error{}
-class ConflictError extends Error{}
 async function request(action,params={},post=false){
- const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),25000);
- try{
-  let response;
-  try{
-   response=await fetch(post?API_URL:API_URL+'?'+new URLSearchParams({action,...params,_ts:String(Date.now())}),post?{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action,...params}),signal:controller.signal}:{signal:controller.signal,cache:'no-store'});
-  }catch(e){throw new TransportError(e.name==='AbortError'?'Le serveur ne répond pas. Les résultats sont conservés.':'Connexion impossible. Les résultats sont conservés.');}
-  if(!response.ok)throw new TransportError('Le serveur a répondu avec une erreur HTTP '+response.status+'.');
-  let result;try{result=await response.json();}catch{throw new TransportError('La réponse du serveur n’est pas un résultat JSON valide.');}
-  if(!result||typeof result!=='object'||Array.isArray(result))throw new TransportError('Réponse du serveur non reconnue.');
-  if(result.ok!==true)throw Error(str(result.error||result.message)||'Le serveur a refusé cette opération.');
-  return result;
- }finally{clearTimeout(timeout);}
+ const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),30000);
+ try{let response;try{response=await fetch(post?API_URL:API_URL+'?'+new URLSearchParams({action,...params,_ts:String(Date.now())}),post?{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action,...params}),signal:controller.signal}:{signal:controller.signal,cache:'no-store'});}catch(e){throw new TransportError('Connexion impossible. La fiche locale n’a pas changé.');}
+ if(!response.ok)throw new TransportError('Erreur HTTP '+response.status+'. La fiche locale n’a pas changé.');let result;try{result=await response.json();}catch{throw new TransportError('Réponse du serveur illisible. La fiche locale n’a pas changé.');}if(!result||result.ok!==true)throw Error(clean(result?.error||result?.message)||'Le serveur a refusé l’opération.');return result;}finally{clearTimeout(timeout);}
 }
-function scope(){return {saison_id:bucket.saison_id,no_session:bucket.no_session};}
 async function readMatches(){
- const result=await request('getSessionMatches',scope());
- if(!Array.isArray(result.rounds))throw new TransportError('La liste de matchs du serveur est incomplète.');
- const rows=[];
- for(const round of result.rounds){
-  if(!Array.isArray(round.matches))throw new TransportError('Un round ne contient pas la liste de matchs attendue.');
-  for(const raw of round.matches){
-   for(const field of slots){const value=raw[field.replace(/_id$/,'')];if(value?.joueur_id&&value.nom)players.set(str(value.joueur_id),str(value.nom));}
-   rows.push(normalizeRow({...raw,round_no:raw.round_no??round.round_no},'server'));
-  }
+ const result=await request('getSessionMatches',{saison_id:bucket.saison_id,no_session:bucket.no_session});const rows=[];
+ for(const round of (Array.isArray(result.rounds)?result.rounds:[]))for(const raw of (Array.isArray(round.matches)?round.matches:[])){
+  for(const f of slots){const v=raw[f.replace(/_id$/,'')];if(v?.joueur_id&&v.nom)players.set(clean(v.joueur_id),str(v.nom));}
+  rows.push(normalizeRow({...raw,round_no:raw.round_no??round.round_no},'classeur'));
  }
  return rows;
 }
-async function readStates(round){
- const result=await request('getRoundGroupStates',{...scope(),round_no:str(round)});
- if(!Array.isArray(result.groups))throw new TransportError('La composition des groupes est absente de la réponse.');
- return result.groups;
-}
-function selectRemoteMatch(rows,row){
- const matches=rows.filter(r=>keyOf(r)===keyOf(row));
- if(matches.length>1)throw new ConflictError('Plusieurs lignes existent pour ce match sur Google Sheets. Vérifie-les avant l’envoi.');
- return matches[0]||null;
-}
-function assessRemote(remote,row){
- if(!remote)return false;
- if(!sameTeams(remote,row))throw new ConflictError('Les équipes diffèrent de celles enregistrées sur Google Sheets.');
- if(hasScore(remote)){
-  if(sameScores(remote,row))return true;
-  throw new ConflictError(`Google Sheets contient ${remote.team1_score||'—'} / ${remote.team2_score||'—'}. Ton pointage reste ici.`);
- }
- return false;
-}
-function confirmRow(row,remote){
- row.pending=false;row.status='synced';row.detail='';row.match_id=remote.match_id;row.confirmedAt=new Date().toISOString();row.importConflict=false;
-}
-function mergeRemoteRows(remoteRows){
- const seen=new Set();
- for(const remote of remoteRows){
-  const key=keyOf(remote);
-  if(seen.has(key)){bucket.rows.filter(r=>keyOf(r)===key).forEach(r=>{r.status='conflict';r.detail='Plusieurs lignes existent pour ce match sur Google Sheets.';});continue;}seen.add(key);
-  const local=bucket.rows.find(r=>keyOf(r)===key);
-  if(!local){remote.status=completed(remote)?'synced':'server';bucket.rows.push(remote);continue;}
-  if(local.importConflict)continue;
-  if(local.pending||local.localEdited){
-   try{if(assessRemote(remote,local))confirmRow(local,remote);}catch(e){local.status='conflict';local.detail=e.message;}
-  }else{const id=local.id;Object.assign(local,remote,{id,status:completed(remote)?'synced':'server'});}
- }
-}
 async function refreshOnline(){
- if(busy||storageConflict)return;setBusy(true);showMessage('Lecture des matchs et des groupes…');
- try{
-  const result=await Promise.allSettled([
-   request('getSeasons'),readMatches(),readStates('1'),readStates('2'),readStates('3'),
-   request('getAttendanceForSession',{...scope(),date_session:selectedSession()?.date||''})
-  ]);
-  const errors=[];let hasRead=false;
-  result.forEach((r,i)=>{
-   if(r.status==='rejected'){errors.push(r.reason.message);return;}
-   if(i===0){if(Array.isArray(r.value.data)){seasons=r.value.data;selectSeasonOptions(bucket.saison_id);selectSessionOptions(bucket.no_session);}else errors.push('Liste des saisons non reconnue.');}
-   if(i===1){mergeRemoteRows(r.value);bucket.lastRead=new Date().toISOString();hasRead=true;}
-   if(i>=2&&i<=4)r.value.forEach(g=>addGroupRows(String(i-1),str(g.group_code||g.groupe_code).toUpperCase(),compositionOf(g),'server'));
-   if(i===5&&Array.isArray(r.value.joueurs))r.value.joueurs.forEach(p=>{if(p.joueur_id&&p.nom)players.set(str(p.joueur_id),str(p.nom));});
-  });
-  saveLocal();showMessage(errors.length?(hasRead?'Matchs actualisés. Certaines informations sont indisponibles : ':'Actualisation incomplète : ')+[...new Set(errors)].join(' '):'Matchs actualisés. Tes pointages locaux ont été conservés.',errors.length?'warning':'');
- }catch(e){showMessage(e.message,'error');}finally{setBusy(false);}
-}
-function selectedSession(){const season=seasons.find(s=>str(s.saison_id)===bucket.saison_id);return parseList(season?.sessions??season?.sessions_json).find(s=>cleanNumber(s.no_session)===bucket.no_session);}
-async function assertSessionOpen(){
- const result=await request('getSeasons');
- if(!Array.isArray(result.data))throw new TransportError('Impossible de vérifier la saison et la session.');
- const season=result.data.find(s=>str(s.saison_id)===bucket.saison_id);
- const session=parseList(season?.sessions??season?.sessions_json).find(s=>cleanNumber(s.no_session)===bucket.no_session);
- if(!season||!session)throw new ConflictError('Cette saison ou cette session est introuvable sur Google Sheets.');
- if(/^(terminee|terminée|closed|archivée|archivee)$/i.test(str(season.statut))||[true,1,'1','true'].includes(session.barree))throw new ConflictError('Cette session est barrée ou la saison est terminée. Les pointages restent dans ta copie.');
-}
-function selectState(states,row){
- const matches=states.filter(s=>str(s.group_code||s.groupe_code).toUpperCase()===row.group_code);
- if(matches.length>1)throw new ConflictError('Plusieurs compositions existent pour ce groupe.');
- return matches[0]||null;
-}
-function checkComposition(state,row){
- const composition=compositionOf(state);const ids=composition.map(p=>p.joueur_id);
- const actual=slots.map(f=>row[f]).filter(Boolean);
- if(![4,5].includes(ids.length)||new Set(ids).size!==ids.length||ids.slice().sort().join('|')!==actual.slice().sort().join('|'))throw new ConflictError('Les joueurs ou le joueur au repos diffèrent de la composition officielle de ce groupe.');
- if(!Number.isInteger(Number(state.composition_version))||Number(state.composition_version)<1)throw new ConflictError('La version de la composition du groupe est absente.');
- if(composition.some((p,i)=>p.tag!==String(i+1)))throw new ConflictError('Les positions officielles du groupe sont incohérentes.');
- return composition;
-}
-async function syncOne(row){
- // Relire avant chaque essai permet de reprendre un envoi dont la réponse a été perdue.
- let remote=selectRemoteMatch(await readMatches(),row);
- if(assessRemote(remote,row)){confirmRow(row,remote);return;}
- await assertSessionOpen();
- let state=selectState(await readStates(row.round_no),row);
- if(!state){
-  const composition=bucket.groups[groupKey(row)];
-  if(!composition)throw new ConflictError('Ce groupe n’a pas de composition officielle. Utilise « Préparer un groupe » avec les positions 1 à 5 avant de réessayer.');
-  checkComposition({composition,composition_version:1},row);
-  await request('saveRoundGroupState',{...scope(),round_no:Number(row.round_no),group_code:row.group_code,expected_version:0,composition:composition.map(p=>({joueur_id:p.joueur_id}))},true);
-  state=selectState(await readStates(row.round_no),row);
-  if(!state)throw new TransportError('La création du groupe n’a pas pu être confirmée.');
- }
- checkComposition(state,row);
- const etat=str(state.etat).toUpperCase();
- if(etat==='EN_JEU'&&cleanNumber(state.match_no_en_cours)!==row.match_no)throw new ConflictError('Un autre match est en cours pour ce groupe. Termine-le dans la page Matchs, puis réessaie.');
- if(etat!=='EN_JEU'){
-  if(!['PRET','FIGE'].includes(etat))throw new ConflictError('État du groupe non disponible pour l’envoi : '+etat+'.');
-  await request('startGroupMatch',{...scope(),round_no:Number(row.round_no),match_no:Number(row.match_no),group_code:row.group_code},true);
- }
- // Le serveur conserve la maîtrise du démarrage et de la version de composition.
- state=selectState(await readStates(row.round_no),row);
- if(!state||str(state.etat).toUpperCase()!=='EN_JEU'||cleanNumber(state.match_no_en_cours)!==row.match_no)throw new ConflictError('Le serveur n’a pas confirmé le démarrage de ce match.');
- const composition=checkComposition(state,row);
- remote=selectRemoteMatch(await readMatches(),row);
- if(assessRemote(remote,row)){confirmRow(row,remote);return;}
- const payload={...scope(),round_no:Number(row.round_no),match_no:Number(row.match_no),group_code:row.group_code,composition_version:Number(state.composition_version),team1_score:str(Number(row.team1_score)),team2_score:str(Number(row.team2_score)),winner_team:''};
- for(const field of slots){const p=composition.find(p=>p.joueur_id===row[field]);payload[field]=p?JSON.stringify({joueur_id:p.joueur_id,tag:p.tag}):'';}
- await request('saveSingleMatch',payload,true);
- remote=selectRemoteMatch(await readMatches(),row);
- if(!remote||!assessRemote(remote,row))throw new TransportError('Envoi non confirmé par une relecture. Le pointage est conservé pour une prochaine vérification.');
- confirmRow(row,remote);
+ if(busy)return;if(!confirm('Remplacer la fiche locale de cette session par les lignes actuellement dans le classeur ?'))return;busy=true;render();showMessage('Lecture du classeur…');
+ try{const [seasonResult,remoteRows]=await Promise.all([request('getSeasons'),readMatches()]);if(Array.isArray(seasonResult.data)){seasons=seasonResult.data;selectSeasonOptions(bucket.saison_id);selectSessionOptions(bucket.no_session);}bucket.rows=remoteRows;saveLocal();showMessage(`${remoteRows.length} ligne(s) chargée(s) du classeur. Tu peux maintenant tout modifier librement.`);}
+ catch(e){showMessage(e.message,'error');}finally{busy=false;render();}
 }
 function reviewSync(){
- if(busy||storageConflict)return;
- const duplicates=duplicateKeys();let invalid=0;
- const ready=bucket.rows.filter(r=>{
-  if(!r.pending||!hasScore(r))return false;
-  const error=r.importConflict?'Compare les deux copies avant de synchroniser.':duplicates.has(keyOf(r))?'Ce match apparaît deux fois dans la fiche.':rowError(r);
-  if(error){r.status='error';r.detail=error;invalid++;return false;}return true;
- }).sort(rowSort);
- saveLocal();render();
- if(!ready.length){showMessage(invalid?'Complète ou corrige les lignes signalées avant l’envoi.':'Aucun nouveau résultat complet à envoyer.','warning');return;}
- reviewIds=ready.map(r=>r.id);
- $('reviewSummary').textContent=`${$('caption').textContent} · ${ready.length} pointage(s) à envoyer${invalid?' · '+invalid+' ligne(s) incomplète(s) ou à vérifier':''}.`;
- $('reviewList').innerHTML='<ul>'+ready.map(r=>`<li>Round ${escapeHtml(r.round_no)} · ${escapeHtml(r.group_code)} · Match ${escapeHtml(r.match_no)} : <span class="review-score">${escapeHtml(r.team1_score)} / ${escapeHtml(r.team2_score)}</span><br><span class="muted">${escapeHtml(name(r.team1_player1_id))} + ${escapeHtml(name(r.team1_player2_id))} contre ${escapeHtml(name(r.team2_player1_id))} + ${escapeHtml(name(r.team2_player2_id))}</span></li>`).join('')+'</ul>';
- $('confirmSync').textContent=`Envoyer ${ready.length} pointage(s)`;$('confirmSync').disabled=false;$('review').showModal();
+ if(busy)return;const rows=bucket.rows;
+ $('reviewSummary').textContent=`${$('caption').textContent} · ${rows.length} ligne(s). Elles remplaceront toutes les lignes de cette saison/session dans la feuille matchs.`;
+ $('reviewList').innerHTML=rows.length?'<ul>'+rows.map(r=>`<li>Round ${escapeHtml(r.round_no||'—')} · Groupe ${escapeHtml(r.group_code||'—')} · Match ${escapeHtml(r.match_no||'—')} : <span class="review-score">${escapeHtml(r.team1_score||'—')} / ${escapeHtml(r.team2_score||'—')}</span><br><span class="muted">${escapeHtml(name(r.team1_player1_id))} + ${escapeHtml(name(r.team1_player2_id))} contre ${escapeHtml(name(r.team2_player1_id))} + ${escapeHtml(name(r.team2_player2_id))}</span></li>`).join('')+'</ul>':'<p class="muted">La fiche est vide : la session sera vidée dans la feuille matchs.</p>';
+ $('review').showModal();
 }
-function setBusy(value){busy=value;render();$('stop').hidden=!value||$('progressBox').hidden;}
 async function sendReviewed(){
- if(busy||storageConflict)return;setBusy(true);$('confirmSync').disabled=true;$('review').close();stopRequested=false;
- $('progressBox').hidden=false;$('stop').hidden=false;$('stop').disabled=false;$('progress').max=reviewIds.length;$('progress').value=0;
- let sent=0,failed=0;
- try{
-  for(const id of reviewIds){
-   if(stopRequested||storageConflict)break;
-   const row=bucket.rows.find(r=>r.id===id);if(!row||!row.pending)continue;
-   $('progressText').textContent=`Vérification et envoi · Round ${row.round_no} · Groupe ${row.group_code} · Match ${row.match_no}`;
-   try{
-    const validation=rowError(row);if(validation)throw new ConflictError(validation);
-    await syncOne(row);sent++;
-   }catch(e){
-    row.pending=true;row.status=e instanceof TransportError?'uncertain':e instanceof ConflictError?'conflict':'error';row.detail=e.message;failed++;
-    // Pas de nouvelle tentative automatique après une réponse absente ou illisible.
-    if(e instanceof TransportError)stopRequested=true;
-   }
-   if(!saveLocal())stopRequested=true;render();$('progress').value=sent+failed;
-  }
-  const remaining=bucket.rows.filter(r=>r.pending&&hasScore(r)).length;
-  showMessage(`${sent} résultat(s) confirmé(s) sur Google Sheets. ${remaining?remaining+' résultat(s) restent dans la fiche, à synchroniser ou à vérifier.':'Tous les pointages saisis sont confirmés.'}${stopRequested?' Envoi arrêté.':''}`,remaining?'warning':'');
- }finally{setBusy(false);$('progressBox').hidden=true;$('stop').hidden=true;}
+ if(busy)return;busy=true;$('review').close();render();$('progressBox').hidden=false;$('progress').max=1;$('progress').value=0;$('progressText').textContent='Écriture brute de la session dans le classeur…';
+ try{const result=await request('replaceSessionMatchesRaw',{saison_id:bucket.saison_id,no_session:bucket.no_session,matches:bucket.rows.map(rawForExport)},true);bucket.rows.forEach(r=>r.source='envoye');bucket.lastWrite=new Date().toISOString();saveLocal();$('progress').value=1;showMessage(`${result.nb_matchs??bucket.rows.length} ligne(s) écrite(s) telles quelles dans la feuille matchs. Aucun classement n’a été recalculé.`);}
+ catch(e){showMessage(e.message,'error');}finally{busy=false;$('progressBox').hidden=true;render();}
 }
-$('rows').addEventListener('input',event=>{
- const input=event.target.closest('[data-field]');if(!input||busy||storageConflict)return;
- const row=bucket.rows.find(r=>r.id===input.closest('tr').dataset.row);if(!row)return;
- row[input.dataset.field]=input.value;row.importConflict=false;touch(row);saveLocal();
- input.setAttribute('aria-invalid',input.value!==''&&!/^\d{1,2}$/.test(input.value)?'true':'false');
- const tr=input.closest('tr');tr.querySelector('.status').innerHTML=statusMarkup(row);updateCounters();
-});
-$('rows').addEventListener('keydown',event=>{
- if(event.key!=='Enter'||!event.target.matches('[data-field]'))return;event.preventDefault();
- const inputs=[...$('rows').querySelectorAll('[data-field]:not(:disabled)')];const next=inputs[inputs.indexOf(event.target)+1];if(next){next.focus();next.select();}
-});
-$('rows').addEventListener('paste',event=>{
- const input=event.target.closest('[data-field]');if(!input||busy||storageConflict)return;
- const text=event.clipboardData.getData('text');if(!/[\t\n]/.test(text))return;event.preventDefault();
- const values=text.trimEnd().split(/\r?\n/).map(line=>line.split('\t'));
- if(values.some(v=>v.length!==2||v.some(x=>!/^\d{1,2}$/.test(x.trim())))){showMessage('Pour coller depuis Excel, sélectionne exactement deux colonnes de points entiers entre 0 et 99.','warning');return;}
- const trs=[...$('rows').querySelectorAll('tr[data-row]')];const start=trs.indexOf(input.closest('tr'));
- if(input.dataset.field!=='team1_score'||start+values.length>trs.length){showMessage('Colle les deux colonnes à partir de Points 1, avec assez de lignes visibles.','warning');return;}
- values.forEach((v,i)=>{const r=bucket.rows.find(r=>r.id===trs[start+i].dataset.row);r.team1_score=v[0].trim();r.team2_score=v[1].trim();r.importConflict=false;touch(r);});saveLocal();render();
-});
-$('rows').addEventListener('click',event=>{const btn=event.target.closest('[data-edit]');if(btn)openEditor('row',btn.dataset.edit);});
-$('editForm').addEventListener('submit',submitEditor);
-$('cancelEdit').onclick=()=>$('editor').close();
-$('deleteRow').onclick=()=>{
- const row=bucket.rows.find(r=>r.id===editId);if(!row||busy||storageConflict)return;
- if(hasScore(row)&&!confirm('Retirer cette ligne de la copie locale ? Télécharge une copie si tu veux garder ce pointage. Google Sheets ne sera pas modifié.'))return;
- bucket.rows=bucket.rows.filter(r=>r.id!==editId);saveLocal();$('editor').close();render();
-};
-$('addGroup').onclick=()=>openEditor('group');$('addRow').onclick=()=>openEditor('row');
-$('roundFilter').onchange=render;$('groupFilter').onchange=render;
+
+$('rows').addEventListener('input',event=>{const input=event.target.closest('[data-field]');if(!input||busy)return;const row=bucket.rows.find(r=>r.id===input.closest('tr').dataset.row);if(!row)return;row[input.dataset.field]=input.value;touch(row);saveLocal();const tr=input.closest('tr');tr.querySelector('.status').innerHTML=statusMarkup(row);});
+$('rows').addEventListener('keydown',event=>{if(event.key!=='Enter'||!event.target.matches('[data-field]'))return;event.preventDefault();const inputs=[...$('rows').querySelectorAll('[data-field]:not(:disabled)')];const next=inputs[inputs.indexOf(event.target)+1];if(next){next.focus();next.select();}});
+$('rows').addEventListener('paste',event=>{const input=event.target.closest('[data-field]');if(!input||busy)return;const t=event.clipboardData.getData('text');if(!/[\t\n]/.test(t)||input.dataset.field!=='team1_score')return;event.preventDefault();const values=t.trimEnd().split(/\r?\n/).map(line=>line.split('\t'));const trs=[...$('rows').querySelectorAll('tr[data-row]')];const start=trs.indexOf(input.closest('tr'));values.forEach((v,i)=>{if(start+i>=trs.length)return;const r=bucket.rows.find(r=>r.id===trs[start+i].dataset.row);if(!r)return;r.team1_score=v[0]??'';if(v.length>1)r.team2_score=v[1]??'';touch(r);});saveLocal();render();});
+$('rows').addEventListener('click',event=>{const edit=event.target.closest('[data-edit]');if(edit)return openEditor(edit.dataset.edit);const del=event.target.closest('[data-del]');if(del)return deleteRow(del.dataset.del);const dup=event.target.closest('[data-dup]');if(dup)return duplicateRow(dup.dataset.dup);const mv=event.target.closest('[data-move]');if(mv)return moveRow(mv.dataset.id,mv.dataset.move);});
+$('editForm').addEventListener('submit',submitEditor);$('cancelEdit').onclick=()=>$('editor').close();$('deleteRow').onclick=()=>{if(editId){$('editor').close();deleteRow(editId);}};
+$('addRow').onclick=()=>openEditor('');$('roundFilter').onchange=render;$('groupFilter').onchange=render;
 $('season').onchange=()=>{selectSessionOptions();openSession();};$('session').onchange=openSession;
 $('load').onclick=refreshOnline;$('sync').onclick=reviewSync;$('cancelSync').onclick=()=>$('review').close();$('confirmSync').onclick=sendReviewed;
-$('stop').onclick=()=>{stopRequested=true;$('stop').disabled=true;};
-$('export').onclick=exportCopy;$('csv').onclick=exportCSV;$('print').onclick=()=>window.print();
-$('import').onclick=()=>$('importFile').click();
-$('importFile').onchange=async event=>{
- const file=event.target.files[0];if(!file)return;
- try{if(file.size>3000000)throw Error('Cette copie dépasse la taille attendue (3 Mo).');const text=await file.text();if(busy||storageConflict)throw Error('Attends la fin de l’opération en cours.');importBackup(JSON.parse(text));}
- catch(e){showMessage(e instanceof SyntaxError?'Ce fichier n’est pas une copie JSON valide.':e.message,'error');}finally{event.target.value='';}
-};
-window.addEventListener('beforeunload',event=>{if(!storageOK||busy){event.preventDefault();event.returnValue='';}});
-window.addEventListener('storage',event=>{if(bucket&&event.key===storageKey()&&event.newValue!==event.oldValue)storageFailure(null,true);});
-window.addEventListener('offline',()=>showMessage('Connexion coupée. Continue de saisir les points : ils restent sur cet appareil.','warning'));
-try{const cached=JSON.parse(localStorage.getItem(CATALOG_KEY)||'null');if(cached&&Array.isArray(cached.seasons)&&cached.seasons.some(s=>s.saison_id===SEED.season)){seasons=cached.seasons;Object.entries(cached.players||{}).forEach(([id,n])=>players.set(id,str(n)));}}catch{}
+$('export').onclick=exportCopy;$('csv').onclick=exportCSV;$('print').onclick=()=>window.print();$('import').onclick=()=>$('importFile').click();
+$('importFile').onchange=async event=>{const file=event.target.files[0];if(!file)return;try{if(file.size>5000000)throw Error('Cette copie dépasse 5 Mo.');importBackup(JSON.parse(await file.text()));}catch(e){showMessage(e instanceof SyntaxError?'Ce fichier n’est pas un JSON valide.':e.message,'error');}finally{event.target.value='';}};
+window.addEventListener('offline',()=>showMessage('Connexion coupée. Continue : tout reste sur cet appareil.','warning'));
+try{const cached=JSON.parse(localStorage.getItem(CATALOG_KEY)||'null');if(cached&&Array.isArray(cached.seasons)){seasons=cached.seasons;Object.entries(cached.players||{}).forEach(([id,n])=>players.set(id,str(n)));}}catch{}
 selectSeasonOptions(SEED.season);selectSessionOptions(SEED.session);openSession();
 </script>
 </body>
