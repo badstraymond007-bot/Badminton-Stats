@@ -486,9 +486,9 @@
             <button type="button" class="btn ghost" id="prevRoundBtn">Tour précédent</button>
             <button type="button" class="btn ghost" id="nextRoundBtn">Tour suivant</button>
             <button type="button" class="btn secondary" id="copyPrevRoundBtn">Prochain à jouer</button>
-            <button type="button" class="btn secondary" id="refreshMatchBtn">🔄 Actualiser</button>
+            <button type="button" class="btn secondary" id="refreshMatchBtn">🔄 Recharger serveur</button>
             <button type="button" class="btn secondary" id="clearWithdrawalsBtn">Annuler retraits</button>
-            <button type="button" class="btn" id="finalizeSessionBtn">Terminer + barrer</button>
+            <button type="button" class="btn" id="finalizeSessionBtn">Synchroniser + terminer</button>
           </div>
         </div>
 
@@ -501,7 +501,7 @@
         </div>
 
         <div class="hint-box" id="hintBox">
-          La logique de préparation a été déplacée ailleurs. Ici, on joue seulement les groupes déjà prêts.
+          Mode un téléphone : les scores sont sauvegardés localement sur cet appareil, puis synchronisés à la fin.
         </div>
 
         <div class="groups-grid" id="groupsGrid"></div>
@@ -604,6 +604,226 @@ let stageManualOrders = {};
 let openMatchSwapMenuRef = null;
 let groupViewPositions = {};
 let renderedMatchMap = {};
+
+
+// ============================================================
+// MODE UN TÉLÉPHONE / SAUVEGARDE LOCALE
+// ============================================================
+const LOCAL_SEASONS_KEY = 'badminton_matchs_seasons_v1';
+const LOCAL_SESSION_PREFIX = 'badminton_matchs_session_v1:';
+const LOCAL_LAST_SELECTION_KEY = 'badminton_matchs_last_selection_v1';
+
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = 7000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function getLocalSessionStorageKey() {
+  const season = getSelectedSeason();
+  const saisonId = safeText(season?.saison_id).trim();
+  const noSession = safeText(matchSessionEl.value || matchSessionNoEl.value).trim();
+  return saisonId && noSession
+    ? `${LOCAL_SESSION_PREFIX}${saisonId}|${noSession}`
+    : '';
+}
+
+function serializeStageWithdrawals() {
+  const result = {};
+  Object.keys(stageWithdrawals || {}).forEach(key => {
+    const value = stageWithdrawals[key];
+    result[key] = value instanceof Set ? [...value] : [];
+  });
+  return result;
+}
+
+function restoreStageWithdrawals(raw) {
+  const result = {};
+  Object.keys(raw || {}).forEach(key => {
+    result[key] = new Set(Array.isArray(raw[key]) ? raw[key] : []);
+  });
+  stageWithdrawals = result;
+}
+
+function persistLocalSession(extra = {}) {
+  try {
+    const key = getLocalSessionStorageKey();
+    const season = getSelectedSeason();
+    const saisonId = safeText(season?.saison_id).trim();
+    const noSession = safeText(matchSessionEl.value || matchSessionNoEl.value).trim();
+    if (!key || !saisonId || !noSession) return;
+
+    const snapshot = {
+      version: 1,
+      saison_id: saisonId,
+      no_session: noSession,
+      date_session: safeText(matchDateEl.value).trim(),
+      attendanceCache,
+      sessionMatchesCache,
+      rankingCache,
+      rankingSeasonId,
+      currentStageNo,
+      currentMatchNo,
+      groupViewPositions,
+      stageWithdrawals: serializeStageWithdrawals(),
+      stageManualOrders,
+      sessionLocked,
+      saved_at: new Date().toISOString(),
+      ...extra
+    };
+
+    localStorage.setItem(key, JSON.stringify(snapshot));
+    localStorage.setItem(
+      LOCAL_LAST_SELECTION_KEY,
+      JSON.stringify({ saison_id: saisonId, no_session: noSession })
+    );
+  } catch (error) {
+    console.warn('Sauvegarde locale impossible :', error);
+  }
+}
+
+function readLocalSessionSnapshot() {
+  try {
+    const key = getLocalSessionStorageKey();
+    if (!key) return null;
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch (error) {
+    console.warn('Lecture locale impossible :', error);
+    return null;
+  }
+}
+
+function snapshotHasUnsyncedWork(snapshot) {
+  const rounds = Array.isArray(snapshot?.sessionMatchesCache)
+    ? snapshot.sessionMatchesCache
+    : [];
+
+  const hasLocalScores = rounds.some(round =>
+    Array.isArray(round?.matches) &&
+    round.matches.some(match =>
+      safeText(match?.match_id).trim().startsWith('LOCAL-')
+    )
+  );
+
+  if (hasLocalScores) return true;
+
+  const hasWithdrawals = Object.values(
+    snapshot?.stageWithdrawals || {}
+  ).some(value =>
+    Array.isArray(value) && value.length > 0
+  );
+
+  if (hasWithdrawals) return true;
+
+  return Object.values(
+    snapshot?.stageManualOrders || {}
+  ).some(value =>
+    Array.isArray(value) && value.length > 0
+  );
+}
+
+function applyLocalSessionSnapshot(snapshot) {
+  if (!snapshot) return false;
+
+  attendanceCache = Array.isArray(snapshot.attendanceCache)
+    ? snapshot.attendanceCache
+    : [];
+
+  sessionMatchesCache = Array.isArray(snapshot.sessionMatchesCache)
+    ? snapshot.sessionMatchesCache
+    : [];
+
+  rankingCache = Array.isArray(snapshot.rankingCache)
+    ? snapshot.rankingCache
+    : [];
+
+  rankingSeasonId = safeText(snapshot.rankingSeasonId).trim();
+
+  currentStageNo = Number(snapshot.currentStageNo || 1);
+  currentMatchNo = Number(snapshot.currentMatchNo || 1);
+
+  groupViewPositions =
+    snapshot.groupViewPositions &&
+    typeof snapshot.groupViewPositions === 'object'
+      ? snapshot.groupViewPositions
+      : {};
+
+  restoreStageWithdrawals(snapshot.stageWithdrawals || {});
+
+  stageManualOrders =
+    snapshot.stageManualOrders &&
+    typeof snapshot.stageManualOrders === 'object'
+      ? snapshot.stageManualOrders
+      : {};
+
+  sessionLocked = !!snapshot.sessionLocked;
+  lockSessionToggle.checked = sessionLocked;
+  renderedMatchMap = {};
+  currentRoundPlan = null;
+
+  return true;
+}
+
+function cacheSeasonsLocally() {
+  try {
+    localStorage.setItem(
+      LOCAL_SEASONS_KEY,
+      JSON.stringify({
+        saved_at: new Date().toISOString(),
+        data: seasonsCache
+      })
+    );
+  } catch (error) {
+    console.warn('Cache des saisons impossible :', error);
+  }
+}
+
+function readCachedSeasons() {
+  try {
+    const raw = localStorage.getItem(LOCAL_SEASONS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed?.data) ? parsed.data : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function markLocalMatchesSynced() {
+  sessionMatchesCache.forEach(round => {
+    (round?.matches || []).forEach(match => {
+      const id = safeText(match?.match_id).trim();
+      if (id.startsWith('LOCAL-')) {
+        match.match_id = 'SYNCED-' + id;
+      }
+    });
+  });
+}
+
+function buildRoundMatchSyncPayload(match) {
+  return {
+    group_code: safeText(match?.group_code).trim().toUpperCase(),
+    court_no: safeText(match?.court_no).trim(),
+    team1_player1_id: buildStoredPlayerRefFromMatchPlayer(match?.team1_player1),
+    team1_player2_id: buildStoredPlayerRefFromMatchPlayer(match?.team1_player2),
+    team2_player1_id: buildStoredPlayerRefFromMatchPlayer(match?.team2_player1),
+    team2_player2_id: buildStoredPlayerRefFromMatchPlayer(match?.team2_player2),
+    waiting_player_id: buildStoredPlayerRefFromMatchPlayer(match?.waiting_player),
+    team1_score: safeText(match?.team1_score).trim(),
+    team2_score: safeText(match?.team2_score).trim(),
+    winner_team: safeText(match?.winner_team).trim()
+  };
+}
 
 // État officiel des groupes provenant de etat_groupes_round
 let roundGroupStates = {};
@@ -1433,71 +1653,28 @@ async function applyVisibleMatchGroups(
 ) {
   const stageNo = Number(currentStageNo || 0);
 
-  const normalizedBefore =
-    normalizeGroupsPositions(
-      previousGroups || []
-    );
-
   const normalizedAfter =
     normalizeGroupsPositions(
       groups || []
     );
 
-  try {
-    await saveChangedRoundGroupsToServer(
-      stageNo,
-      normalizedBefore,
-      normalizedAfter
-    );
-
-    // Seulement APRÈS confirmation du serveur.
-    if (typeof afterSave === 'function') {
-      afterSave();
-    }
-
-    setStageManualOrderFromGroups(
-      stageNo,
-      normalizedAfter
-    );
-
-    openMatchSwapMenuRef = null;
-    renderedMatchMap = {};
-    currentRoundPlan = null;
-
-    renderRound();
-
-    return true;
-
-  } catch (error) {
-    console.error(error);
-
-    // Quelque chose a changé ailleurs :
-    // on reprend automatiquement la vérité serveur.
-    try {
-      await refreshRoundGroupStatesFromServer(
-        stageNo
-      );
-
-      applyOfficialRoundStatesToStage(
-        stageNo
-      );
-    } catch (refreshError) {
-      console.error(refreshError);
-    }
-
-    openMatchSwapMenuRef = null;
-    renderedMatchMap = {};
-    currentRoundPlan = null;
-
-    renderRound();
-
-    alert(
-      'Modification refusée : ' +
-      (error.message || error)
-    );
-
-    return false;
+  if (typeof afterSave === 'function') {
+    afterSave();
   }
+
+  setStageManualOrderFromGroups(
+    stageNo,
+    normalizedAfter
+  );
+
+  openMatchSwapMenuRef = null;
+  renderedMatchMap = {};
+  currentRoundPlan = null;
+
+  persistLocalSession();
+  renderRound();
+
+  return true;
 }
 
 async function swapMatchPlayers(refA, refB) {
@@ -1798,13 +1975,13 @@ function applySessionLockUI() {
 
   if (!hasSession) {
     lockSessionNote.textContent =
-      'Choisis une session pour pouvoir la barrer.';
+      'Choisis une session.';
   } else if (sessionLocked) {
     lockSessionNote.textContent =
-      'Session barrée : modification des scores bloquée.';
+      'Session barrée localement : modification des scores bloquée.';
   } else {
     lockSessionNote.textContent =
-      'Session modifiable.';
+      'Mode local : ce téléphone garde les scores même sans réseau.';
   }
 
   finalizeSessionBtn.disabled =
@@ -1812,9 +1989,6 @@ function applySessionLockUI() {
     matchControlsBaseDisabled ||
     sessionLocked;
 
-  // SCORE :
-  // impossible d'écrire tant que CE téléphone
-  // n'a pas cliqué "Commencer à jouer".
   groupsGridEl
     .querySelectorAll('[data-score-field]')
     .forEach(input => {
@@ -1824,16 +1998,6 @@ function applySessionLockUI() {
         input.dataset.groupCode
       ).trim().toUpperCase();
 
-const state = getCachedRoundGroupState(
-  stageNo,
-  groupCode
-);
-
-const canScore =
-  safeText(state?.etat).trim().toUpperCase() === 'EN_JEU' &&
-  safeText(state?.match_no_en_cours).trim() ===
-    safeText(matchNo).trim();
-
       const match = getRenderedMatchForPosition(
         stageNo,
         matchNo,
@@ -1845,16 +2009,13 @@ const canScore =
         safeText(match?.team1_score).trim() !== '' &&
         safeText(match?.team2_score).trim() !== '';
 
-input.disabled =
-  !hasSession ||
-  matchControlsBaseDisabled ||
-  sessionLocked ||
-  !canScore ||
-  saved;
+      input.disabled =
+        !hasSession ||
+        matchControlsBaseDisabled ||
+        sessionLocked ||
+        saved;
     });
 
-  // SAUVEGARDER :
-  // même règle.
   groupsGridEl
     .querySelectorAll('[data-action="save-group-scores"]')
     .forEach(button => {
@@ -1864,16 +2025,6 @@ input.disabled =
         button.dataset.groupCode
       ).trim().toUpperCase();
 
-const state = getCachedRoundGroupState(
-  stageNo,
-  groupCode
-);
-
-const canSave =
-  safeText(state?.etat).trim().toUpperCase() === 'EN_JEU' &&
-  safeText(state?.match_no_en_cours).trim() ===
-    safeText(matchNo).trim();
-
       const match = getRenderedMatchForPosition(
         stageNo,
         matchNo,
@@ -1885,72 +2036,15 @@ const canSave =
         safeText(match?.team1_score).trim() !== '' &&
         safeText(match?.team2_score).trim() !== '';
 
-button.disabled =
-  !hasSession ||
-  matchControlsBaseDisabled ||
-  sessionLocked ||
-  !canSave ||
-  saved;
-    });
+      button.disabled =
+        !hasSession ||
+        matchControlsBaseDisabled ||
+        sessionLocked ||
+        saved;
 
-  // COMMENCER À JOUER
-  groupsGridEl
-    .querySelectorAll('[data-action="start-group-match"]')
-    .forEach(button => {
-      const stageNo = Number(button.dataset.stageNo || 0);
-      const matchNo = Number(button.dataset.matchNo || 0);
-      const groupCode = safeText(
-        button.dataset.groupCode
-      ).trim().toUpperCase();
-
-      const activeLock = getActiveMatchLock(
-        stageNo,
-        matchNo,
-        groupCode
-      );
-
-      const state = getCachedRoundGroupState(
-        stageNo,
-        groupCode
-      );
-
-      const match = getRenderedMatchForPosition(
-        stageNo,
-        matchNo,
-        groupCode
-      );
-
-      const saved =
-        !!safeText(match?.match_id).trim() &&
-        safeText(match?.team1_score).trim() !== '' &&
-        safeText(match?.team2_score).trim() !== '';
-
-const sameMatchAlreadyPlaying =
-  safeText(state?.etat).trim().toUpperCase() === 'EN_JEU' &&
-  safeText(state?.match_no_en_cours).trim() ===
-    safeText(matchNo).trim();
-
-const anotherMatchPlaying =
-  safeText(state?.etat).trim().toUpperCase() === 'EN_JEU' &&
-  !sameMatchAlreadyPlaying;
-
-button.disabled =
-  !hasSession ||
-  matchControlsBaseDisabled ||
-  sessionLocked ||
-  saved ||
-  sameMatchAlreadyPlaying ||
-  anotherMatchPlaying;
-
-if (saved) {
-  button.textContent = 'Sauvegardé';
-} else if (sameMatchAlreadyPlaying) {
-  button.textContent = 'Match en cours';
-} else if (anotherMatchPlaying) {
-  button.textContent = 'Autre match en cours';
-} else {
-  button.textContent = 'Commencer à jouer';
-}
+      if (saved) {
+        button.textContent = 'Sauvegardé sur ce téléphone';
+      }
     });
 }
 
@@ -2656,7 +2750,7 @@ function getNextLaggingGroupToPlay() {
           <div class="group-top">
             <div>
               <h3 class="group-title">Groupe ${escapeHtml(cleanGroupCode)}</h3>
-              <div class="group-badge ${saved ? 'saved' : ''}">${saved ? 'Sauvegardé' : 'À jouer'}</div>
+              <div class="group-badge ${saved ? 'saved' : ''}">${saved ? 'Sauvegardé localement' : 'À jouer'}</div>
               <div class="group-meta">Navigation indépendante pour ce groupe.</div>
               <div class="round-note">Clique sur un joueur pour faire un switch ou une cascade sur le match 1 du round. #1 = plus fort, puis cascade vers le bas si retrait.</div>
             </div>
@@ -2695,20 +2789,6 @@ function getNextLaggingGroupToPlay() {
             <div class="waiting-label">Joueur en attente</div>
             <div>${renderPlayerCard(match.waiting_player, renderOptions(match.waiting_player))}</div>
           </div>
-
-<div class="group-save-wrap">
-  <button
-    type="button"
-    class="btn"
-    data-action="start-group-match"
-    data-group-code="${escapeHtml(cleanGroupCode)}"
-    data-stage-no="${escapeHtml(String(stageNo))}"
-    data-match-no="${escapeHtml(String(matchNo))}"
-    ${saved ? 'disabled' : ''}
-  >
-    Commencer à jouer
-  </button>
-</div>
 
           <div class="score-row">
             <div class="score-box">
@@ -2888,76 +2968,56 @@ function getNextLaggingGroupToPlay() {
     }
 
     function buildSaveScoresPayload(groupCode, stageNo = currentStageNo, matchNo = currentMatchNo) {
-      const season = getSelectedSeason();
-      const saisonId = safeText(season?.saison_id).trim();
-      const noSession = safeText(matchSessionEl.value || matchSessionNoEl.value).trim();
-      const cleanGroupCode = safeText(groupCode).trim().toUpperCase();
+  const season = getSelectedSeason();
+  const saisonId = safeText(season?.saison_id).trim();
+  const noSession = safeText(matchSessionEl.value || matchSessionNoEl.value).trim();
+  const cleanGroupCode = safeText(groupCode).trim().toUpperCase();
 
-      if (!saisonId) throw new Error('Saison manquante.');
-      if (!noSession) throw new Error('Session manquante.');
-      if (!cleanGroupCode) throw new Error('Groupe manquant.');
+  if (!saisonId) throw new Error('Saison manquante.');
+  if (!noSession) throw new Error('Session manquante.');
+  if (!cleanGroupCode) throw new Error('Groupe manquant.');
 
-      const match = getRenderedMatchForPosition(stageNo, matchNo, cleanGroupCode);
-      const roundPlan = buildRoundPlan(stageNo, matchNo);
-const groupModel = (roundPlan.groups || []).find(group =>
-  safeText(group.group_code).trim().toUpperCase() === cleanGroupCode
-) || null;
-      if (!match) throw new Error(`Groupe ${cleanGroupCode} introuvable pour cet écran.`);
-const state = getCachedRoundGroupState(
-  stageNo,
-  cleanGroupCode
-);
-
-if (!state) {
-  throw new Error(
-    `État serveur introuvable pour le groupe ${cleanGroupCode}. Actualise la page.`
+  const match = getRenderedMatchForPosition(
+    stageNo,
+    matchNo,
+    cleanGroupCode
   );
+
+  const roundPlan = buildRoundPlan(stageNo, matchNo);
+  const groupModel = (roundPlan.groups || []).find(group =>
+    safeText(group.group_code).trim().toUpperCase() === cleanGroupCode
+  ) || null;
+
+  if (!match) {
+    throw new Error(`Groupe ${cleanGroupCode} introuvable pour cet écran.`);
+  }
+
+  if (
+    safeText(match.team1_score).trim() === '' ||
+    safeText(match.team2_score).trim() === ''
+  ) {
+    throw new Error(
+      `Entre les deux scores du groupe ${cleanGroupCode} avant de sauvegarder.`
+    );
+  }
+
+  return {
+    saison_id: saisonId,
+    no_session: noSession,
+    round_no: Number(stageNo || 1),
+    match_no: Number(matchNo || 1),
+    group_code: cleanGroupCode,
+    court_no: safeText(match.court_no).trim(),
+    team1_player1_id: buildStoredPlayerRefFromDisplayedGroup(match.team1_player1, groupModel),
+    team1_player2_id: buildStoredPlayerRefFromDisplayedGroup(match.team1_player2, groupModel),
+    team2_player1_id: buildStoredPlayerRefFromDisplayedGroup(match.team2_player1, groupModel),
+    team2_player2_id: buildStoredPlayerRefFromDisplayedGroup(match.team2_player2, groupModel),
+    waiting_player_id: buildStoredPlayerRefFromDisplayedGroup(match.waiting_player, groupModel),
+    team1_score: safeText(match.team1_score).trim(),
+    team2_score: safeText(match.team2_score).trim(),
+    winner_team: ''
+  };
 }
-
-if (safeText(state.etat).trim().toUpperCase() !== 'EN_JEU') {
-  throw new Error(
-    `Le groupe ${cleanGroupCode} n'est pas actuellement EN_JEU.`
-  );
-}
-
-if (
-  safeText(state.match_no_en_cours).trim() !==
-  safeText(matchNo).trim()
-) {
-  throw new Error(
-    `Le groupe ${cleanGroupCode} joue actuellement un autre match.`
-  );
-}
-
-if (!Number(state.composition_version || 0)) {
-  throw new Error(
-    `Version de composition manquante pour le groupe ${cleanGroupCode}.`
-  );
-}
-      
-      if (safeText(match.team1_score).trim() === '' || safeText(match.team2_score).trim() === '') {
-        throw new Error(`Entre les deux scores du groupe ${cleanGroupCode} avant de sauvegarder.`);
-      }
-
-return {
-  saison_id: saisonId,
-  no_session: noSession,
-  round_no: stageNo,
-  match_no: matchNo,
-  group_code: cleanGroupCode,
-
-composition_version:
-  Number(state.composition_version || 0),
-team1_player1_id: buildStoredPlayerRefFromDisplayedGroup(match.team1_player1, groupModel),
-team1_player2_id: buildStoredPlayerRefFromDisplayedGroup(match.team1_player2, groupModel),
-team2_player1_id: buildStoredPlayerRefFromDisplayedGroup(match.team2_player1, groupModel),
-team2_player2_id: buildStoredPlayerRefFromDisplayedGroup(match.team2_player2, groupModel),
-waiting_player_id: buildStoredPlayerRefFromDisplayedGroup(match.waiting_player, groupModel),
-        team1_score: safeText(match.team1_score).trim(),
-        team2_score: safeText(match.team2_score).trim(),
-        winner_team: ''
-      };
-    }
 
     function normalizeSavedMatchFromServer(savedMatch, fallbackMatch, groupModel) {
       const normalizedGroup = normalizeGroupPositions(groupModel || {});
@@ -3006,481 +3066,497 @@ waiting_player_id: buildStoredPlayerRefFromDisplayedGroup(match.waiting_player, 
     }
 
 async function startCurrentGroupMatch(groupCode, stageNo = currentStageNo, matchNo = currentMatchNo) {
+  currentStageNo = Number(stageNo || 1);
+  currentMatchNo = Number(matchNo || 1);
+  persistLocalSession();
+  renderRound();
+}
+    
+    async function saveCurrentScores(groupCode, stageNo = currentStageNo, matchNo = currentMatchNo) {
   if (sessionLocked) {
     alert('Cette session est barrée.');
     return;
   }
 
-  const season = getSelectedSeason();
-  const saisonId = safeText(season?.saison_id).trim();
-  const noSession = safeText(matchSessionEl.value || matchSessionNoEl.value).trim();
-  const cleanGroupCode = safeText(groupCode).trim().toUpperCase();
-
-  if (!saisonId || !noSession || !cleanGroupCode) {
-    alert('Saison, session ou groupe manquant.');
-    return;
-  }
-
-
+  currentStageNo = Number(stageNo || 1);
+  currentMatchNo = Number(matchNo || 1);
 
   try {
-    // 1. Lire la version officielle du serveur
-    const stateParams = new URLSearchParams({
-      action: 'getRoundGroupStates',
-      saison_id: saisonId,
-      no_session: noSession,
-      round_no: String(stageNo)
-    });
-
-    const stateResponse = await fetch(
-      `${API_URL}?${stateParams.toString()}`
+    const payload = buildSaveScoresPayload(
+      groupCode,
+      currentStageNo,
+      currentMatchNo
     );
 
-    const stateResult = await stateResponse.json();
-
-    if (!stateResult.ok) {
-      throw new Error(
-        stateResult.error || 'Impossible de lire l’état des groupes.'
-      );
-    }
-
-    (stateResult.groups || []).forEach(state => {
-      const key = getRoundGroupStateKey(
-        stageNo,
-        state.group_code
-      );
-
-      roundGroupStates[key] = state;
-    });
-
-    let state = getCachedRoundGroupState(
-      stageNo,
-      cleanGroupCode
+    const liveMatch = getRenderedMatchForPosition(
+      currentStageNo,
+      currentMatchNo,
+      groupCode
     );
 
-    // 2. Si le groupe n'existe pas encore dans etat_groupes_round,
-    // on crée sa première composition officielle.
-    if (!state) {
-      const roundPlan = buildRoundPlan(stageNo, matchNo);
+    const roundPlan = buildRoundPlan(
+      currentStageNo,
+      currentMatchNo
+    );
 
-      const groupModel = (roundPlan.groups || []).find(group =>
-        safeText(group.group_code).trim().toUpperCase() ===
-        cleanGroupCode
-      );
+    const groupModel = (roundPlan.groups || []).find(group =>
+      safeText(group.group_code).trim().toUpperCase() ===
+      safeText(groupCode).trim().toUpperCase()
+    ) || null;
 
-      if (!groupModel) {
-        throw new Error(
-          `Composition du groupe ${cleanGroupCode} introuvable.`
-        );
-      }
-
-      const composition = (groupModel.players || []).map(player => ({
-        joueur_id: safeText(player?.joueur_id).trim()
-      }));
-
-      const createResponse = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'text/plain;charset=utf-8'
-        },
-        body: JSON.stringify({
-          action: 'saveRoundGroupState',
-          saison_id: saisonId,
-          no_session: noSession,
-          round_no: stageNo,
-          group_code: cleanGroupCode,
-          expected_version: 0,
-          composition: composition
-        })
-      });
-
-      const createResult = await createResponse.json();
-
-      if (!createResult.ok) {
-        throw new Error(
-          createResult.error ||
-          'Impossible d’initialiser le groupe.'
-        );
-      }
-
-      state = {
-        group_code: cleanGroupCode,
-        composition: createResult.composition || [],
-        composition_version:
-          Number(createResult.composition_version || 0),
-        etat: 'PRET',
-        match_no_en_cours: ''
-      };
-
-      roundGroupStates[
-        getRoundGroupStateKey(stageNo, cleanGroupCode)
-      ] = state;
+    if (!liveMatch || !groupModel) {
+      throw new Error('Match ou groupe introuvable.');
     }
 
-    // 3. Le serveur relit encore sa propre vérité
-    // et verrouille CE match.
-    const startResponse = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'text/plain;charset=utf-8'
-      },
-      body: JSON.stringify({
-        action: 'startGroupMatch',
-        saison_id: saisonId,
-        no_session: noSession,
-        round_no: stageNo,
-        match_no: matchNo,
-        group_code: cleanGroupCode
-      })
+    const localId = [
+      'LOCAL',
+      safeText(payload.saison_id).trim(),
+      safeText(payload.no_session).trim(),
+      String(payload.round_no),
+      String(payload.match_no),
+      safeText(payload.group_code).trim().toUpperCase()
+    ].join('-');
+
+    const localSavedMatch = {
+      ...liveMatch,
+      match_id: localId,
+      round_no: String(payload.round_no),
+      match_no: String(payload.match_no),
+      group_code: safeText(payload.group_code).trim().toUpperCase(),
+      court_no: safeText(payload.court_no).trim(),
+      team1_score: safeText(payload.team1_score).trim(),
+      team2_score: safeText(payload.team2_score).trim(),
+      winner_team: ''
+    };
+
+    upsertSavedMatchInCache(localSavedMatch);
+
+    renderedMatchMap[
+      getMatchStateKey(
+        currentStageNo,
+        currentMatchNo,
+        groupCode
+      )
+    ] = localSavedMatch;
+
+    persistLocalSession({
+      last_local_save_at: new Date().toISOString()
     });
 
-    const result = await startResponse.json();
-
-    if (!result.ok) {
-      throw new Error(
-        result.error || 'Impossible de commencer ce match.'
-      );
-    }
-
-
-
-roundGroupStates[
-  getRoundGroupStateKey(stageNo, cleanGroupCode)
-] = {
-  group_code: cleanGroupCode,
-  composition: result.composition || [],
-  composition_version:
-    Number(result.composition_version || 0),
-  etat: 'EN_JEU',
-match_no_en_cours:
-  safeText(result.match_no || matchNo).trim(),
-  started_at: result.started_at || ''
-};
-
-// FORCE-REFRESH CACHÉ :
-// l'écran adopte maintenant la composition officielle du serveur.
-applyOfficialRoundStatesToStage(stageNo);
-
-renderRound();
-
-  } catch (error) {
-    console.error(error);
+    renderRound();
 
     alert(
-      'Impossible de commencer le match : ' +
+      `Groupe ${safeText(groupCode).trim().toUpperCase()} sauvegardé sur ce téléphone.`
+    );
+  } catch (error) {
+    console.error(error);
+    alert(
+      'Erreur lors de la sauvegarde locale : ' +
       (error.message || error)
     );
   }
 }
-    
-    async function saveCurrentScores(groupCode, stageNo = currentStageNo, matchNo = currentMatchNo) {
-      if (sessionLocked) {
-        alert('Cette session est barrée. Décoche-la pour pouvoir modifier les scores.');
-        return;
-      }
-
-      currentStageNo = Number(stageNo || 1);
-      currentMatchNo = Number(matchNo || 1);
-
-      try {
-        const payload = buildSaveScoresPayload(groupCode, currentStageNo, currentMatchNo);
-        const response = await fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({
-            action: 'saveSingleMatch',
-            ...payload
-          })
-        });
-
-        const result = await response.json();
-        if (!result.ok) throw new Error(result.error || 'Erreur API inconnue');
-
-        const liveMatch = getRenderedMatchForPosition(
-          currentStageNo,
-          currentMatchNo,
-          groupCode
-        );
-
-        const freshPlan = buildRoundPlan(currentStageNo, currentMatchNo);
-        const groupModel = (freshPlan.groups || []).find(group =>
-          safeText(group.group_code).trim().toUpperCase() ===
-          safeText(groupCode).trim().toUpperCase()
-        ) || null;
-
-if (liveMatch && groupModel) {
-  const normalizedSavedMatch = normalizeSavedMatchFromServer(
-    result.saved_match || {},
-    {
-      ...liveMatch,
-      match_id: safeText(result.match_id || liveMatch.match_id).trim(),
-      round_no: safeText(payload.round_no).trim(),
-      match_no: safeText(payload.match_no).trim(),
-      team1_score: safeText(payload.team1_score).trim(),
-      team2_score: safeText(payload.team2_score).trim(),
-      winner_team: safeText(
-        result.winner_team ||
-        result.saved_match?.winner_team ||
-        liveMatch.winner_team
-      ).trim()
-    },
-    groupModel
-  );
-
-upsertSavedMatchInCache(normalizedSavedMatch);
-
-// Le match affiché doit immédiatement devenir
-// la version officiellement sauvegardée.
-renderedMatchMap[
-  getMatchStateKey(
-    currentStageNo,
-    currentMatchNo,
-    groupCode
-  )
-] = normalizedSavedMatch;
-}
-
-// Ce lock a servi. On le détruit sur CE téléphone.
-delete activeMatchLocks[
-  getMatchLockKey(
-    currentStageNo,
-    currentMatchNo,
-    groupCode
-  )
-];
-
-// Le serveur vient aussi de libérer le groupe.
-roundGroupStates[
-  getRoundGroupStateKey(
-    currentStageNo,
-    groupCode
-  )
-] = {
-  ...(getCachedRoundGroupState(
-    currentStageNo,
-    groupCode
-  ) || {}),
-  composition_version:
-    Number(result.composition_version || payload.composition_version || 0),
-  etat: safeText(result.etat || 'PRET').trim().toUpperCase(),
-  match_no_en_cours: ''
-};
-
-renderRound();
-
-alert(
-  `Groupe ${safeText(groupCode).trim().toUpperCase()} sauvegardé.`
-);
-      } catch (error) {
-        console.error(error);
-        alert('Erreur lors de la sauvegarde des scores : ' + (error.message || error));
-      }
-    }
 
     async function saveSessionLockState(barree) {
-      const season = getSelectedSeason();
-      const saisonId = safeText(season?.saison_id).trim();
-      const noSession = safeText(matchSessionEl.value).trim();
-      if (!saisonId || !noSession) throw new Error('Session manquante.');
+  sessionLocked = !!barree;
+  const sessionMeta = getSelectedSessionMeta();
+  if (sessionMeta) sessionMeta.barree = sessionLocked;
+  persistLocalSession();
+  applySessionLockUI();
+}
 
-      const response = await fetch(API_URL, {
+    async function finalizeCurrentSession() {
+  if (sessionLocked) {
+    alert('Cette session est déjà barrée.');
+    return;
+  }
+
+  const season = getSelectedSeason();
+  const saisonId = safeText(season?.saison_id).trim();
+  const noSession = safeText(matchSessionEl.value).trim();
+
+  if (!saisonId || !noSession) {
+    alert('Choisis une saison et une session avant de terminer.');
+    return;
+  }
+
+  const nextMissing = getNextLaggingGroupToPlay();
+  if (nextMissing) {
+    alert(
+      `Il reste au moins un match à sauvegarder localement.\n` +
+      `Prochain : groupe ${nextMissing.group_code}, ` +
+      `round ${nextMissing.next_position.stage_no}, ` +
+      `match ${nextMissing.next_position.match_no}.`
+    );
+    return;
+  }
+
+  persistLocalSession();
+
+  if (!navigator.onLine) {
+    alert(
+      'Pas de réseau. Tout reste sauvegardé sur ce téléphone. ' +
+      'Quand Internet revient, appuie de nouveau sur « Synchroniser + terminer ».'
+    );
+    return;
+  }
+
+  const confirmation = window.confirm(
+    'Synchroniser tous les scores de ce téléphone vers Google, recalculer les classements et barrer la session ?'
+  );
+
+  if (!confirmation) return;
+
+  try {
+    finalizeSessionBtn.disabled = true;
+    finalizeSessionBtn.textContent = 'Synchronisation...';
+
+    const batches = [];
+
+    (sessionMatchesCache || []).forEach(round => {
+      const roundNo = safeText(round?.round_no).trim();
+      const byMatch = {};
+
+      (round?.matches || []).forEach(match => {
+        const matchNo = safeText(match?.match_no).trim();
+        if (
+          !roundNo ||
+          !matchNo ||
+          safeText(match?.team1_score).trim() === '' ||
+          safeText(match?.team2_score).trim() === ''
+        ) {
+          return;
+        }
+
+        if (!byMatch[matchNo]) byMatch[matchNo] = [];
+        byMatch[matchNo].push(match);
+      });
+
+      Object.keys(byMatch)
+        .sort(compareNumericLike)
+        .forEach(matchNo => {
+          batches.push({
+            round_no: roundNo,
+            match_no: matchNo,
+            matches: byMatch[matchNo]
+          });
+        });
+    });
+
+    for (const batch of batches) {
+      const response = await fetchWithTimeout(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({
-          action: 'setSessionLock',
+          action: 'saveRoundMatches',
           saison_id: saisonId,
           no_session: noSession,
-          barree: !!barree
+          round_no: batch.round_no,
+          match_no: batch.match_no,
+          refresh_rankings: false,
+          matches: batch.matches.map(buildRoundMatchSyncPayload)
         })
       });
 
       const result = await response.json();
-      if (!result.ok) throw new Error(result.error || 'Erreur API inconnue');
 
-      sessionLocked = !!barree;
-      const sessionMeta = getSelectedSessionMeta();
-      if (sessionMeta) sessionMeta.barree = sessionLocked;
-      applySessionLockUI();
-    }
-
-    async function finalizeCurrentSession() {
-      if (sessionLocked) {
-        alert('Cette session est déjà barrée.');
-        return;
-      }
-
-      const season = getSelectedSeason();
-      const saisonId = safeText(season?.saison_id).trim();
-      const noSession = safeText(matchSessionEl.value).trim();
-      if (!saisonId || !noSession) {
-        alert('Choisis une saison et une session avant de terminer.');
-        return;
-      }
-
-      const confirmation = window.confirm('Terminer la session, recalculer les classements et barrer la session ?');
-      if (!confirmation) return;
-
-      try {
-        finalizeSessionBtn.disabled = true;
-        const response = await fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({
-            action: 'finalizeSession',
-            saison_id: saisonId,
-            no_session: noSession,
-            barree: true
-          })
-        });
-
-        const result = await response.json();
-        if (!result.ok) throw new Error(result.error || 'Erreur API inconnue');
-
-        const sessionMeta = getSelectedSessionMeta();
-        if (sessionMeta) sessionMeta.barree = true;
-        sessionLocked = true;
-        lockSessionToggle.checked = true;
-        rankingCache = [];
-        rankingSeasonId = '';
-        applySessionLockUI();
-
-        alert(`Session ${noSession} terminée et barrée.`);
-      } catch (error) {
-        console.error(error);
-        alert('Erreur lors de la finalisation de la session : ' + (error.message || error));
-      } finally {
-        applySessionLockUI();
+      if (!result.ok) {
+        throw new Error(
+          result.error ||
+          `Erreur de synchronisation round ${batch.round_no}, match ${batch.match_no}.`
+        );
       }
     }
+
+    const response = await fetchWithTimeout(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        action: 'finalizeSession',
+        saison_id: saisonId,
+        no_session: noSession,
+        barree: true
+      })
+    });
+
+    const result = await response.json();
+    if (!result.ok) {
+      throw new Error(result.error || 'Erreur API inconnue');
+    }
+
+    markLocalMatchesSynced();
+
+    const sessionMeta = getSelectedSessionMeta();
+    if (sessionMeta) sessionMeta.barree = true;
+
+    sessionLocked = true;
+    lockSessionToggle.checked = true;
+    rankingCache = [];
+    rankingSeasonId = '';
+
+    persistLocalSession({
+      synced_at: new Date().toISOString()
+    });
+
+    applySessionLockUI();
+
+    alert(
+      `Session ${noSession} synchronisée, terminée et barrée. ` +
+      'Une copie demeure sur ce téléphone.'
+    );
+  } catch (error) {
+    console.error(error);
+
+    persistLocalSession({
+      sync_error_at: new Date().toISOString(),
+      sync_error: safeText(error?.message || error)
+    });
+
+    alert(
+      'La synchronisation n’est pas terminée. ' +
+      'Aucune donnée locale n’a été effacée.\n\n' +
+      (error.message || error)
+    );
+  } finally {
+    finalizeSessionBtn.textContent = 'Synchroniser + terminer';
+    applySessionLockUI();
+  }
+}
 
     async function loadSessionContext(options = {}) {
-      const season = getSelectedSeason();
-      const saisonId = safeText(season?.saison_id).trim();
-      const noSession = safeText(matchSessionEl.value).trim();
-      const dateSession = safeText(matchDateEl.value).trim();
-      const jumpToNextPlayable = options.jumpToNextPlayable === true;
+  const season = getSelectedSeason();
+  const saisonId = safeText(season?.saison_id).trim();
+  const noSession = safeText(matchSessionEl.value).trim();
+  const dateSession = safeText(matchDateEl.value).trim();
+  const jumpToNextPlayable = options.jumpToNextPlayable === true;
+  const forceServer = options.forceServer === true;
 
-      attendanceCache = [];
-      sessionMatchesCache = [];
-      currentRoundPlan = null;
-      currentStageNo = 1;
-      currentMatchNo = 1;
-      groupViewPositions = {};
-      renderedMatchMap = {};
-      resetStageWithdrawals();
-      resetStageManualOrders();
-// Nouvelle session / nouveau chargement :
-// on oublie les anciens états locaux et on relit le serveur.
-roundGroupStates = {};
-activeMatchLocks = {};
+  if (!saisonId || !noSession || !dateSession) {
+    renderRound();
+    return;
+  }
 
-      if (!saisonId || !noSession || !dateSession) {
-        renderRound();
-        return;
-      }
+  const localSnapshot = readLocalSessionSnapshot();
 
-      try {
-        const attendanceParams = new URLSearchParams({
-          action: 'getAttendanceForSession',
-          saison_id: saisonId,
-          date_session: dateSession,
-          no_session: noSession
-        });
+  if (
+    !forceServer &&
+    localSnapshot &&
+    (!navigator.onLine || snapshotHasUnsyncedWork(localSnapshot))
+  ) {
+    applyLocalSessionSnapshot(localSnapshot);
 
-        const matchesParams = new URLSearchParams({
-          action: 'getSessionMatches',
-          saison_id: saisonId,
-          no_session: noSession
-        });
-
-        const rankingPromise =
-          rankingSeasonId === saisonId && Array.isArray(rankingCache) && rankingCache.length
-            ? Promise.resolve({ ok: true, rows: rankingCache })
-            : (async () => {
-                const rankingParams = new URLSearchParams({
-                  action: 'getRanking',
-                  saison_id: saisonId
-                });
-                const rankingResponse = await fetch(`${API_URL}?${rankingParams.toString()}`);
-                return rankingResponse.json();
-              })();
-
-        const [attendanceResponse, matchesResponse, rankingResult] = await Promise.all([
-          fetch(`${API_URL}?${attendanceParams.toString()}`),
-          fetch(`${API_URL}?${matchesParams.toString()}`),
-          rankingPromise
-        ]);
-
-        const attendanceResult = await attendanceResponse.json();
-        const matchesResult = await matchesResponse.json();
-
-        if (!attendanceResult.ok) throw new Error(attendanceResult.error || 'Erreur de présence.');
-        if (!matchesResult.ok) throw new Error(matchesResult.error || 'Erreur de matchs.');
-        if (!rankingResult.ok) throw new Error(rankingResult.error || 'Erreur de classement.');
-
-        attendanceCache = Array.isArray(attendanceResult.joueurs) ? attendanceResult.joueurs : [];
-        sessionMatchesCache = Array.isArray(matchesResult.rounds) ? matchesResult.rounds : [];
-        rankingCache = Array.isArray(rankingResult.rows) ? rankingResult.rows : [];
-        rankingSeasonId = saisonId;
-
-// Relit les états officiels de tous les rounds.
-// C'est ce qui permet à un autre téléphone de récupérer
-// automatiquement un groupe déjà EN_JEU.
-for (let roundNo = 1; roundNo <= MAX_ROUNDS; roundNo += 1) {
-  await refreshRoundGroupStatesFromServer(roundNo);
-}
-
-// Réapplique les compositions/tags officiels du serveur.
-for (let roundNo = 1; roundNo <= MAX_ROUNDS; roundNo += 1) {
-  applyOfficialRoundStatesToStage(roundNo);
-}
-        
-        const sessionMeta = getSelectedSessionMeta();
-        sessionLocked = !!sessionMeta?.barree;
-        lockSessionToggle.checked = sessionLocked;
-
-        if (jumpToNextPlayable) {
-          const nextPlayable = getNextPlayablePosition();
-          currentStageNo = nextPlayable.stage_no;
-          currentMatchNo = nextPlayable.match_no;
-        }
-
-        renderRound();
-      } catch (error) {
-        console.error(error);
-        resetGroups('Erreur lors du chargement du contexte.');
-        hintBoxEl.textContent = 'Erreur lors du chargement du contexte.';
-        setMatchControlsDisabled(true);
-        alert('Erreur lors du chargement : ' + (error.message || error));
-      }
+    if (jumpToNextPlayable) {
+      const nextPlayable = getNextPlayablePosition();
+      currentStageNo = nextPlayable.stage_no;
+      currentMatchNo = nextPlayable.match_no;
     }
 
-    async function loadSeasons() {
-      try {
-       const response = await fetch(
-  `${API_URL}?action=getSeasons&_=${Date.now()}`,
-  { cache: 'no-store' }
-);
-        const result = await response.json();
-        if (!result.ok) throw new Error(result.error || 'Erreur API inconnue');
+    renderRound();
+    hintBoxEl.textContent =
+      navigator.onLine
+        ? 'Session récupérée depuis ce téléphone pour protéger les changements locaux.'
+        : 'Mode hors ligne : session récupérée depuis ce téléphone.';
+    return;
+  }
 
-        seasonsCache = Array.isArray(result.data) ? result.data : [];
-        matchSeasonEl.innerHTML = '<option value="">Choisir une saison</option>' +
-          seasonsCache.map(season => `
-            <option value="${escapeHtml(safeText(season.saison_id))}">
-              ${escapeHtml(safeText(season.nom_saison || season.saison_id))}
-            </option>
-          `).join('');
+  attendanceCache = [];
+  sessionMatchesCache = [];
+  currentRoundPlan = null;
+  currentStageNo = 1;
+  currentMatchNo = 1;
+  groupViewPositions = {};
+  renderedMatchMap = {};
+  resetStageWithdrawals();
+  resetStageManualOrders();
+  roundGroupStates = {};
+  activeMatchLocks = {};
 
-        clearSessionFields();
-        renderRound();
-      } catch (error) {
-        console.error(error);
-        resetGroups('Erreur lors du chargement des saisons.');
-        hintBoxEl.textContent = 'Impossible de charger les saisons.';
-        alert('Erreur lors du chargement des saisons : ' + (error.message || error));
+  try {
+    const attendanceParams = new URLSearchParams({
+      action: 'getAttendanceForSession',
+      saison_id: saisonId,
+      date_session: dateSession,
+      no_session: noSession
+    });
+
+    const matchesParams = new URLSearchParams({
+      action: 'getSessionMatches',
+      saison_id: saisonId,
+      no_session: noSession
+    });
+
+    const rankingParams = new URLSearchParams({
+      action: 'getRanking',
+      saison_id: saisonId
+    });
+
+    const [attendanceResponse, matchesResponse, rankingResponse] =
+      await Promise.all([
+        fetchWithTimeout(`${API_URL}?${attendanceParams.toString()}`),
+        fetchWithTimeout(`${API_URL}?${matchesParams.toString()}`),
+        fetchWithTimeout(`${API_URL}?${rankingParams.toString()}`)
+      ]);
+
+    const attendanceResult = await attendanceResponse.json();
+    const matchesResult = await matchesResponse.json();
+    const rankingResult = await rankingResponse.json();
+
+    if (!attendanceResult.ok) {
+      throw new Error(attendanceResult.error || 'Erreur de présence.');
+    }
+
+    if (!matchesResult.ok) {
+      throw new Error(matchesResult.error || 'Erreur de matchs.');
+    }
+
+    if (!rankingResult.ok) {
+      throw new Error(rankingResult.error || 'Erreur de classement.');
+    }
+
+    attendanceCache = Array.isArray(attendanceResult.joueurs)
+      ? attendanceResult.joueurs
+      : [];
+
+    sessionMatchesCache = Array.isArray(matchesResult.rounds)
+      ? matchesResult.rounds
+      : [];
+
+    rankingCache = Array.isArray(rankingResult.rows)
+      ? rankingResult.rows
+      : [];
+
+    rankingSeasonId = saisonId;
+
+    const sessionMeta = getSelectedSessionMeta();
+    sessionLocked = !!sessionMeta?.barree;
+    lockSessionToggle.checked = sessionLocked;
+
+    if (jumpToNextPlayable) {
+      const nextPlayable = getNextPlayablePosition();
+      currentStageNo = nextPlayable.stage_no;
+      currentMatchNo = nextPlayable.match_no;
+    }
+
+    persistLocalSession({
+      server_loaded_at: new Date().toISOString()
+    });
+
+    renderRound();
+  } catch (error) {
+    console.error(error);
+
+    if (localSnapshot && applyLocalSessionSnapshot(localSnapshot)) {
+      hintBoxEl.textContent =
+        'Réseau indisponible : session chargée depuis ce téléphone.';
+      renderRound();
+      return;
+    }
+
+    resetGroups('Impossible de charger la session et aucun backup local n’est disponible.');
+    hintBoxEl.textContent =
+      'Impossible de charger la session et aucun backup local n’est disponible.';
+    setMatchControlsDisabled(true);
+
+    alert(
+      'Erreur lors du chargement : ' +
+      (error.message || error)
+    );
+  }
+
+}
+
+async function loadSeasons() {
+  let loadedFromServer = false;
+
+  try {
+    const response = await fetchWithTimeout(
+      `${API_URL}?action=getSeasons&_=${Date.now()}`,
+      { cache: 'no-store' }
+    );
+
+    const result = await response.json();
+    if (!result.ok) {
+      throw new Error(result.error || 'Erreur API inconnue');
+    }
+
+    seasonsCache = Array.isArray(result.data)
+      ? result.data
+      : [];
+
+    cacheSeasonsLocally();
+    loadedFromServer = true;
+  } catch (error) {
+    console.warn(
+      'Serveur indisponible, utilisation du cache des saisons :',
+      error
+    );
+
+    seasonsCache = readCachedSeasons();
+
+    if (!seasonsCache.length) {
+      resetGroups('Impossible de charger les saisons.');
+      hintBoxEl.textContent =
+        'Impossible de charger les saisons et aucun cache local n’est disponible.';
+
+      alert(
+        'Impossible de charger les saisons : ' +
+        (error.message || error)
+      );
+
+      return;
+    }
+  }
+
+  matchSeasonEl.innerHTML =
+    '<option value="">Choisir une saison</option>' +
+    seasonsCache.map(season => `
+      <option value="${escapeHtml(safeText(season.saison_id))}">
+        ${escapeHtml(safeText(season.nom_saison || season.saison_id))}
+      </option>
+    `).join('');
+
+  clearSessionFields();
+  renderRound();
+
+  try {
+    const lastRaw = localStorage.getItem(
+      LOCAL_LAST_SELECTION_KEY
+    );
+
+    const last = lastRaw ? JSON.parse(lastRaw) : null;
+
+    if (
+      last?.saison_id &&
+      seasonsCache.some(season =>
+        safeText(season?.saison_id).trim() ===
+        safeText(last.saison_id).trim()
+      )
+    ) {
+      matchSeasonEl.value = safeText(last.saison_id).trim();
+      populateSessions();
+
+      if (
+        last?.no_session &&
+        [...matchSessionEl.options].some(option =>
+          safeText(option.value).trim() ===
+          safeText(last.no_session).trim()
+        )
+      ) {
+        matchSessionEl.value =
+          safeText(last.no_session).trim();
+
+        syncSelectedSession();
       }
     }
+  } catch (error) {
+    console.warn('Restauration de la dernière session impossible :', error);
+  }
+
+  if (!loadedFromServer) {
+    hintBoxEl.textContent =
+      'Mode hors ligne : saisons récupérées depuis ce téléphone.';
+  }
+}
 
     function populateSessions() {
       clearSessionFields();
@@ -3522,27 +3598,42 @@ for (let roundNo = 1; roundNo <= MAX_ROUNDS; roundNo += 1) {
     }
 
     function syncSelectedSession() {
-      const option = matchSessionEl.selectedOptions[0];
-      if (!option || !option.value) {
-        matchDateEl.value = '';
-        matchSessionNoEl.value = '';
-        sessionLocked = false;
-        lockSessionToggle.checked = false;
-        renderRound();
-        return;
-      }
+  const option = matchSessionEl.selectedOptions[0];
 
-      matchDateEl.value = option.dataset.date || '';
-      matchSessionNoEl.value = option.value || '';
-      sessionLocked = option.dataset.locked === '1';
-      lockSessionToggle.checked = sessionLocked;
-      loadSessionContext({ jumpToNextPlayable: true });
-    }
+  if (!option || !option.value) {
+    matchDateEl.value = '';
+    matchSessionNoEl.value = '';
+    sessionLocked = false;
+    lockSessionToggle.checked = false;
+    renderRound();
+    return;
+  }
+
+  matchDateEl.value = option.dataset.date || '';
+  matchSessionNoEl.value = option.value || '';
+  sessionLocked = option.dataset.locked === '1';
+  lockSessionToggle.checked = sessionLocked;
+
+  try {
+    const season = getSelectedSeason();
+    localStorage.setItem(
+      LOCAL_LAST_SELECTION_KEY,
+      JSON.stringify({
+        saison_id: safeText(season?.saison_id).trim(),
+        no_session: safeText(option.value).trim()
+      })
+    );
+  } catch (error) {
+  }
+
+  loadSessionContext({ jumpToNextPlayable: true });
+}
 
     prevRoundBtn.addEventListener('click', () => {
       const previous = getPreviousPosition(currentStageNo, currentMatchNo);
       currentStageNo = previous.stage_no;
       currentMatchNo = previous.match_no;
+      persistLocalSession();
       renderRound();
     });
 
@@ -3550,6 +3641,7 @@ for (let roundNo = 1; roundNo <= MAX_ROUNDS; roundNo += 1) {
       const next = getNextPosition(currentStageNo, currentMatchNo);
       currentStageNo = next.stage_no;
       currentMatchNo = next.match_no;
+      persistLocalSession();
       renderRound();
     });
 
@@ -3558,13 +3650,9 @@ copyPrevRoundBtn.addEventListener('click', async () => {
     copyPrevRoundBtn.disabled = true;
     copyPrevRoundBtn.textContent = '🔄 Vérification...';
 
-    // 1. Relire la vérité serveur :
-    // scores sauvegardés + états des groupes.
-    await loadSessionContext({
-      jumpToNextPlayable: false
-    });
-
-    // 2. Trouver le groupe réellement le plus en retard.
+    // Mode un téléphone : on travaille uniquement avec
+    // les sauvegardes locales déjà présentes en mémoire.
+    // Trouver le groupe réellement le plus en retard.
     const next = getNextLaggingGroupToPlay();
 
     if (!next) {
@@ -3584,6 +3672,7 @@ copyPrevRoundBtn.addEventListener('click', async () => {
 
     currentStageNo = position.stage_no;
     currentMatchNo = position.match_no;
+    persistLocalSession();
 
     renderedMatchMap = {};
     currentRoundPlan = null;
@@ -3623,41 +3712,33 @@ copyPrevRoundBtn.addEventListener('click', async () => {
   }
 });
 refreshMatchBtn.addEventListener('click', async () => {
-  const savedStageNo = currentStageNo;
-  const savedMatchNo = currentMatchNo;
-  const savedGroupViewPositions = {
-    ...groupViewPositions
-  };
+  const snapshot = readLocalSessionSnapshot();
+
+  if (snapshotHasUnsyncedWork(snapshot)) {
+    alert(
+      'Il y a des scores locaux non synchronisés. ' +
+      'Je ne recharge pas le serveur pour éviter de les écraser.'
+    );
+    return;
+  }
 
   try {
     refreshMatchBtn.disabled = true;
-    refreshMatchBtn.textContent = '🔄 Actualisation...';
+    refreshMatchBtn.textContent = '🔄 Rechargement...';
 
-    // Recharge présences, matchs sauvegardés
-    // et états officiels EN_JEU / FIGE.
     await loadSessionContext({
-      jumpToNextPlayable: false
+      jumpToNextPlayable: false,
+      forceServer: true
     });
-
-    // On revient exactement où l'utilisateur était.
-    currentStageNo = savedStageNo;
-    currentMatchNo = savedMatchNo;
-    groupViewPositions = savedGroupViewPositions;
-
-    currentRoundPlan = null;
-    renderedMatchMap = {};
-
-    renderRound();
-
   } catch (error) {
     console.error(error);
     alert(
-      'Erreur lors de l’actualisation : ' +
+      'Erreur lors du rechargement : ' +
       (error.message || error)
     );
   } finally {
     refreshMatchBtn.disabled = false;
-    refreshMatchBtn.textContent = '🔄 Actualiser';
+    refreshMatchBtn.textContent = '🔄 Recharger serveur';
     applySessionLockUI();
   }
 });
@@ -3689,6 +3770,7 @@ clearWithdrawalsBtn.addEventListener('click', () => {
   clearWithdrawalsForStage(currentStageNo);
   renderedMatchMap = {};
   currentRoundPlan = null;
+  persistLocalSession();
   renderRound();
 });
 
@@ -3712,6 +3794,7 @@ function withdrawPlayerFromCurrentStage(joueurId, playerName, stageNo = currentS
   setPlayerWithdrawal(currentStageNo, cleanJoueurId, true);
   renderedMatchMap = {};
   currentRoundPlan = null;
+  persistLocalSession();
   renderRound();
 }
     groupsGridEl.addEventListener('click', event => {
@@ -3723,6 +3806,7 @@ function withdrawPlayerFromCurrentStage(joueurId, playerName, stageNo = currentS
         setGroupViewPosition(groupCode, previous);
         currentStageNo = previous.stage_no;
         currentMatchNo = previous.match_no;
+        persistLocalSession();
         renderRound();
         return;
       }
@@ -3735,6 +3819,7 @@ function withdrawPlayerFromCurrentStage(joueurId, playerName, stageNo = currentS
         setGroupViewPosition(groupCode, next);
         currentStageNo = next.stage_no;
         currentMatchNo = next.match_no;
+        persistLocalSession();
         renderRound();
         return;
       }
