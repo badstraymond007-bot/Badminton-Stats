@@ -368,15 +368,47 @@ function maybeBuildRound2(){
   return true;
 }
 
+function sameMatchComposition(a,b){
+  if(!a||!b)return false;
+  const ref=x=>idOf(x);
+  return (
+    clean(a.match_no)===clean(b.match_no) &&
+    ref(a.team1_player1)===ref(b.team1_player1) &&
+    ref(a.team1_player2)===ref(b.team1_player2) &&
+    ref(a.team2_player1)===ref(b.team2_player1) &&
+    ref(a.team2_player2)===ref(b.team2_player2) &&
+    ref(a.waiting_player)===ref(b.waiting_player)
+  );
+}
+
+function preserveCompatibleRoundScores(oldRound,newRound){
+  if(!oldRound||!newRound)return newRound;
+  (newRound.groups||[]).forEach(newGroup=>{
+    const oldGroup=(oldRound.groups||[]).find(g=>g.group_code===newGroup.group_code);
+    if(!oldGroup)return;
+    (newGroup.matches||[]).forEach(newMatch=>{
+      const oldMatch=(oldGroup.matches||[]).find(m=>sameMatchComposition(m,newMatch));
+      if(!oldMatch)return;
+      newMatch.team1_score=oldMatch.team1_score;
+      newMatch.team2_score=oldMatch.team2_score;
+    });
+  });
+  return newRound;
+}
+
 function rebuildRound2(force=false){
   if (!state || !roundComplete(state.rounds['1'])) return;
-  if (state.rounds['2'] && roundHasAnyScore(state.rounds['2']) && !force){
-    if(!confirm('La Série 2 contient déjà des scores. Les recalculer effacera ces scores. Continuer ?')) return;
+  const oldRound2=state.rounds['2'] || null;
+  if (oldRound2 && roundHasAnyScore(oldRound2) && !force){
+    if(!confirm('La Série 1 a changé. Recalculer la Série 2 maintenant ? Les pointages déjà saisis seront conservés seulement si le match est exactement le même.')) return;
   }
-  state.rounds['2'] = buildRound(buildNextRoundGroups(state.rounds['1']),2,state.rules);
+  const rebuilt=buildRound(buildNextRoundGroups(state.rounds['1']),2,state.rules);
+  state.rounds['2'] = preserveCompatibleRoundScores(oldRound2,rebuilt);
   state.round1_dirty_after_round2 = false;
+  state.saved_to_server=false;
   saveLocal();
   renderAll();
+  setMessage('Série 2 recalculée à partir des résultats actuels de la Série 1. Les scores des matchs inchangés ont été conservés.');
 }
 
 function roundHasAnyScore(round){
@@ -527,9 +559,10 @@ function updateComputedDisplays(roundNo,groupCode){
   const roundDone=roundComplete(round);
   const status=$('round'+roundNo+'Status');
   status.textContent=roundDone?'Complète':'En cours';
-  if(String(roundNo)==='1' && roundDone && !state.rounds['2']){
-    if(maybeBuildRound2())renderAll();
-  }
+  // Important : on ne construit PAS la Série 2 sur l'événement input.
+  // Sinon, en tapant 21, le premier chiffre "2" peut créer la Série 2
+  // avant que le score complet "21" soit entré. La création/reconstruction
+  // de la Série 2 se fait uniquement quand le champ est validé (change).
   refreshSaveState();
 }
 
@@ -657,6 +690,30 @@ document.addEventListener('input',event=>{
   state.saved_to_server=false;
   if(tr.dataset.round==='1'&&state.rounds['2'])state.round1_dirty_after_round2=true;
   saveLocal();updateComputedDisplays(tr.dataset.round,tr.dataset.group);
+});
+
+// On attend que l'utilisateur ait FINI de saisir le score avant de créer
+// ou recalculer la Série 2. C'est ce qui empêche un "21" d'être traité
+// temporairement comme "2" pendant la frappe.
+document.addEventListener('change',event=>{
+  const input=event.target.closest('input[data-score]');if(!input||!state)return;
+  const tr=input.closest('tr[data-round]');if(!tr||tr.dataset.round!=='1')return;
+
+  if(!roundComplete(state.rounds['1']))return;
+
+  if(!state.rounds['2']){
+    if(maybeBuildRound2())renderAll();
+    return;
+  }
+
+  if(!state.round1_dirty_after_round2)return;
+
+  if(!roundHasAnyScore(state.rounds['2'])){
+    rebuildRound2(true);
+    return;
+  }
+
+  setMessage('La Série 1 a changé après le début de la Série 2. Recalcule la Série 2 avant de continuer; les scores des matchs inchangés seront conservés.','warning');
 });
 
 document.addEventListener('keydown',event=>{
