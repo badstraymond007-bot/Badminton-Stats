@@ -95,7 +95,7 @@
     <div>
       <div class="eyebrow">Club St-Raymond</div>
       <h1>Fiche de scores</h1>
-      <p>Présences → Série 1 → mouvement des groupes → Série 2 → enregistrement final.</p>
+      <p>Présences → Série 1 → mouvement des groupes → Série 2 → mouvement des groupes → Série 3 → enregistrement final.</p>
     </div>
     <a class="back" href="index.html">← Accueil</a>
   </header>
@@ -161,6 +161,7 @@
     </div>
     <div class="save-actions">
       <button id="rebuildRound2Btn" class="warning" hidden>Recalculer la Série 2</button>
+      <button id="rebuildRound3Btn" class="warning" hidden>Recalculer la Série 3</button>
       <button id="saveBtn" class="primary" disabled>Enregistrer la session</button>
     </div>
   </section>
@@ -388,6 +389,7 @@ function maybeBuildRound3(){
 
   const groups3 = buildNextRoundGroups(state.rounds['2']);
   state.rounds['3'] = buildRound(groups3,3,state.rules);
+  state.round2_dirty_after_round3 = false;
 
   saveLocal();
   return true;
@@ -424,16 +426,37 @@ function preserveCompatibleRoundScores(oldRound,newRound){
 function rebuildRound2(force=false){
   if (!state || !roundComplete(state.rounds['1'])) return;
   const oldRound2=state.rounds['2'] || null;
+  const hadRound3=!!state.rounds['3'];
   if (oldRound2 && roundHasAnyScore(oldRound2) && !force){
     if(!confirm('La Série 1 a changé. Recalculer la Série 2 maintenant ? Les pointages déjà saisis seront conservés seulement si le match est exactement le même.')) return;
   }
   const rebuilt=buildRound(buildNextRoundGroups(state.rounds['1']),2,state.rules);
   state.rounds['2'] = preserveCompatibleRoundScores(oldRound2,rebuilt);
   state.round1_dirty_after_round2 = false;
+  if(hadRound3) state.round2_dirty_after_round3 = true;
   state.saved_to_server=false;
   saveLocal();
   renderAll();
-  setMessage('Série 2 recalculée à partir des résultats actuels de la Série 1. Les scores des matchs inchangés ont été conservés.');
+  if(hadRound3){
+    setMessage('Série 2 recalculée. La Série 3 doit maintenant être recalculée à partir de la nouvelle Série 2.','warning');
+  }else{
+    setMessage('Série 2 recalculée à partir des résultats actuels de la Série 1. Les scores des matchs inchangés ont été conservés.');
+  }
+}
+
+function rebuildRound3(force=false){
+  if (!state || !roundComplete(state.rounds['2'])) return;
+  const oldRound3=state.rounds['3'] || null;
+  if (oldRound3 && roundHasAnyScore(oldRound3) && !force){
+    if(!confirm('La Série 2 a changé. Recalculer la Série 3 maintenant ? Les pointages déjà saisis seront conservés seulement si le match est exactement le même.')) return;
+  }
+  const rebuilt=buildRound(buildNextRoundGroups(state.rounds['2']),3,state.rules);
+  state.rounds['3'] = preserveCompatibleRoundScores(oldRound3,rebuilt);
+  state.round2_dirty_after_round3 = false;
+  state.saved_to_server=false;
+  saveLocal();
+  renderAll();
+  setMessage('Série 3 recalculée à partir des résultats actuels de la Série 2. Les scores des matchs inchangés ont été conservés.');
 }
 
 function roundHasAnyScore(round){
@@ -527,7 +550,6 @@ function hydrateServerState(setup, remote){
   (remote.rounds||[]).forEach(r=>{ s.rounds[clean(r.round_no)] = hydrateSavedRound(r,setupMap); });
   if(!s.rounds['1'])s.rounds['1']=buildNewState(setup).rounds['1'];
   if(!s.rounds['2'] && roundComplete(s.rounds['1']))s.rounds['2']=buildRound(buildNextRoundGroups(s.rounds['1']),2,s.rules);
-  if(!s.rounds['3'] && roundComplete(s.rounds['2']))s.rounds['3']=buildRound(buildNextRoundGroups(s.rounds['2']),3,s.rules);
   s.saved_to_server=true;
   return s;
 }
@@ -586,10 +608,10 @@ function updateComputedDisplays(roundNo,groupCode){
   const roundDone=roundComplete(round);
   const status=$('round'+roundNo+'Status');
   status.textContent=roundDone?'Complète':'En cours';
-  // Important : on ne construit PAS la Série 2 sur l'événement input.
-  // Sinon, en tapant 21, le premier chiffre "2" peut créer la Série 2
-  // avant que le score complet "21" soit entré. La création/reconstruction
-  // de la Série 2 se fait uniquement quand le champ est validé (change).
+  // Important : on ne construit pas la série suivante sur l'événement input.
+  // Sinon, pendant la frappe d'un score à deux chiffres, la série suivante
+  // pourrait être créée avant que le score complet soit entré.
+  // La création/reconstruction se fait uniquement quand le champ est validé (change).
   refreshSaveState();
 }
 
@@ -599,9 +621,12 @@ function refreshSaveState(){
   const r1=roundComplete(state.rounds['1']);
   const r2=roundComplete(state.rounds['2']);
   const r3=roundComplete(state.rounds['3']);
+  const dirty12=!!state.round1_dirty_after_round2;
+  const dirty23=!!state.round2_dirty_after_round3;
 
-  $('saveBtn').disabled=loading || !(r1&&r2&&r3);
-  $('rebuildRound2Btn').hidden=!state.round1_dirty_after_round2;
+  $('saveBtn').disabled=loading || !(r1&&r2&&r3) || dirty12 || dirty23;
+  $('rebuildRound2Btn').hidden=!dirty12;
+  $('rebuildRound3Btn').hidden=!dirty23;
 }
 
 function renderAll(){
@@ -661,7 +686,9 @@ async function loadFresh(force=false){
     setMessage('Vérification d’une session déjà enregistrée…');
     const remote=await apiGet('getSessionMatches',{saison_id:seasonId,no_session:sessionNo});
     state=remote.count>0?hydrateServerState(setup,remote):buildNewState(setup);
-    state.round1_dirty_after_round2=false;saveLocal();renderAll();
+    state.round1_dirty_after_round2=false;
+    state.round2_dirty_after_round3=false;
+    saveLocal();renderAll();
     setMessage(remote.count>0?`Session relue du classeur : ${remote.count} matchs trouvés.`:`Nouvelle session prête : ${setup.nb_presents} joueurs présents.`);
   }catch(error){
     const local=loadLocal(seasonId,sessionNo);
@@ -687,6 +714,7 @@ async function saveSession(){
     return;
   }
   if(state.round1_dirty_after_round2){setMessage('La Série 1 a changé après la création de la Série 2. Recalcule la Série 2 avant d’enregistrer.','warning');return;}
+  if(state.round2_dirty_after_round3){setMessage('La Série 2 a changé après la création de la Série 3. Recalcule la Série 3 avant d’enregistrer.','warning');return;}
   const matches=flattenMatches();
   if(!confirm(`Enregistrer la session ${state.no_session} au complet dans le classeur ?\n\n${matches.length} matchs seront écrits et les classements seront recalculés.`))return;
   loading=true;refreshSaveState();setMessage('Enregistrement de toute la soirée dans Google Sheets…');
@@ -738,6 +766,7 @@ $('reloadBtn').addEventListener('click',()=>{
 });
 $('saveBtn').addEventListener('click',saveSession);
 $('rebuildRound2Btn').addEventListener('click',()=>rebuildRound2(false));
+$('rebuildRound3Btn').addEventListener('click',()=>rebuildRound3(false));
 
 document.addEventListener('input',event=>{
   const input=event.target.closest('input[data-score]');if(!input||!state)return;
@@ -753,8 +782,8 @@ document.addEventListener('input',event=>{
 });
 
 // On attend que l'utilisateur ait FINI de saisir le score avant de créer
-// ou recalculer la Série 2. C'est ce qui empêche un "21" d'être traité
-// temporairement comme "2" pendant la frappe.
+// ou recalculer la série suivante. C'est ce qui empêche un score à deux
+// chiffres d'être traité à moitié pendant la frappe.
 document.addEventListener('change',event=>{
   const input=event.target.closest('input[data-score]');
   if(!input||!state)return;
@@ -800,7 +829,20 @@ document.addEventListener('change',event=>{
 
     if(!state.rounds['3']){
       if(maybeBuildRound3())renderAll();
+      return;
     }
+
+    if(!state.round2_dirty_after_round3)return;
+
+    if(!roundHasAnyScore(state.rounds['3'])){
+      rebuildRound3(true);
+      return;
+    }
+
+    setMessage(
+      'La Série 2 a changé après le début de la Série 3. Recalcule la Série 3 avant de continuer; les scores des matchs inchangés seront conservés.',
+      'warning'
+    );
   }
 });
 
