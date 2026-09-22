@@ -139,6 +139,20 @@
     <div id="round2Groups" class="groups"></div>
   </section>
 
+  <section id="round3" class="round" hidden>
+  <div class="round-head">
+    <div class="round-title">
+      <h2>Série 3</h2>
+      <span id="round3Status" class="pill">À venir</span>
+    </div>
+    <div class="round-note">
+      Troisième et dernière série de la soirée.
+    </div>
+  </div>
+
+  <div id="round3Groups" class="groups"></div>
+</section>
+
   <section id="saveBox" class="save-box" hidden>
     <div>
       <strong>Enregistrer toute la soirée</strong>
@@ -368,6 +382,17 @@ function maybeBuildRound2(){
   return true;
 }
 
+function maybeBuildRound3(){
+  if (!state || !roundComplete(state.rounds['2'])) return false;
+  if (state.rounds['3']) return false;
+
+  const groups3 = buildNextRoundGroups(state.rounds['2']);
+  state.rounds['3'] = buildRound(groups3,3,state.rules);
+
+  saveLocal();
+  return true;
+}
+  
 function sameMatchComposition(a,b){
   if(!a||!b)return false;
   const ref=x=>idOf(x);
@@ -417,7 +442,7 @@ function roundHasAnyScore(round){
 
 function flattenMatches(){
   const out=[];
-  ['1','2'].forEach(roundNo=>{
+  ['1','2','3'].forEach(roundNo=>{
     const round=state?.rounds?.[roundNo];
     (round?.groups||[]).forEach(group=>{
       (group.matches||[]).forEach(match=>{
@@ -487,9 +512,10 @@ function buildNewState(setup){
     rules:setup.rules || {},
     setup_players:setup.joueurs || [],
     rounds:{'1':buildRound(groups,1,setup.rules || {})},
-    saved_to_server:false,
-    round1_dirty_after_round2:false,
-    updated_at:''
+saved_to_server:false,
+round1_dirty_after_round2:false,
+round2_dirty_after_round3:false,
+updated_at:''
   };
 }
 
@@ -501,6 +527,7 @@ function hydrateServerState(setup, remote){
   (remote.rounds||[]).forEach(r=>{ s.rounds[clean(r.round_no)] = hydrateSavedRound(r,setupMap); });
   if(!s.rounds['1'])s.rounds['1']=buildNewState(setup).rounds['1'];
   if(!s.rounds['2'] && roundComplete(s.rounds['1']))s.rounds['2']=buildRound(buildNextRoundGroups(s.rounds['1']),2,s.rules);
+  if(!s.rounds['3'] && roundComplete(s.rounds['2']))s.rounds['3']=buildRound(buildNextRoundGroups(s.rounds['2']),3,s.rules);
   s.saved_to_server=true;
   return s;
 }
@@ -568,22 +595,43 @@ function updateComputedDisplays(roundNo,groupCode){
 
 function refreshSaveState(){
   if(!state)return;
+
   const r1=roundComplete(state.rounds['1']);
   const r2=roundComplete(state.rounds['2']);
-  $('saveBtn').disabled=loading || !(r1&&r2);
+  const r3=roundComplete(state.rounds['3']);
+
+  $('saveBtn').disabled=loading || !(r1&&r2&&r3);
   $('rebuildRound2Btn').hidden=!state.round1_dirty_after_round2;
 }
 
 function renderAll(){
-  if(!state){$('summary').hidden=true;$('round1').hidden=true;$('round2').hidden=true;$('saveBox').hidden=true;return;}
-  $('summary').hidden=false;$('saveBox').hidden=false;
+  if(!state){
+    $('summary').hidden=true;
+    $('round1').hidden=true;
+    $('round2').hidden=true;
+    $('round3').hidden=true;
+    $('saveBox').hidden=true;
+    return;
+  }
+
+  $('summary').hidden=false;
+  $('saveBox').hidden=false;
+
   $('sumDate').textContent=state.date_session||'—';
   $('sumPresent').textContent=String(state.nb_presents||0);
   $('sumGroups').textContent=String(state.rounds?.['1']?.groups?.length||0);
   $('sumSource').textContent=sourceLabel();
   $('sumLocal').textContent=state.saved_to_server?'Relue du classeur':'Copie locale';
-  renderRound(1);renderRound(2);refreshSaveState();
-  $('localState').textContent=state.updated_at?'Dernière copie locale : '+new Date(state.updated_at).toLocaleTimeString('fr-CA'):'La saisie est sauvegardée automatiquement sur cet appareil.';
+
+  renderRound(1);
+  renderRound(2);
+  renderRound(3);
+
+  refreshSaveState();
+
+  $('localState').textContent=state.updated_at
+    ? 'Dernière copie locale : '+new Date(state.updated_at).toLocaleTimeString('fr-CA')
+    : 'La saisie est sauvegardée automatiquement sur cet appareil.';
 }
 
 function findMatch(roundNo,groupCode,matchNo){
@@ -626,7 +674,18 @@ async function loadFresh(force=false){
 
 async function saveSession(){
   if(loading||!state)return;
-  if(!(roundComplete(state.rounds['1'])&&roundComplete(state.rounds['2']))){setMessage('Complète tous les scores des deux séries avant l’enregistrement final.','warning');return;}
+
+  if(!(
+    roundComplete(state.rounds['1']) &&
+    roundComplete(state.rounds['2']) &&
+    roundComplete(state.rounds['3'])
+  )){
+    setMessage(
+      'Complète tous les scores des trois séries avant l’enregistrement final.',
+      'warning'
+    );
+    return;
+  }
   if(state.round1_dirty_after_round2){setMessage('La Série 1 a changé après la création de la Série 2. Recalcule la Série 2 avant d’enregistrer.','warning');return;}
   const matches=flattenMatches();
   if(!confirm(`Enregistrer la session ${state.no_session} au complet dans le classeur ?\n\n${matches.length} matchs seront écrits et les classements seront recalculés.`))return;
@@ -689,6 +748,7 @@ document.addEventListener('input',event=>{
   if(input.value!==match[field])input.value=match[field];
   state.saved_to_server=false;
   if(tr.dataset.round==='1'&&state.rounds['2'])state.round1_dirty_after_round2=true;
+  if(tr.dataset.round==='2'&&state.rounds['3'])state.round2_dirty_after_round3=true;
   saveLocal();updateComputedDisplays(tr.dataset.round,tr.dataset.group);
 });
 
@@ -696,24 +756,52 @@ document.addEventListener('input',event=>{
 // ou recalculer la Série 2. C'est ce qui empêche un "21" d'être traité
 // temporairement comme "2" pendant la frappe.
 document.addEventListener('change',event=>{
-  const input=event.target.closest('input[data-score]');if(!input||!state)return;
-  const tr=input.closest('tr[data-round]');if(!tr||tr.dataset.round!=='1')return;
+  const input=event.target.closest('input[data-score]');
+  if(!input||!state)return;
 
-  if(!roundComplete(state.rounds['1']))return;
+  const tr=input.closest('tr[data-round]');
+  if(!tr)return;
 
-  if(!state.rounds['2']){
-    if(maybeBuildRound2())renderAll();
+  const roundNo=tr.dataset.round;
+
+  // =========================
+  // FIN DE LA SÉRIE 1
+  // =========================
+  if(roundNo==='1'){
+
+    if(!roundComplete(state.rounds['1']))return;
+
+    if(!state.rounds['2']){
+      if(maybeBuildRound2())renderAll();
+      return;
+    }
+
+    if(!state.round1_dirty_after_round2)return;
+
+    if(!roundHasAnyScore(state.rounds['2'])){
+      rebuildRound2(true);
+      return;
+    }
+
+    setMessage(
+      'La Série 1 a changé après le début de la Série 2. Recalcule la Série 2 avant de continuer; les scores des matchs inchangés seront conservés.',
+      'warning'
+    );
+
     return;
   }
 
-  if(!state.round1_dirty_after_round2)return;
+  // =========================
+  // FIN DE LA SÉRIE 2
+  // =========================
+  if(roundNo==='2'){
 
-  if(!roundHasAnyScore(state.rounds['2'])){
-    rebuildRound2(true);
-    return;
+    if(!roundComplete(state.rounds['2']))return;
+
+    if(!state.rounds['3']){
+      if(maybeBuildRound3())renderAll();
+    }
   }
-
-  setMessage('La Série 1 a changé après le début de la Série 2. Recalcule la Série 2 avant de continuer; les scores des matchs inchangés seront conservés.','warning');
 });
 
 document.addEventListener('keydown',event=>{
