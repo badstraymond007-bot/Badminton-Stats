@@ -150,7 +150,7 @@
   <section id="round2" class="round" hidden>
     <div class="round-head">
       <div class="round-title"><h2>Série 2</h2><span id="round2Status" class="pill">À venir</span></div>
-      <div class="round-note">Clique sur un joueur à gauche pour le déplacer ou le retirer.</div>
+      <div class="round-note">Référence officielle pour la prochaine session · clique sur un joueur à gauche pour le déplacer ou le retirer.</div>
     </div>
     <div id="round2PlayerTools" class="player-tools" hidden></div>
     <div id="round2Groups" class="groups"></div>
@@ -159,11 +159,11 @@
   <section id="round3" class="round" hidden>
   <div class="round-head">
     <div class="round-title">
-      <h2>Série 3</h2>
+      <h2>Série 3 · Bonus</h2>
       <span id="round3Status" class="pill">À venir</span>
     </div>
     <div class="round-note">
-      Troisième série · clique sur un joueur à gauche pour le déplacer ou le retirer.
+      Série bonus : elle compte dans les statistiques, mais ne change pas l’ordre de départ de la prochaine session.
     </div>
   </div>
 
@@ -303,7 +303,12 @@ function buildMatch(group, roundNo, appearanceNo, rotation){
 
 function rotationsForGroup(group, roundNo, rules){
   if (group.players.length === 4) return rules.rotation_4 || [];
-  if (group.players.length === 5) return Number(roundNo) === 2 ? (rules.rotation_5_round_2 || []) : (rules.rotation_5_round_1 || []);
+  if (group.players.length === 5){
+    const n=Number(roundNo);
+    if(n===2) return rules.rotation_5_round_2 || rules.rotation_5_round_1 || [];
+    if(n===3) return rules.rotation_5_round_3 || rules.rotation_5_round_1 || [];
+    return rules.rotation_5_round_1 || [];
+  }
   return [];
 }
 
@@ -342,7 +347,14 @@ function roundComplete(round){
   return !!round && (round.groups || []).length > 0 && round.groups.every(groupComplete);
 }
 
-function computeGroupStats(group){
+function allRoundMatches(round){
+  const out=[];
+  (round?.groups||[]).forEach(group=>(group.matches||[]).forEach(match=>out.push(match)));
+  (round?.archived_matches||[]).forEach(match=>out.push(match));
+  return out;
+}
+
+function computeGroupStats(group,round=null){
   const stats = {};
   (group.players || []).forEach((p,index)=>{
     stats[idOf(p)] = {
@@ -352,7 +364,10 @@ function computeGroupStats(group){
     };
   });
 
-  (group.matches || []).forEach(match=>{
+  // Un joueur déplacé par cascade garde les résultats qu'il avait déjà joués
+  // plus tôt dans cette même série.
+  const matches=round ? allRoundMatches(round) : (group.matches || []);
+  matches.forEach(match=>{
     if(match.cancelled) return;
     const s1 = numOrBlank(match.team1_score);
     const s2 = numOrBlank(match.team2_score);
@@ -383,7 +398,7 @@ function computeGroupStats(group){
 
 function buildNextRoundGroups(round1){
   const buckets = (round1.groups || []).map(group=>{
-    const rankedIds = computeGroupStats(group).ranked.map(x=>x.joueur_id);
+    const rankedIds = computeGroupStats(group,round1).ranked.map(x=>x.joueur_id);
     const rankedPlayers = rankedIds.map(id=>group.players.find(p=>idOf(p)===id)).filter(Boolean);
     const five = rankedPlayers.length === 5;
     return {
@@ -526,6 +541,81 @@ function applyFlatPlayers(roundNo,flat,sizes){
   });
 }
 
+function groupSizesForTotal(totalPlayers){
+  const total=Number(totalPlayers||0);
+  if(!Number.isInteger(total)||total<4)return [];
+  const groupCount=Math.floor(total/4);
+  const fiveCount=total-groupCount*4;
+  if(fiveCount<0||fiveCount>groupCount)return [];
+  const fourCount=groupCount-fiveCount;
+  const sizes=[];
+  for(let i=0;i<fourCount;i++)sizes.push(4);
+  for(let i=0;i<fiveCount;i++)sizes.push(5);
+  const maxGroups=Array.isArray(state?.rules?.group_codes)?state.rules.group_codes.length:5;
+  return sizes.length<=maxGroups?sizes:[];
+}
+
+function reformRoundGroupsFromFlat(roundNo,flatPlayers){
+  const round=state?.rounds?.[String(roundNo)];
+  if(!round)return false;
+  const sizes=groupSizesForTotal(flatPlayers.length);
+  if(!sizes.length)return false;
+
+  const oldGroups=(round.groups||[]).slice();
+  const archived=(round.archived_matches||[]).slice();
+
+  // Si le nombre de groupes diminue, on conserve les matchs déjà terminés
+  // des groupes qui disparaissent. Ils seront encore envoyés à la sauvegarde finale.
+  oldGroups.slice(sizes.length).forEach(group=>{
+    (group.matches||[]).forEach(match=>{
+      if(matchFullyScored(match)) archived.push(match);
+    });
+  });
+
+  const codes=Array.isArray(state?.rules?.group_codes)&&state.rules.group_codes.length
+    ? state.rules.group_codes
+    : ['A','B','C','D','E'];
+
+  let cursor=0;
+  round.groups=sizes.map((size,index)=>{
+    const previous=oldGroups[index]||{};
+    const players=flatPlayers.slice(cursor,cursor+size).map((p,i)=>clonePlayerForSlot(p,i+1));
+    cursor+=size;
+    const group={
+      group_code:clean(previous.group_code)||clean(codes[index])||String.fromCharCode(65+index),
+      court_no:clean(previous.court_no)||String(index+1),
+      players,
+      matches:Array.isArray(previous.matches)?previous.matches:[]
+    };
+    rebuildPendingMatchesForGroup(group,String(roundNo));
+    return group;
+  });
+
+  const seen=new Set();
+  round.archived_matches=archived.filter(match=>{
+    const key=[clean(match.group_code),clean(match.match_no),matchSignature(match),clean(match.team1_score),clean(match.team2_score)].join('|');
+    if(seen.has(key))return false;
+    seen.add(key);
+    return true;
+  });
+  return true;
+}
+
+function repairLegacyInvalidGroups(){
+  if(!state?.rounds)return false;
+  let changed=false;
+  ['1','2','3'].forEach(roundNo=>{
+    const round=state.rounds[roundNo];
+    if(!round)return;
+    const groups=round.groups||[];
+    if(!groups.some(g=>(g.players||[]).length<4||(g.players||[]).length>5))return;
+    const flat=[];
+    groups.forEach(g=>(g.players||[]).forEach(p=>flat.push(p)));
+    if(reformRoundGroupsFromFlat(roundNo,flat))changed=true;
+  });
+  return changed;
+}
+
 function markDownstreamDirty(roundNo){
   state.saved_to_server=false;
   if(String(roundNo)==='1' && state.rounds['2']) state.round1_dirty_after_round2=true;
@@ -574,9 +664,20 @@ function removePlayerFromRound(roundNo,playerId){
   const loc=findPlayerLocation(roundNo,playerId);
   if(!loc)return;
   const playerName=nameOf(loc.player);
-  if(!confirm(`Retirer ${playerName} à partir de la Série ${roundNo} ?\n\nLes matchs déjà commencés restent intacts. Les matchs encore vierges seront adaptés.`))return;
-  loc.group.players=(loc.group.players||[]).filter(p=>idOf(p)!==clean(playerId)).map((p,i)=>clonePlayerForSlot(p,i+1));
-  finishRosterChange(roundNo,`${playerName} a été retiré de la Série ${roundNo}.`);
+  if(!confirm(`Retirer ${playerName} à partir de la Série ${roundNo} ?
+
+Tous les joueurs suivants remonteront automatiquement en cascade et les groupes seront reformés en 4 ou 5 joueurs. Les matchs déjà joués restent intacts.`))return;
+
+  const flat=roundPlayerLocations(roundNo)
+    .map(x=>x.player)
+    .filter(p=>idOf(p)!==clean(playerId));
+
+  if(!reformRoundGroupsFromFlat(roundNo,flat)){
+    alert(`Après ce retrait, ${flat.length} joueurs ne permettent pas de former uniquement des groupes de 4 ou 5. Aucun changement n’a été fait.`);
+    return;
+  }
+
+  finishRosterChange(roundNo,`${playerName} a été retiré de la Série ${roundNo}. Les joueurs ont remonté automatiquement en cascade.`);
 }
 
 function switchPlayers(roundNo,sourceId,targetId){
@@ -692,34 +793,34 @@ function rebuildRound3(force=false){
 }
 
 function roundHasAnyScore(round){
-  return !!round && (round.groups || []).some(g=>(g.matches||[]).some(m=>clean(m.team1_score)!=='' || clean(m.team2_score)!==''));
+  return !!round && allRoundMatches(round).some(m=>clean(m.team1_score)!=='' || clean(m.team2_score)!=='');
 }
 
 function flattenMatches(){
   const out=[];
   ['1','2','3'].forEach(roundNo=>{
     const round=state?.rounds?.[roundNo];
-    (round?.groups||[]).forEach(group=>{
-      (group.matches||[]).forEach(match=>{
-        if(match.cancelled)return;
-        const ref=p=>p?{joueur_id:idOf(p),tag:clean(p.tag)}:'';
-        out.push({
-          round_no:roundNo,
-          match_no:match.match_no,
-          groupe_code:group.group_code,
-          court_no:group.court_no,
-          team1_player1_id:ref(match.team1_player1),
-          team1_player2_id:ref(match.team1_player2),
-          team2_player1_id:ref(match.team2_player1),
-          team2_player2_id:ref(match.team2_player2),
-          waiting_player_id:ref(match.waiting_player),
-          team1_score:match.team1_score,
-          team2_score:match.team2_score,
-          winner_team:'',
-          notes:match.notes || ''
-        });
+    const pushMatch=(match,groupCode,courtNo)=>{
+      if(match.cancelled)return;
+      const ref=p=>p?{joueur_id:idOf(p),tag:clean(p.tag)}:'';
+      out.push({
+        round_no:roundNo,
+        match_no:match.match_no,
+        groupe_code:groupCode||match.group_code,
+        court_no:courtNo||match.court_no,
+        team1_player1_id:ref(match.team1_player1),
+        team1_player2_id:ref(match.team1_player2),
+        team2_player1_id:ref(match.team2_player1),
+        team2_player2_id:ref(match.team2_player2),
+        waiting_player_id:ref(match.waiting_player),
+        team1_score:match.team1_score,
+        team2_score:match.team2_score,
+        winner_team:'',
+        notes:match.notes || ''
       });
-    });
+    };
+    (round?.groups||[]).forEach(group=>(group.matches||[]).forEach(match=>pushMatch(match,group.group_code,group.court_no)));
+    (round?.archived_matches||[]).forEach(match=>pushMatch(match,match.group_code,match.court_no));
   });
   return out;
 }
@@ -806,7 +907,7 @@ function playerRowHtml(player,index,computed,complete,roundNo,groupCode){
 function teamHtml(a,b){return `<span>${esc(nameOf(a))}</span><span>${esc(nameOf(b))}</span>`;}
 
 function groupHtml(group,roundNo){
-  const computed=computeGroupStats(group);
+  const computed=computeGroupStats(group,state?.rounds?.[String(roundNo)]);
   const complete=groupComplete(group);
   const playersRows=(group.players||[]).map((p,i)=>playerRowHtml(p,i,computed,complete,roundNo,group.group_code)).join('');
   const matchesRows=(group.matches||[]).map(m=>{
@@ -839,7 +940,7 @@ function updateComputedDisplays(roundNo,groupCode){
   const group=(round?.groups||[]).find(g=>g.group_code===groupCode);
   const card=document.querySelector(`[data-round-card="${CSS.escape(String(roundNo))}"][data-group-card="${CSS.escape(groupCode)}"]`);
   if(!group||!card)return;
-  const computed=computeGroupStats(group), complete=groupComplete(group);
+  const computed=computeGroupStats(group,round), complete=groupComplete(group);
   (group.players||[]).forEach(p=>{
     const row=card.querySelector(`[data-player="${CSS.escape(idOf(p))}"]`);if(!row)return;
     const st=computed.stats[idOf(p)];
@@ -920,7 +1021,13 @@ async function loadFresh(force=false){
 
   if(!force){
     const local=loadLocal(seasonId,sessionNo);
-    if(local){state=local;setMessage('Copie locale chargée. Tu peux continuer exactement où tu étais.');renderAll();return;}
+    if(local){
+      state=local;
+      const repaired=repairLegacyInvalidGroups();
+      if(repaired)saveLocal();
+      setMessage(repaired?'Copie locale chargée et anciens groupes incomplets réparés automatiquement.':'Copie locale chargée. Tu peux continuer exactement où tu étais.');
+      renderAll();return;
+    }
   }
 
   loading=true;$('loadBtn').disabled=true;$('reloadBtn').disabled=true;setMessage('Lecture des présences et de l’ordre de départ…');
@@ -932,13 +1039,14 @@ async function loadFresh(force=false){
     setMessage('Vérification d’une session déjà enregistrée…');
     const remote=await apiGet('getSessionMatches',{saison_id:seasonId,no_session:sessionNo});
     state=remote.count>0?hydrateServerState(setup,remote):buildNewState(setup);
+    repairLegacyInvalidGroups();
     state.round1_dirty_after_round2=false;
     state.round2_dirty_after_round3=false;
     saveLocal();renderAll();
     setMessage(remote.count>0?`Session relue du classeur : ${remote.count} matchs trouvés.`:`Nouvelle session prête : ${setup.nb_presents} joueurs présents.`);
   }catch(error){
     const local=loadLocal(seasonId,sessionNo);
-    if(local){state=local;renderAll();setMessage('Internet indisponible : copie locale chargée. '+error.message,'warning');}
+    if(local){state=local;const repaired=repairLegacyInvalidGroups();if(repaired)saveLocal();renderAll();setMessage('Internet indisponible : copie locale chargée. '+error.message,'warning');}
     else setMessage('Erreur de chargement : '+error.message,'error');
   }finally{
     loading=false;$('loadBtn').disabled=false;$('reloadBtn').disabled=false;refreshSaveState();
