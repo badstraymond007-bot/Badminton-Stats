@@ -60,6 +60,20 @@
     .global-pos{display:block;font-size:11px;color:var(--muted);font-weight:500}
     .num{text-align:center;font-variant-numeric:tabular-nums}
     .rank{font-weight:800;text-align:center}
+    .player-row{transition:background .12s ease,box-shadow .12s ease}
+    .player-row.is-clickable{cursor:pointer}
+    .player-row.is-clickable:hover{background:#f0f7f2}
+    .player-row.is-selected{background:#fff5c7;box-shadow:inset 4px 0 0 #d3a900}
+    .player-row.is-target-mode{background:#eef5ff}
+    .player-tools{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:-1px 0 10px;padding:10px 12px;background:#fff;border:1px solid var(--line);border-radius:10px}
+    .player-tools strong{font-size:14px}
+    .player-tools .tool-note{font-size:12px;color:var(--muted);margin-right:auto}
+    .player-tools button{min-height:38px;padding:7px 11px}
+    .player-tools .danger{color:#fff;background:var(--danger);border-color:var(--danger)}
+    .player-tools .danger:hover{background:#8f281d;border-color:#8f281d}
+    .player-tools .active-action{background:#e9f1ff;border-color:#8eb2ff;color:#184ea5}
+    .cancelled-row td{background:#f7f7f7;color:#8a918d}
+    .cancelled-label{font-weight:800;color:#8a5a00}
     .match-no{width:48px;text-align:center;font-weight:800}
     .team{min-width:150px;line-height:1.35}
     .team span{display:block;white-space:nowrap}
@@ -81,6 +95,7 @@
       .group-body{grid-template-columns:1fr}.players-panel{border-right:0;border-bottom:1px solid var(--line)}
       .round-head{align-items:flex-start;flex-direction:column}.round-note{text-align:left}
       .save-box{display:block}.save-actions{margin-top:12px}.save-actions button{flex:1}
+      .player-tools{align-items:stretch}.player-tools .tool-note{width:100%;margin-right:0}.player-tools button{flex:1}
     }
     @media(max-width:600px){
       .session-bar{grid-template-columns:1fr}.back{padding:8px 10px}.summary{gap:10px}.summary-item{min-width:46%}
@@ -126,16 +141,18 @@
   <section id="round1" class="round" hidden>
     <div class="round-head">
       <div class="round-title"><h2>Série 1</h2><span id="round1Status" class="pill">En cours</span></div>
-      <div class="round-note">Classement par total +/−. Les 2 premiers montent, les 2 derniers descendent.</div>
+      <div class="round-note">Classement par total +/−. Clique sur un joueur à gauche pour le déplacer ou le retirer.</div>
     </div>
+    <div id="round1PlayerTools" class="player-tools" hidden></div>
     <div id="round1Groups" class="groups"></div>
   </section>
 
   <section id="round2" class="round" hidden>
     <div class="round-head">
       <div class="round-title"><h2>Série 2</h2><span id="round2Status" class="pill">À venir</span></div>
-      <div class="round-note">Cette série sert de référence pour préparer la prochaine session.</div>
+      <div class="round-note">Clique sur un joueur à gauche pour le déplacer ou le retirer.</div>
     </div>
+    <div id="round2PlayerTools" class="player-tools" hidden></div>
     <div id="round2Groups" class="groups"></div>
   </section>
 
@@ -146,10 +163,11 @@
       <span id="round3Status" class="pill">À venir</span>
     </div>
     <div class="round-note">
-      Troisième et dernière série de la soirée.
+      Troisième série · clique sur un joueur à gauche pour le déplacer ou le retirer.
     </div>
   </div>
 
+  <div id="round3PlayerTools" class="player-tools" hidden></div>
   <div id="round3Groups" class="groups"></div>
 </section>
 
@@ -178,6 +196,7 @@ const $ = id => document.getElementById(id);
 let seasons = [];
 let state = null;
 let loading = false;
+let playerEdit = {roundNo:'', sourceId:'', mode:''};
 
 function clean(v){ return String(v ?? '').trim(); }
 function esc(v){ return String(v ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -304,8 +323,20 @@ function playerIdsFromMatch(match){
   return [match.team1_player1,match.team1_player2,match.team2_player1,match.team2_player2,match.waiting_player].filter(Boolean).map(idOf);
 }
 
+function matchHasAnyScore(match){
+  return clean(match?.team1_score) !== '' || clean(match?.team2_score) !== '';
+}
+function matchFullyScored(match){
+  return clean(match?.team1_score) !== '' && clean(match?.team2_score) !== '';
+}
+function matchFinished(match){
+  return !!match?.cancelled || matchFullyScored(match);
+}
 function groupComplete(group){
-  return (group.matches || []).length > 0 && group.matches.every(m => clean(m.team1_score) !== '' && clean(m.team2_score) !== '');
+  const matches = group?.matches || [];
+  const activePlayers = group?.players || [];
+  if(activePlayers.length < 4) return matches.every(matchFinished);
+  return matches.length > 0 && matches.every(matchFinished);
 }
 function roundComplete(round){
   return !!round && (round.groups || []).length > 0 && round.groups.every(groupComplete);
@@ -322,6 +353,7 @@ function computeGroupStats(group){
   });
 
   (group.matches || []).forEach(match=>{
+    if(match.cancelled) return;
     const s1 = numOrBlank(match.team1_score);
     const s2 = numOrBlank(match.team2_score);
     if (s1 === '' || s2 === '') return;
@@ -395,6 +427,206 @@ function maybeBuildRound3(){
   return true;
 }
   
+function clonePlayerForSlot(player,tag){
+  return {...player, tag:String(tag)};
+}
+
+function roundPlayerLocations(roundNo){
+  const round=state?.rounds?.[String(roundNo)];
+  const out=[];
+  (round?.groups||[]).forEach((group,groupIndex)=>{
+    (group.players||[]).forEach((player,playerIndex)=>{
+      out.push({roundNo:String(roundNo),group,groupIndex,player,playerIndex});
+    });
+  });
+  return out;
+}
+
+function findPlayerLocation(roundNo,playerId){
+  return roundPlayerLocations(roundNo).find(x=>idOf(x.player)===clean(playerId)) || null;
+}
+
+function clearPlayerEdit(render=true){
+  playerEdit={roundNo:'',sourceId:'',mode:''};
+  if(render && state) renderAll();
+}
+
+function matchSignature(match){
+  if(!match)return '';
+  const team=a=>a.filter(Boolean).map(idOf).filter(Boolean).sort().join('+');
+  const a=team([match.team1_player1,match.team1_player2]);
+  const b=team([match.team2_player1,match.team2_player2]);
+  return [a,b].sort().join(' vs ');
+}
+
+function cancelledMatch(group,roundNo,matchNo){
+  return {
+    round_no:String(roundNo),match_no:String(matchNo),group_code:group.group_code,
+    court_no:String(group.court_no||''),team1_player1:null,team1_player2:null,
+    team2_player1:null,team2_player2:null,waiting_player:null,
+    team1_score:'',team2_score:'',notes:'Match annulé après modification des joueurs',
+    cancelled:true
+  };
+}
+
+function rebuildPendingMatchesForGroup(group,roundNo){
+  const oldMatches=(group.matches||[]).slice().sort((a,b)=>Number(a.match_no||0)-Number(b.match_no||0));
+  const locked=oldMatches.filter(matchHasAnyScore);
+  const lockedByNo=new Map(locked.map(m=>[String(m.match_no),m]));
+  const lockedSignatures=new Set(locked.filter(matchFullyScored).map(matchSignature));
+
+  (group.players||[]).forEach((p,i)=>{ p.tag=String(i+1); });
+  const rotations=rotationsForGroup(group,roundNo,state?.rules||{});
+  let candidates=rotations.map((rotation,i)=>buildMatch(group,roundNo,i+1,rotation));
+  candidates=candidates.filter(m=>!lockedSignatures.has(matchSignature(m)));
+
+  const targetSlots=Math.max(oldMatches.length,candidates.length,locked.length);
+  const rebuilt=[];
+  let candidateIndex=0;
+
+  for(let slot=1;slot<=targetSlots;slot++){
+    const key=String(slot);
+    if(lockedByNo.has(key)){
+      rebuilt.push(lockedByNo.get(key));
+      continue;
+    }
+    const candidate=candidates[candidateIndex++];
+    if(candidate){
+      candidate.match_no=key;
+      rebuilt.push(candidate);
+    }else{
+      rebuilt.push(cancelledMatch(group,roundNo,key));
+    }
+  }
+
+  // Un groupe qui était injouable (0 match) et qui redevient 4 ou 5 joueurs
+  // reçoit son horaire normal.
+  if(!targetSlots && candidates.length){
+    candidates.forEach((m,i)=>{m.match_no=String(i+1);rebuilt.push(m);});
+  }
+
+  group.matches=rebuilt;
+}
+
+function rebuildPendingMatchesForRound(roundNo){
+  const round=state?.rounds?.[String(roundNo)];
+  if(!round)return;
+  (round.groups||[]).forEach(group=>rebuildPendingMatchesForGroup(group,String(roundNo)));
+}
+
+function applyFlatPlayers(roundNo,flat,sizes){
+  const round=state?.rounds?.[String(roundNo)];
+  if(!round)return;
+  let cursor=0;
+  (round.groups||[]).forEach((group,index)=>{
+    const count=sizes[index]||0;
+    const slice=flat.slice(cursor,cursor+count);
+    group.players=slice.map((p,i)=>clonePlayerForSlot(p,i+1));
+    cursor+=count;
+  });
+}
+
+function markDownstreamDirty(roundNo){
+  state.saved_to_server=false;
+  if(String(roundNo)==='1' && state.rounds['2']) state.round1_dirty_after_round2=true;
+  if(String(roundNo)==='2' && state.rounds['3']) state.round2_dirty_after_round3=true;
+}
+
+function finishRosterChange(roundNo,message){
+  markDownstreamDirty(roundNo);
+  rebuildPendingMatchesForRound(roundNo);
+  playerEdit={roundNo:'',sourceId:'',mode:''};
+  saveLocal();
+
+  if(String(roundNo)==='1' && roundComplete(state.rounds['1'])){
+    if(!state.rounds['2']){
+      maybeBuildRound2();
+      renderAll();
+      setMessage(message+' La Série 2 a été préparée avec les joueurs restants.');
+      return;
+    }
+    if(state.round1_dirty_after_round2 && !roundHasAnyScore(state.rounds['2'])){
+      rebuildRound2(true);
+      setMessage(message+' La Série 2 a été recalculée automatiquement.');
+      return;
+    }
+  }
+
+  if(String(roundNo)==='2' && roundComplete(state.rounds['2'])){
+    if(!state.rounds['3']){
+      maybeBuildRound3();
+      renderAll();
+      setMessage(message+' La Série 3 a été préparée avec les joueurs restants.');
+      return;
+    }
+    if(state.round2_dirty_after_round3 && !roundHasAnyScore(state.rounds['3'])){
+      rebuildRound3(true);
+      setMessage(message+' La Série 3 a été recalculée automatiquement.');
+      return;
+    }
+  }
+
+  renderAll();
+  setMessage(message);
+}
+
+function removePlayerFromRound(roundNo,playerId){
+  const loc=findPlayerLocation(roundNo,playerId);
+  if(!loc)return;
+  const playerName=nameOf(loc.player);
+  if(!confirm(`Retirer ${playerName} à partir de la Série ${roundNo} ?\n\nLes matchs déjà commencés restent intacts. Les matchs encore vierges seront adaptés.`))return;
+  loc.group.players=(loc.group.players||[]).filter(p=>idOf(p)!==clean(playerId)).map((p,i)=>clonePlayerForSlot(p,i+1));
+  finishRosterChange(roundNo,`${playerName} a été retiré de la Série ${roundNo}.`);
+}
+
+function switchPlayers(roundNo,sourceId,targetId){
+  const round=state?.rounds?.[String(roundNo)];
+  if(!round||sourceId===targetId)return;
+  const sizes=(round.groups||[]).map(g=>(g.players||[]).length);
+  const flat=roundPlayerLocations(roundNo).map(x=>x.player);
+  const a=flat.findIndex(p=>idOf(p)===clean(sourceId));
+  const b=flat.findIndex(p=>idOf(p)===clean(targetId));
+  if(a<0||b<0)return;
+  const sourceName=nameOf(flat[a]),targetName=nameOf(flat[b]);
+  [flat[a],flat[b]]=[flat[b],flat[a]];
+  applyFlatPlayers(roundNo,flat,sizes);
+  finishRosterChange(roundNo,`${sourceName} et ${targetName} ont été échangés dans la Série ${roundNo}.`);
+}
+
+function cascadePlayer(roundNo,sourceId,targetId){
+  const round=state?.rounds?.[String(roundNo)];
+  if(!round||sourceId===targetId)return;
+  const sizes=(round.groups||[]).map(g=>(g.players||[]).length);
+  const flat=roundPlayerLocations(roundNo).map(x=>x.player);
+  const sourceIndex=flat.findIndex(p=>idOf(p)===clean(sourceId));
+  const targetIndex=flat.findIndex(p=>idOf(p)===clean(targetId));
+  if(sourceIndex<0||targetIndex<0)return;
+  const sourceName=nameOf(flat[sourceIndex]);
+  const targetName=nameOf(flat[targetIndex]);
+  const [moved]=flat.splice(sourceIndex,1);
+  const insertionIndex=targetIndex;
+  flat.splice(insertionIndex,0,moved);
+  applyFlatPlayers(roundNo,flat,sizes);
+  finishRosterChange(roundNo,`${sourceName} a été déplacé en cascade à la position de ${targetName} dans la Série ${roundNo}.`);
+}
+
+function renderPlayerTools(roundNo){
+  const box=$('round'+roundNo+'PlayerTools');
+  if(!box)return;
+  const active=playerEdit.roundNo===String(roundNo) && playerEdit.sourceId;
+  if(!active){box.hidden=true;box.innerHTML='';return;}
+  const loc=findPlayerLocation(roundNo,playerEdit.sourceId);
+  if(!loc){box.hidden=true;box.innerHTML='';return;}
+  box.hidden=false;
+  const label=`${nameOf(loc.player)} · Groupe ${loc.group.group_code} · position ${loc.playerIndex+1}`;
+  if(playerEdit.mode==='switch' || playerEdit.mode==='cascade'){
+    const verb=playerEdit.mode==='switch'?'Switch':'Cascade';
+    box.innerHTML=`<strong>${esc(verb)} : ${esc(label)}</strong><span class="tool-note">Clique maintenant sur le joueur cible dans n’importe quel groupe de cette série.</span><button data-player-cancel>Annuler</button>`;
+    return;
+  }
+  box.innerHTML=`<strong>${esc(label)}</strong><span class="tool-note">Choisis l’action. Les matchs déjà commencés ne seront pas modifiés.</span><button class="danger" data-player-action="remove">Retirer</button><button data-player-action="switch">Switch</button><button data-player-action="cascade">Cascade</button><button data-player-cancel>Annuler</button>`;
+}
+
 function sameMatchComposition(a,b){
   if(!a||!b)return false;
   const ref=x=>idOf(x);
@@ -469,6 +701,7 @@ function flattenMatches(){
     const round=state?.rounds?.[roundNo];
     (round?.groups||[]).forEach(group=>{
       (group.matches||[]).forEach(match=>{
+        if(match.cancelled)return;
         const ref=p=>p?{joueur_id:idOf(p),tag:clean(p.tag)}:'';
         out.push({
           round_no:roundNo,
@@ -560,11 +793,14 @@ function sourceLabel(){
   return 'Ordre logique issu de la Série 2 précédente';
 }
 
-function playerRowHtml(player,index,computed,complete){
+function playerRowHtml(player,index,computed,complete,roundNo,groupCode){
   const st=computed.stats[idOf(player)] || {plus_moins:0,rang:''};
   const rank=complete ? st.rang : '—';
   const gp=player.position_logique ? `Global #${esc(player.position_logique)}` : '';
-  return `<tr data-player="${esc(idOf(player))}"><td class="pos">${index+1}</td><td><span class="player-name">${esc(nameOf(player))}</span>${gp?`<span class="global-pos">${gp}</span>`:''}</td><td class="num" data-stat="diff">${st.plus_moins>0?'+':''}${st.plus_moins}</td><td class="rank" data-stat="rank">${rank}</td></tr>`;
+  const selected=playerEdit.roundNo===String(roundNo) && playerEdit.sourceId===idOf(player);
+  const targetMode=playerEdit.roundNo===String(roundNo) && !!playerEdit.mode && !selected;
+  const classes=['player-row','is-clickable',selected?'is-selected':'',targetMode?'is-target-mode':''].filter(Boolean).join(' ');
+  return `<tr class="${classes}" data-player="${esc(idOf(player))}" data-player-pick="1" data-round="${esc(roundNo)}" data-group="${esc(groupCode)}" title="Cliquer pour déplacer ou retirer"><td class="pos">${index+1}</td><td><span class="player-name">${esc(nameOf(player))}</span>${gp?`<span class="global-pos">${gp}</span>`:''}</td><td class="num" data-stat="diff">${st.plus_moins>0?'+':''}${st.plus_moins}</td><td class="rank" data-stat="rank">${rank}</td></tr>`;
 }
 
 function teamHtml(a,b){return `<span>${esc(nameOf(a))}</span><span>${esc(nameOf(b))}</span>`;}
@@ -572,18 +808,26 @@ function teamHtml(a,b){return `<span>${esc(nameOf(a))}</span><span>${esc(nameOf(
 function groupHtml(group,roundNo){
   const computed=computeGroupStats(group);
   const complete=groupComplete(group);
-  const playersRows=(group.players||[]).map((p,i)=>playerRowHtml(p,i,computed,complete)).join('');
-  const matchesRows=(group.matches||[]).map(m=>`<tr data-round="${roundNo}" data-group="${esc(group.group_code)}" data-match="${esc(m.match_no)}"><td class="match-no">${esc(m.match_no)}</td><td class="team">${teamHtml(m.team1_player1,m.team1_player2)}</td><td class="score-cell"><input class="score" inputmode="numeric" autocomplete="off" data-score="1" value="${esc(m.team1_score)}"></td><td class="score-cell"><input class="score" inputmode="numeric" autocomplete="off" data-score="2" value="${esc(m.team2_score)}"></td><td class="team">${teamHtml(m.team2_player1,m.team2_player2)}</td><td class="waiting">${m.waiting_player?esc(nameOf(m.waiting_player)):'—'}</td></tr>`).join('');
-  return `<article class="group-card" data-round-card="${roundNo}" data-group-card="${esc(group.group_code)}"><div class="group-head"><h3>Groupe ${esc(group.group_code)}</h3><div class="group-meta ${complete?'complete':'incomplete'}">${complete?'Série complète':'Scores à compléter'} · ${group.players.length} joueurs</div></div><div class="group-body"><div class="players-panel"><table><thead><tr><th class="pos">Pos.</th><th>Joueur</th><th class="num">+/−</th><th class="rank">Rang</th></tr></thead><tbody>${playersRows}</tbody></table></div><div class="matches-panel"><table><thead><tr><th>#</th><th>Équipe 1</th><th>Pts</th><th>Pts</th><th>Équipe 2</th><th>Repos</th></tr></thead><tbody>${matchesRows}</tbody></table></div></div></article>`;
+  const playersRows=(group.players||[]).map((p,i)=>playerRowHtml(p,i,computed,complete,roundNo,group.group_code)).join('');
+  const matchesRows=(group.matches||[]).map(m=>{
+    if(m.cancelled){
+      return `<tr class="cancelled-row" data-round="${roundNo}" data-group="${esc(group.group_code)}" data-match="${esc(m.match_no)}"><td class="match-no">${esc(m.match_no)}</td><td colspan="5" class="cancelled-label">Match annulé — joueurs insuffisants ou composition modifiée</td></tr>`;
+    }
+    return `<tr data-round="${roundNo}" data-group="${esc(group.group_code)}" data-match="${esc(m.match_no)}"><td class="match-no">${esc(m.match_no)}</td><td class="team">${teamHtml(m.team1_player1,m.team1_player2)}</td><td class="score-cell"><input class="score" inputmode="numeric" autocomplete="off" data-score="1" value="${esc(m.team1_score)}"></td><td class="score-cell"><input class="score" inputmode="numeric" autocomplete="off" data-score="2" value="${esc(m.team2_score)}"></td><td class="team">${teamHtml(m.team2_player1,m.team2_player2)}</td><td class="waiting">${m.waiting_player?esc(nameOf(m.waiting_player)):'—'}</td></tr>`;
+  }).join('');
+  const playable=(group.players||[]).length>=4;
+  const metaText=!playable ? `${group.players.length} joueurs · aucun double possible` : `${complete?'Série complète':'Scores à compléter'} · ${group.players.length} joueurs`;
+  return `<article class="group-card" data-round-card="${roundNo}" data-group-card="${esc(group.group_code)}"><div class="group-head"><h3>Groupe ${esc(group.group_code)}</h3><div class="group-meta ${complete?'complete':'incomplete'}">${metaText}</div></div><div class="group-body"><div class="players-panel"><table><thead><tr><th class="pos">Pos.</th><th>Joueur</th><th class="num">+/−</th><th class="rank">Rang</th></tr></thead><tbody>${playersRows}</tbody></table></div><div class="matches-panel"><table><thead><tr><th>#</th><th>Équipe 1</th><th>Pts</th><th>Pts</th><th>Équipe 2</th><th>Repos</th></tr></thead><tbody>${matchesRows || `<tr><td colspan="6" class="empty">Aucun match possible avec ${group.players.length} joueurs.</td></tr>`}</tbody></table></div></div></article>`;
 }
 
 function renderRound(roundNo){
   const round=state?.rounds?.[String(roundNo)];
   const section=$('round'+roundNo);
   const container=$('round'+roundNo+'Groups');
-  if(!round){section.hidden=true;container.innerHTML='';return;}
+  if(!round){section.hidden=true;container.innerHTML='';const tools=$('round'+roundNo+'PlayerTools');if(tools)tools.hidden=true;return;}
   section.hidden=false;
   container.innerHTML=(round.groups||[]).map(g=>groupHtml(g,String(roundNo))).join('') || '<div class="empty">Aucun groupe.</div>';
+  renderPlayerTools(String(roundNo));
   const complete=roundComplete(round);
   const status=$('round'+roundNo+'Status');
   status.textContent=complete?'Complète':'En cours';
@@ -603,7 +847,9 @@ function updateComputedDisplays(roundNo,groupCode){
     row.querySelector('[data-stat="rank"]').textContent=complete?st.rang:'—';
   });
   const meta=card.querySelector('.group-meta');
-  meta.textContent=(complete?'Série complète':'Scores à compléter')+' · '+group.players.length+' joueurs';
+  meta.textContent=group.players.length<4
+    ? group.players.length+' joueurs · aucun double possible'
+    : (complete?'Série complète':'Scores à compléter')+' · '+group.players.length+' joueurs';
   meta.className='group-meta '+(complete?'complete':'incomplete');
   const roundDone=roundComplete(round);
   const status=$('round'+roundNo+'Status');
@@ -755,8 +1001,8 @@ async function boot(){
   if($('season').value&&$('session').value)await loadFresh(false);
 }
 
-$('season').addEventListener('change',()=>{populateSessions();state=null;renderAll();});
-$('session').addEventListener('change',()=>{state=null;renderAll();});
+$('season').addEventListener('change',()=>{populateSessions();state=null;playerEdit={roundNo:'',sourceId:'',mode:''};renderAll();});
+$('session').addEventListener('change',()=>{state=null;playerEdit={roundNo:'',sourceId:'',mode:''};renderAll();});
 $('loadBtn').addEventListener('click',()=>loadFresh(false));
 $('reloadBtn').addEventListener('click',()=>{
   const seasonId=$('season').value,sessionNo=$('session').value;
@@ -767,6 +1013,48 @@ $('reloadBtn').addEventListener('click',()=>{
 $('saveBtn').addEventListener('click',saveSession);
 $('rebuildRound2Btn').addEventListener('click',()=>rebuildRound2(false));
 $('rebuildRound3Btn').addEventListener('click',()=>rebuildRound3(false));
+
+document.addEventListener('click',event=>{
+  const cancelBtn=event.target.closest('[data-player-cancel]');
+  if(cancelBtn){clearPlayerEdit(true);return;}
+
+  const actionBtn=event.target.closest('[data-player-action]');
+  if(actionBtn && state && playerEdit.sourceId){
+    const action=actionBtn.dataset.playerAction;
+    if(action==='remove'){
+      removePlayerFromRound(playerEdit.roundNo,playerEdit.sourceId);
+      return;
+    }
+    if(action==='switch' || action==='cascade'){
+      playerEdit.mode=action;
+      renderAll();
+      setMessage(`${action==='switch'?'Switch':'Cascade'} : clique maintenant sur le joueur cible dans la Série ${playerEdit.roundNo}.`);
+      return;
+    }
+  }
+
+  const row=event.target.closest('[data-player-pick]');
+  if(!row||!state)return;
+  const roundNo=clean(row.dataset.round);
+  const playerId=clean(row.dataset.player);
+  if(!roundNo||!playerId)return;
+
+  if(playerEdit.roundNo===roundNo && playerEdit.sourceId && playerEdit.mode){
+    if(playerId===playerEdit.sourceId){
+      playerEdit.mode='';
+      renderAll();
+      return;
+    }
+    const mode=playerEdit.mode;
+    const sourceId=playerEdit.sourceId;
+    if(mode==='switch') switchPlayers(roundNo,sourceId,playerId);
+    else cascadePlayer(roundNo,sourceId,playerId);
+    return;
+  }
+
+  playerEdit={roundNo,sourceId:playerId,mode:''};
+  renderAll();
+});
 
 document.addEventListener('input',event=>{
   const input=event.target.closest('input[data-score]');if(!input||!state)return;
